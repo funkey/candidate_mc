@@ -1,0 +1,18 @@
+[submodule "cmake"]
+	path = cmake
+	url = http://github.com/funkey/cmake
+[submodule "modules/util"]
+	path = modules/util
+	url = http://github.com/funkey/util
+[submodule "modules/region_features"]
+	path = modules/region_features
+	url = http://github.com/funkey/region_features
+[submodule "modules/signals"]
+	path = modules/signals
+	url = http://github.com/funkey/signals
+[submodule "modules/pipeline"]
+	path = modules/pipeline
+	url = http://github.com/funkey/pipeline
+[submodule "modules/imageprocessing"]
+	path = modules/imageprocessing
+	url = http://github.com/funkey/imageprocessing

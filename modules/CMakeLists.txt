@@ -1,0 +1,8 @@
+add_subdirectory(util)
+add_subdirectory(signals)
+add_subdirectory(pipeline)
+add_subdirectory(imageprocessing)
+add_subdirectory(region_features)
+#define_module(cohear HEADER INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+#define_module(scopegraph HEADER INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+#add_subdirectory(sg_gui)
