@@ -5,7 +5,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/include/define_module.cmake)
 # project information #
 #######################
 
-project(treemc)
+project(candidatemc)
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
 
@@ -27,7 +27,7 @@ include_directories(${PROJECT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_subdirectory(modules)
-add_subdirectory(trag)
+add_subdirectory(crag)
 add_subdirectory(features)
 add_subdirectory(io)
 add_subdirectory(binaries)
