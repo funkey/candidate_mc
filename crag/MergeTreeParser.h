@@ -13,14 +13,14 @@ class MergeTreeParser {
 public:
 
 	/**
-	 * Create a new MergeTreeParser for a merge tree image. The image is assumed 
-	 * to be a spaced edge image, i.e., edges are stored between image locations 
-	 * with a stride of 2.
+	 * Create a new MergeTreeParser for a merge tree image.
 	 */
 	MergeTreeParser(const Image& mergeTree);
 
 	/**
-	 * Get the candidate region adjacency graph from the given merge tree image.
+	 * Get the candidate region adjacency graph from the given merge tree image. 
+	 * Note that this only extracts the subset relations, not the adjacency 
+	 * (since the latter might be application dependent).
 	 */
 	void getCrag(Crag& crag);
 

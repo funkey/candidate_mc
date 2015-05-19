@@ -11,6 +11,7 @@
 #include <util/exceptions.h>
 #include <crag/Crag.h>
 #include <crag/MergeTreeParser.h>
+#include <crag/PlanarAdjacencyAnnotator.h>
 #include <io/Hdf5CragStore.h>
 
 util::ProgramOption optionMergeTree(
@@ -63,25 +64,32 @@ int main(int argc, char** argv) {
 		util::ProgramOptions::init(argc, argv);
 		logger::LogManager::init();
 
+		util::point<float, 3> resolution(
+				optionResX,
+				optionResY,
+				optionResZ);
+		util::point<float, 3> offset(
+				optionOffsetX,
+				optionOffsetY,
+				optionOffsetZ);
+
 		// get information about the image to read
 		std::string filename = optionMergeTree;
 		vigra::ImageImportInfo info(filename.c_str());
 		Image mergeTree(info.width(), info.height());
 		importImage(info, vigra::destImage(mergeTree));
-		mergeTree.setResolution(
-				optionResX,
-				optionResY,
-				optionResZ);
-		mergeTree.setOffset(
-				optionOffsetX,
-				optionOffsetY,
-				optionOffsetZ);
+		mergeTree.setResolution(resolution);
+		mergeTree.setOffset(offset);
 
 		MergeTreeParser parser(mergeTree);
 
 		Crag crag;
 		parser.getCrag(crag);
 
+		PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
+		annotator.annotate(crag);
+
+		boost::filesystem::remove(optionProjectFile.as<std::string>());
 		Hdf5CragStore store(optionProjectFile.as<std::string>());
 		store.saveCrag(crag);
 
