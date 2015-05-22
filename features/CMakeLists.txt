@@ -1,1 +1,1 @@
-define_module(features OBJECT LINKS region_features)
+define_module(features OBJECT LINKS crag region_features)

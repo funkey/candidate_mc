@@ -3,6 +3,8 @@
 
 #include <imageprocessing/ExplicitVolume.h>
 #include <lemon/list_graph.h>
+#define WITH_LEMON
+#include <vigra/multi_gridgraph.hxx>
 
 /**
  * Candidate region adjacency graph.
@@ -26,15 +28,18 @@ public:
 	typedef RagType::IncEdgeIt   IncEdgeIt;
 
 	typedef SubsetType::Node     SubsetNode;
+	typedef SubsetType::NodeIt   SubsetNodeIt;
 	typedef SubsetType::Arc      SubsetArc;
 	typedef SubsetType::ArcIt    SubsetArcIt;
 	typedef SubsetType::OutArcIt SubsetOutArcIt;
 	typedef SubsetType::InArcIt  SubsetInArcIt;
 
 	template <typename T> using NodeMap = RagType::NodeMap<T>;
+	template <typename T> using EdgeMap = RagType::EdgeMap<T>;
 
 	Crag() :
-		_volumes(_rag) {}
+		_volumes(_rag),
+		_affiliatedEdges(_rag) {}
 
 	/**
 	 * Add a node to the CRAG.
@@ -64,6 +69,35 @@ public:
 	}
 
 	/**
+	 * Set the grid graph, to which the affiliated edges between leaf node 
+	 * regions refer.
+	 */
+	void setGridGraph(const vigra::GridGraph<3>& gridGraph) {
+
+		_gridGraph = gridGraph;
+	}
+
+	/**
+	 * Associate affiliated edges to a pair of adjacent leaf node regions. It is 
+	 * assumed that an adjacency edge has already been added between u and v.
+	 */
+	void setAffiliatedEdges(Node u, Node v, const std::vector<vigra::GridGraph<3>::Edge>& edges) {
+
+		for (IncEdgeIt e(_rag, u); e != lemon::INVALID; ++e)
+			if (_rag.oppositeNode(u, e) == v) {
+
+				_affiliatedEdges[e] = edges;
+				return;
+			}
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"no rag edge between "
+				<< _rag.id(u) << " and "
+				<< _rag.id(v) << " has been added.");
+	}
+
+	/**
 	 * Get direct access to the underlying lemon graphs.
 	 */
 	const lemon::ListGraph&   getAdjacencyGraph() const { return _rag; }
@@ -87,8 +121,13 @@ public:
 	operator const SubsetType& () const { return _ssg; }
 	operator       SubsetType& ()       { return _ssg; }
 
-	int id(Node n)    const { return _rag.id(n); }
-	int id(SubsetNode n) const { return _ssg.id(n); }
+	inline Node u(Edge e) const { return _rag.u(e); }
+	inline Node v(Edge e) const { return _rag.v(e); }
+
+	inline int id(Node n)       const { return _rag.id(n); }
+	inline int id(SubsetNode n) const { return _ssg.id(n); }
+	inline int id(Edge e)       const { return _rag.id(e); }
+	inline int id(SubsetArc  a) const { return _ssg.id(a); }
 
 	/**
 	 * Convenience function to create a node from an id.
@@ -101,7 +140,7 @@ public:
 	/**
 	 * Convert a subset node into a rag node.
 	 */
-	inline Node toRag(SubsetNode n) {
+	inline Node toRag(SubsetNode n) const {
 
 		return _rag.nodeFromId(_ssg.id(n));
 	}
@@ -109,7 +148,7 @@ public:
 	/**
 	 * Convert a rag node into a subset node.
 	 */
-	inline SubsetNode toSubset(Node n) {
+	inline SubsetNode toSubset(Node n) const {
 
 		return _ssg.nodeFromId(_rag.id(n));
 	}
@@ -135,6 +174,11 @@ private:
 
 	// volumes of leaf candidates
 	NodeMap<ExplicitVolume<unsigned char>> _volumes;
+
+	vigra::GridGraph<3> _gridGraph;
+
+	// voxel edges between adjacent leaf nodes
+	EdgeMap<std::vector<vigra::GridGraph<3>::Edge>> _affiliatedEdges;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_H__

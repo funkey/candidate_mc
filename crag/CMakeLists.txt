@@ -1,1 +1,1 @@
-define_module(trag OBJECT LINKS region_features lemon-hg imageprocessing util)
+define_module(crag OBJECT LINKS region_features lemon-hg imageprocessing util)

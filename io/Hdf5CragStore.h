@@ -39,10 +39,32 @@ public:
 	void saveCrag(const Crag& crag) override;
 
 	/**
+	 * Store features for the candidates (i.e., the nodes) of a CRAG.
+	 */
+	void saveNodeFeatures(const Crag& crag, const NodeFeatures& features) override;
+
+	/**
+	 * Store features for adjacent candidates (i.e., the edges) of a CRAG.
+	 */
+	void saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) override;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
 	void retrieveCrag(Crag& crag) override;
+
+	/**
+	 * Retrieve features for the candidates (i.e., the nodes) of the CRAG 
+	 * associated to this store.
+	 */
+	void retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) override;
+
+	/**
+	 * Retrieve features for adjacent candidates (i.e., the edges) of the CRAG 
+	 * associated to this store.
+	 */
+	void retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) override;
 
 private:
 

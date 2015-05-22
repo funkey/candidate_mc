@@ -27,9 +27,11 @@ include_directories(${PROJECT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_subdirectory(modules)
+add_subdirectory(solver)
 add_subdirectory(crag)
 add_subdirectory(features)
 add_subdirectory(io)
+add_subdirectory(inference)
 add_subdirectory(binaries)
 
 ###############
