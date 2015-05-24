@@ -1,4 +1,5 @@
 #include <lemon/dijkstra.h>
+#include <lemon/connectivity.h>
 #include <util/Logger.h>
 #include "MultiCut.h"
 
@@ -7,6 +8,7 @@ logger::LogChannel multicutlog("multicutlog", "[MultiCut] ");
 MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
 	_cut(crag),
+	_components(crag),
 	_numNodes(0),
 	_numEdges(0),
 	_parameters(parameters) {
@@ -45,7 +47,7 @@ MultiCut::solve(unsigned int numIterations) {
 	if (numIterations == 0)
 		numIterations = _parameters.numIterations;
 
-	for (int i = 0; i < numIterations; i++) {
+	for (unsigned int i = 0; i < numIterations; i++) {
 
 		LOG_DEBUG(multicutlog)
 				<< "------------------------ iteration "
@@ -242,15 +244,37 @@ MultiCut::findViolatedConstraints() {
 		if (_cut[e])
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
 
+	// find connected components in cut graph
+	lemon::connectedComponents(cutGraph, _components);
+
+	// label rejected nodes with -1
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 1)
+			_components[n] = -1;
+
+	// propagate node labels to subsets
+	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		int numParents = 0;
+		for (Crag::SubsetOutArcIt e(_crag, n); e != lemon::INVALID; ++e)
+			numParents++;
+
+		if (numParents == 0)
+			propagateLabel(n, -1);
+	}
+
 	// setup Dijkstra
 	One one;
 	lemon::Dijkstra<Cut, One> dijkstra(cutGraph, one);
 
-	// for each not selected edge, find the shortest path along connected nodes 
-	// connecting them
+	// for each not selected edge with nodes in the same connected component, 
+	// find the shortest path along connected nodes connecting them
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
 		if (_cut[e])
+			continue;
+
+		if (_components[_crag.u(e)] != _components[_crag.v(e)])
 			continue;
 
 		Crag::Node s = _crag.u(e);
@@ -324,4 +348,14 @@ MultiCut::findViolatedConstraints() {
 			<< " cycle constraints" << std::endl;
 
 	return (constraintsAdded > 0);
+}
+
+void
+MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
+
+	if (label == -1)
+		label = _components[_crag.toRag(n)];
+
+	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e)
+		propagateLabel(_crag.getSubsetGraph().oppositeNode(n, e), label);
 }

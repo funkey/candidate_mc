@@ -54,7 +54,13 @@ public:
 	 * Get the current solution. If solve() did not return SolutionFound, the 
 	 * solution might be suboptimal and/or inconsistent.
 	 */
-	const Crag::EdgeMap<bool>& getCut() { return _cut; }
+	const Crag::EdgeMap<bool>& getCut() const { return _cut; }
+
+	/**
+	 * Get the current solution in terms of a connected component labelling. If 
+	 * solve() did not return SolutionFound, the solution might be suboptimal.
+	 */
+	const Crag::NodeMap<int>& getComponents() const { return _components; }
 
 private:
 
@@ -64,7 +70,7 @@ private:
 		typedef int Value;
 
 		template <typename T>
-		int operator[](const T& t) const { return 1; }
+		int operator[](const T&) const { return 1; }
 
 	};
 
@@ -80,12 +86,15 @@ private:
 
 	bool findViolatedConstraints();
 
+	void propagateLabel(Crag::SubsetNode n, int label);
+
 	inline unsigned int nodeIdToVar(int nodeId) { return nodeId; }
 	inline unsigned int edgeIdToVar(int edgeId) { return _edgeIdToVarMap[edgeId]; }
 
 	const Crag& _crag;
 
 	Crag::EdgeMap<bool> _cut;
+	Crag::NodeMap<int>  _components;
 
 	unsigned int _numNodes, _numEdges;
 
