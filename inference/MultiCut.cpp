@@ -7,7 +7,7 @@ logger::LogChannel multicutlog("multicutlog", "[MultiCut] ");
 
 MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
-	_cut(crag),
+	_merged(crag),
 	_components(crag),
 	_numNodes(0),
 	_numEdges(0),
@@ -49,7 +49,7 @@ MultiCut::solve(unsigned int numIterations) {
 
 	for (unsigned int i = 0; i < numIterations; i++) {
 
-		LOG_DEBUG(multicutlog)
+		LOG_USER(multicutlog)
 				<< "------------------------ iteration "
 				<< i << std::endl;
 
@@ -123,7 +123,7 @@ MultiCut::setInitialConstraints() {
 		}
 	}
 
-	LOG_DEBUG(multicutlog)
+	LOG_USER(multicutlog)
 			<< "added " << numTreePathConstraints
 			<< " tree-path constraints" << std::endl;
 
@@ -159,7 +159,7 @@ MultiCut::setInitialConstraints() {
 		numRejectionConstraints++;
 	}
 
-	LOG_DEBUG(multicutlog)
+	LOG_USER(multicutlog)
 			<< "added " << numRejectionConstraints
 			<< " rejection constraints" << std::endl;
 }
@@ -216,12 +216,12 @@ MultiCut::findCut() {
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
-		_cut[e] = ((*_solution)[edgeIdToVar(_crag.id(e))] > 0);
+		_merged[e] = ((*_solution)[edgeIdToVar(_crag.id(e))] > 0.5);
 
 		LOG_ALL(multicutlog)
 				<< "(" << _crag.id(_crag.u(e))
 				<< "," << _crag.id(_crag.v(e))
-				<< "): " << _cut[e]
+				<< "): " << _merged[e]
 				<< std::endl;
 	}
 }
@@ -241,7 +241,7 @@ MultiCut::findViolatedConstraints() {
 		cutGraph.addNode();
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-		if (_cut[e])
+		if (_merged[e])
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
 
 	// find connected components in cut graph
@@ -249,7 +249,7 @@ MultiCut::findViolatedConstraints() {
 
 	// label rejected nodes with -1
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 1)
+		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 0.5)
 			_components[n] = -1;
 
 	// propagate node labels to subsets
@@ -263,87 +263,116 @@ MultiCut::findViolatedConstraints() {
 			propagateLabel(n, -1);
 	}
 
-	// setup Dijkstra
-	One one;
-	lemon::Dijkstra<Cut, One> dijkstra(cutGraph, one);
-
 	// for each not selected edge with nodes in the same connected component, 
 	// find the shortest path along connected nodes connecting them
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
-		if (_cut[e])
-			continue;
-
-		if (_components[_crag.u(e)] != _components[_crag.v(e)])
+		// not selected
+		if (_merged[e])
 			continue;
 
 		Crag::Node s = _crag.u(e);
 		Crag::Node t = _crag.v(e);
 
-		LOG_ALL(multicutlog)
-				<< "checking cut edge " << _crag.id(s)
-				<< ", " << _crag.id(t)
-				<< " for cycle consistency"
+		// in same component
+		if (_components[s] != _components[t] || _components[s] == -1)
+			continue;
+
+		LOG_DEBUG(multicutlog)
+				<< "nodes " << _crag.id(s)
+				<< " and " << _crag.id(t)
+				<< " (edge " << edgeIdToVar(_crag.id(e))
+				<< ") are cut, but in same component"
 				<< std::endl;
 
-		// e = (u, v) was not selected -> there should be no path connecting u 
-		// and v
-		if (dijkstra.run(s, t)) {
+		// setup Dijkstra
+		One one;
+		lemon::Dijkstra<Cut, One> dijkstra(cutGraph, one);
 
-			LOG_ALL(multicutlog)
-					<< "nodes " << _crag.id(s)
-					<< " and " << _crag.id(t)
-					<< " are connected"
+		// e = (s, t) was not selected -> there should be no path connecting s 
+		// and t
+		if (!dijkstra.run(s, t))
+			LOG_ERROR(multicutlog)
+					<< "dijkstra could not find a path!"
 					<< std::endl;
 
-			LinearConstraint cycleConstraint;
+		LOG_DEBUG(multicutlog)
+				<< "nodes " << _crag.id(s)
+				<< " and " << _crag.id(t)
+				<< " are in same component "
+				<< _components[_crag.v(e)]
+				<< std::endl;
 
-			int lenPath = 0;
+		LinearConstraint cycleConstraint;
 
-			// walk along the path between u and v
-			Crag::Node cur = t;
-			while (cur != s) {
+		int lenPath = 0;
 
-				LOG_ALL(multicutlog)
-						<< "walking backwards: "
-						<< _crag.id(cur)
+		// walk along the path between u and v
+		Crag::Node cur = t;
+		LOG_DEBUG(multicutlog)
+				<< "nodes " << _crag.id(s)
+				<< " and " << _crag.id(t)
+				<< " (edge " << edgeIdToVar(_crag.id(e)) << ")"
+				<< " are connected via path ";
+		while (cur != s) {
+
+			LOG_DEBUG(multicutlog)
+					<< _crag.id(cur)
+					<< " ";
+
+			Crag::Node pre = dijkstra.predNode(cur);
+
+			// here we have to iterate over all adjacent edges in order to 
+			// find (cur, pre) in CRAG, since there is no 1:1 mapping 
+			// between edges in cutGraph and _crag
+			Crag::IncEdgeIt pathEdge(_crag, cur);
+			for (; pathEdge!= lemon::INVALID; ++pathEdge)
+				if (_crag.getAdjacencyGraph().oppositeNode(cur, pathEdge) == pre)
+					break;
+
+			if (pathEdge == lemon::INVALID)
+				UTIL_THROW_EXCEPTION(
+						Exception,
+						"could not find path edge in CRAG");
+
+			if (!_merged[pathEdge])
+				LOG_ERROR(multicutlog)
+						<< "edge " << edgeIdToVar(_crag.id(pathEdge))
+						<< " is not selected, but found by dijkstra"
 						<< std::endl;
-
-				Crag::Node pre = cutGraph.oppositeNode(cur, dijkstra.predMap()[cur]);
-
-				// here we have to iterate over all adjacent edges in order to 
-				// find (cur, pre) in CRAG, since there is no 1:1 mapping 
-				// between edges in cutGraph and _crag
-				for (Crag::IncEdgeIt pathEdge(_crag, cur); pathEdge != lemon::INVALID; ++pathEdge)
-					if (_crag.getAdjacencyGraph().oppositeNode(cur, pathEdge) == pre) {
-
-						cycleConstraint.setCoefficient(
-								edgeIdToVar(_crag.id(pathEdge)),
-								1.0);
-						break;
-					}
-
-				lenPath++;
-				cur = pre;
-			}
+				//UTIL_THROW_EXCEPTION(
+						//Exception,
+						//"edge " << edgeIdToVar(_crag.id(pathEdge)) << " is not selected, but found by dijkstra");
 
 			cycleConstraint.setCoefficient(
-					edgeIdToVar(_crag.id(e)),
-					-1.0);
-			cycleConstraint.setRelation(LessEqual);
-			cycleConstraint.setValue(lenPath - 1);
+					edgeIdToVar(_crag.id(pathEdge)),
+					1.0);
+			LOG_DEBUG(multicutlog)
+					<< "(edge " << edgeIdToVar(_crag.id(pathEdge)) << ") ";
 
-			_constraints->add(cycleConstraint);
-
-			constraintsAdded++;
-
-			if (_parameters.maxConstraintsPerIteration > 0 &&
-			    constraintsAdded >= _parameters.maxConstraintsPerIteration)
-				break;
+			lenPath++;
+			cur = pre;
 		}
+		LOG_DEBUG(multicutlog) << _crag.id(s) << std::endl;
+
+		cycleConstraint.setCoefficient(
+				edgeIdToVar(_crag.id(e)),
+				-1.0);
+		cycleConstraint.setRelation(LessEqual);
+		cycleConstraint.setValue(lenPath - 1);
+
+		LOG_DEBUG(multicutlog) << cycleConstraint << std::endl;
+
+		_constraints->add(cycleConstraint);
+
+		constraintsAdded++;
+
+		if (_parameters.maxConstraintsPerIteration > 0 &&
+			constraintsAdded >= _parameters.maxConstraintsPerIteration)
+			break;
 	}
 
-	LOG_DEBUG(multicutlog)
+	LOG_USER(multicutlog)
 			<< "added " << constraintsAdded
 			<< " cycle constraints" << std::endl;
 

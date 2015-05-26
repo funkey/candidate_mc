@@ -5,6 +5,7 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/helpers.hpp>
+#include <util/timing.h>
 #include "FeatureExtractor.h"
 
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
@@ -113,6 +114,8 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
+		UTIL_TIME_SCOPE("extract node region features");
+
 		LOG_ALL(featureextractorlog)
 				<< "extracting features for node "
 				<< _crag.id(n) << std::endl;
@@ -162,9 +165,6 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		RegionFeatures<3, float, unsigned char> regionFeatures(rawNodeImage, labelImage, p);
 
 		regionFeatures.fill(adaptor);
-
-		for (std::string name : regionFeatures.getFeatureNames())
-			std::cout << name << std::endl;
 	}
 
 	///////////////////

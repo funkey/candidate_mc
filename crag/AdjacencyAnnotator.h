@@ -24,6 +24,8 @@ protected:
 private:
 
 	std::set<Crag::Node> recurseAdjacencies(Crag& crag, Crag::Node n);
+
+	unsigned int _numAdded;
 };
 
 #endif // CANDIDATE_MC_CRAG_ADJACENCY_ANNOTATOR_H__

@@ -67,5 +67,7 @@ public:
 	virtual bool solve(Solution& solution, double& value, std::string& message) = 0;
 };
 
+class LinearSolverBackendException : public Exception {};
+
 #endif // INFERENCE_LINEAR_SOLVER_BACKEND_H__
 

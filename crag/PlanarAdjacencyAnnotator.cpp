@@ -1,4 +1,5 @@
 #include <util/timing.h>
+#include <util/Logger.h>
 #include "PlanarAdjacencyAnnotator.h"
 #include <vigra/impex.hxx>
 #include <vigra/functorexpression.hxx>
@@ -6,6 +7,8 @@
 #include <vigra/multi_gridgraph.hxx>
 #include <vigra/adjacency_list_graph.hxx>
 #include <vigra/graph_algorithms.hxx>
+
+logger::LogChannel planaradjacenciyannotatorlog("planaradjacenciyannotatorlog", "[PlanarAdjacencyAnnotator] ");
 
 namespace vigra {
 
@@ -106,6 +109,7 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 			affiliatedEdges,
 			std::numeric_limits<int>::max());
 
+	unsigned int numAdded = 0;
 	for (RagType::EdgeIt e(rag); e != lemon::INVALID; ++e) {
 
 		int u = rag.id(rag.u(*e));
@@ -114,7 +118,12 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 		crag.addAdjacencyEdge(
 				crag.nodeFromId(u),
 				crag.nodeFromId(v));
+		numAdded++;
 	}
+
+	LOG_USER(planaradjacenciyannotatorlog)
+			<< "added " << numAdded << " leaf node adjacency edges"
+			<< std::endl;
 
 	propagateLeafAdjacencies(crag);
 }

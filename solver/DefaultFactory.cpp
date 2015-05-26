@@ -16,7 +16,16 @@ DefaultFactory::createLinearSolverBackend() const {
 // by default, create a gurobi backend
 #ifdef HAVE_GUROBI
 
-	return new GurobiBackend();
+	try {
+
+		return new GurobiBackend();
+
+	} catch (GRBException& e) {
+
+		UTIL_THROW_EXCEPTION(
+				LinearSolverBackendException,
+				"gurobi error: " << e.getMessage());
+	}
 
 #endif
 

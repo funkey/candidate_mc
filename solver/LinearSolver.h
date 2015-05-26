@@ -84,5 +84,7 @@ private:
 	bool _parametersDirty;
 };
 
+class LinearSolverException : public Exception {};
+
 #endif // INFERENCE_LINEAR_SOLVER_H__
 

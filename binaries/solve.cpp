@@ -16,9 +16,21 @@
 
 util::ProgramOption optionFeatureWeights(
 		util::_long_name        = "featureWeights",
-		util::_short_name       = "f",
+		util::_short_name       = "w",
 		util::_description_text = "A file containing feature weights.",
 		util::_default_value    = "feature_weights.txt");
+
+util::ProgramOption optionForegroundBias(
+		util::_long_name        = "foregroundBias",
+		util::_short_name       = "f",
+		util::_description_text = "A bias to be added to each node weight.",
+		util::_default_value    = 0);
+
+util::ProgramOption optionMergeBias(
+		util::_long_name        = "mergeBias",
+		util::_short_name       = "b",
+		util::_description_text = "A bias to be added to each edge weight.",
+		util::_default_value    = 0);
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -76,16 +88,18 @@ int main(int argc, char** argv) {
 		//edgeWeights[be] = -0.5;
 		//edgeWeights[ce] = -0.5;
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-			nodeWeights[n] = 0;
+		float edgeBias = optionMergeBias;
+		float nodeBias = optionForegroundBias;
 
-		float bias = -3000;
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
+			nodeWeights[n] = nodeBias;
+
 		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
 			float intensityU = nodeFeatures[crag.u(e)][4];
 			float intensityV = nodeFeatures[crag.v(e)][4];
 
-			edgeWeights[e] = bias + pow(intensityU - intensityV, 2);
+			edgeWeights[e] = edgeBias + pow(intensityU - intensityV, 2);
 		}
 
 		MultiCut multicut(crag);

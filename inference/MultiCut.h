@@ -54,7 +54,7 @@ public:
 	 * Get the current solution. If solve() did not return SolutionFound, the 
 	 * solution might be suboptimal and/or inconsistent.
 	 */
-	const Crag::EdgeMap<bool>& getCut() const { return _cut; }
+	const Crag::EdgeMap<bool>& getCut() const { return _merged; }
 
 	/**
 	 * Get the current solution in terms of a connected component labelling. If 
@@ -93,7 +93,7 @@ private:
 
 	const Crag& _crag;
 
-	Crag::EdgeMap<bool> _cut;
+	Crag::EdgeMap<bool> _merged;
 	Crag::NodeMap<int>  _components;
 
 	unsigned int _numNodes, _numEdges;
