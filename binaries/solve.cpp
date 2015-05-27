@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <boost/filesystem.hpp>
 
 #include <util/Logger.h>
@@ -56,6 +57,17 @@ int main(int argc, char** argv) {
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
+		std::ifstream weightsFile(optionFeatureWeights.as<std::string>());
+		std::vector<double> weights;
+		while (true) {
+			double f;
+			weightsFile >> f;
+			if (!weightsFile.good())
+				break;
+			weights.push_back(f);
+			std::cout << f << std::endl;
+		}
+
 		//Crag crag;
 
 		//Crag::Node a = crag.addNode();
@@ -91,15 +103,23 @@ int main(int argc, char** argv) {
 		float edgeBias = optionMergeBias;
 		float nodeBias = optionForegroundBias;
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
+		unsigned int numNodeFeatures = nodeFeatures.dims();
+		unsigned int numEdgeFeatures = edgeFeatures.dims();
+
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
 			nodeCosts[n] = nodeBias;
+
+			for (unsigned int i = 0; i < numNodeFeatures; i++)
+				nodeCosts[n] += weights[i]*nodeFeatures[n][i];
+		}
 
 		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
-			float intensityU = nodeFeatures[crag.u(e)][4];
-			float intensityV = nodeFeatures[crag.v(e)][4];
+			edgeCosts[e] = edgeBias;
 
-			edgeCosts[e] = edgeBias + pow(intensityU - intensityV, 2);
+			for (unsigned int i = 0; i < numEdgeFeatures; i++)
+				edgeCosts[e] += weights[i + numNodeFeatures]*edgeFeatures[e][i];
 		}
 
 		MultiCut multicut(crag);
@@ -165,7 +185,7 @@ int main(int argc, char** argv) {
 									end.z())),
 					vigra::functor::ifThenElse(
 							vigra::functor::Arg1() == vigra::functor::Param(1),
-							vigra::functor::Param(multicut.getComponents()[n]),
+							vigra::functor::Param(multicut.getComponents()[n] + 1),
 							vigra::functor::Arg2()
 					));
 		}

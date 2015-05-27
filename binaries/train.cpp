@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <boost/filesystem.hpp>
 
 #include <util/Logger.h>
@@ -18,6 +19,12 @@ util::ProgramOption optionProjectFile(
 		util::_short_name       = "p",
 		util::_description_text = "The treemc project file.",
 		util::_default_value    = "project.hdf");
+
+util::ProgramOption optionFeatureWeights(
+		util::_long_name        = "featureWeights",
+		util::_short_name       = "w",
+		util::_description_text = "A file to store the learnt feature weights.",
+		util::_default_value    = "feature_weights.txt");
 
 int main(int argc, char** argv) {
 
@@ -58,6 +65,10 @@ int main(int argc, char** argv) {
 
 		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), 0);
 		optimizer.optimize(oracle, weights);
+
+		std::ofstream weightsFile(optionFeatureWeights.as<std::string>());
+		for (double f : weights)
+			weightsFile << f << std::endl;
 
 	} catch (boost::exception& e) {
 
