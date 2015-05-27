@@ -19,9 +19,15 @@ public:
 
 	std::vector<double>& getVector() { return _solution; }
 
+	void setValue(double value) { _value = value; }
+
+	double getValue() const { return _value; }
+
 private:
 
 	std::vector<double> _solution;
+
+	double _value;
 };
 
 #endif // INFERENCE_SOLUTION_H__

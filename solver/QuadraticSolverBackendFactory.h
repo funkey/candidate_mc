@@ -1,8 +1,7 @@
 #ifndef QUADRATIC_PROGRAM_SOLVER_FACTORY_H__
 #define QUADRATIC_PROGRAM_SOLVER_FACTORY_H__
 
-// forward declaration
-class QuadraticSolverBackend;
+#include "QuadraticSolverBackend.h"
 
 class QuadraticSolverBackendFactory {
 

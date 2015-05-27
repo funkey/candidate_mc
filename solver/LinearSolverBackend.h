@@ -64,7 +64,7 @@ public:
 	 * @param message A status message from the solver.
 	 * @return true, if the optimal value was found.
 	 */
-	virtual bool solve(Solution& solution, double& value, std::string& message) = 0;
+	virtual bool solve(Solution& solution, std::string& message) = 0;
 };
 
 class LinearSolverBackendException : public Exception {};

@@ -32,6 +32,7 @@ add_subdirectory(crag)
 add_subdirectory(features)
 add_subdirectory(io)
 add_subdirectory(inference)
+add_subdirectory(learning)
 add_subdirectory(binaries)
 
 ###############

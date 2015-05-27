@@ -236,7 +236,7 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 }
 
 bool
-GurobiBackend::solve(Solution& x, double& value, std::string& msg) {
+GurobiBackend::solve(Solution& x, std::string& msg) {
 
 	try {
 
@@ -262,7 +262,7 @@ GurobiBackend::solve(Solution& x, double& value, std::string& msg) {
 			x[i] = _variables[i].get(GRB_DoubleAttr_X);
 
 		// get current value of the objective
-		value = _model.get(GRB_DoubleAttr_ObjVal);
+		x.setValue(_model.get(GRB_DoubleAttr_ObjVal));
 
 	} catch (GRBException e) {
 

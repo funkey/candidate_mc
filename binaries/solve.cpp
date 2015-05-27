@@ -74,38 +74,38 @@ int main(int argc, char** argv) {
 		//crag.addSubsetArc(b, a);
 		//crag.addSubsetArc(e, a);
 
-		Crag::NodeMap<double> nodeWeights(crag);
-		Crag::EdgeMap<double> edgeWeights(crag);
+		Crag::NodeMap<double> nodeCosts(crag);
+		Crag::EdgeMap<double> edgeCosts(crag);
 
-		//nodeWeights[a] = 0;
-		//nodeWeights[b] = 0;
-		//nodeWeights[c] = 0;
-		//nodeWeights[d] = 0;
-		//nodeWeights[e] = 0;
+		//nodeCosts[a] = 0;
+		//nodeCosts[b] = 0;
+		//nodeCosts[c] = 0;
+		//nodeCosts[d] = 0;
+		//nodeCosts[e] = 0;
 
-		//edgeWeights[cd] = -1;
-		//edgeWeights[de] =  1;
-		//edgeWeights[be] = -0.5;
-		//edgeWeights[ce] = -0.5;
+		//edgeCosts[cd] = -1;
+		//edgeCosts[de] =  1;
+		//edgeCosts[be] = -0.5;
+		//edgeCosts[ce] = -0.5;
 
 		float edgeBias = optionMergeBias;
 		float nodeBias = optionForegroundBias;
 
 		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-			nodeWeights[n] = nodeBias;
+			nodeCosts[n] = nodeBias;
 
 		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
 			float intensityU = nodeFeatures[crag.u(e)][4];
 			float intensityV = nodeFeatures[crag.v(e)][4];
 
-			edgeWeights[e] = edgeBias + pow(intensityU - intensityV, 2);
+			edgeCosts[e] = edgeBias + pow(intensityU - intensityV, 2);
 		}
 
 		MultiCut multicut(crag);
 
-		multicut.setNodeWeights(nodeWeights);
-		multicut.setEdgeWeights(edgeWeights);
+		multicut.setNodeCosts(nodeCosts);
+		multicut.setEdgeCosts(edgeCosts);
 		multicut.solve();
 
 		//////////////////

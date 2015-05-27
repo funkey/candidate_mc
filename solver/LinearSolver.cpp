@@ -98,11 +98,9 @@ LinearSolver::updateLinearProgram() {
 void
 LinearSolver::solve() {
 
-	double value;
-
 	std::string message;
 
-	if (_solver->solve(*_solution, value, message)) {
+	if (_solver->solve(*_solution, message)) {
 
 		LOG_DEBUG(linearsolverlog) << "optimal solution found" << std::endl;
 

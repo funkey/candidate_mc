@@ -44,9 +44,16 @@ public:
 
 	MultiCut(const Crag& crag, const Parameters& parameters = Parameters());
 
-	void setNodeWeights(const Crag::NodeMap<double>& nodeWeights);
+	/**
+	 * Set the costs (or reward, if negative) of accepting a node.
+	 */
+	void setNodeCosts(const Crag::NodeMap<double>& nodeCosts);
 
-	void setEdgeWeights(const Crag::EdgeMap<double>& edgeWeights);
+	/**
+	 * Set the costs (or reward, if negative) of selecting an edge, i.e., 
+	 * merging two nodes.
+	 */
+	void setEdgeCosts(const Crag::EdgeMap<double>& edgeCosts);
 
 	Status solve(unsigned int numIterations = 0);
 
@@ -61,6 +68,11 @@ public:
 	 * solve() did not return SolutionFound, the solution might be suboptimal.
 	 */
 	const Crag::NodeMap<int>& getComponents() const { return _components; }
+
+	/**
+	 * Get the value of the current solution.
+	 */
+	double getValue() { return _solution->getValue(); }
 
 private:
 

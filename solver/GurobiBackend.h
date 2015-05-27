@@ -56,7 +56,7 @@ public:
 
 	void setConstraints(const LinearConstraints& constraints);
 
-	bool solve(Solution& solution, double& value, std::string& message);
+	bool solve(Solution& solution, std::string& message);
 
 private:
 

@@ -24,21 +24,21 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 }
 
 void
-MultiCut::setNodeWeights(const Crag::NodeMap<double>& nodeWeights) {
+MultiCut::setNodeCosts(const Crag::NodeMap<double>& nodeCosts) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
 		_objective->setCoefficient(
 				nodeIdToVar(_crag.id(n)),
-				nodeWeights[n]);
+				nodeCosts[n]);
 }
 
 void
-MultiCut::setEdgeWeights(const Crag::EdgeMap<double>& edgeWeights) {
+MultiCut::setEdgeCosts(const Crag::EdgeMap<double>& edgeCosts) {
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
 		_objective->setCoefficient(
 				edgeIdToVar(_crag.id(e)),
-				edgeWeights[e]);
+				edgeCosts[e]);
 }
 
 MultiCut::Status
@@ -46,6 +46,8 @@ MultiCut::solve(unsigned int numIterations) {
 
 	if (numIterations == 0)
 		numIterations = _parameters.numIterations;
+
+	_solver->setInput("objective", _objective);
 
 	for (unsigned int i = 0; i < numIterations; i++) {
 
@@ -75,7 +77,6 @@ MultiCut::prepareSolver() {
 	_objective->resize(_numNodes + _numEdges);
 	_solverParameters->setVariableType(Binary);
 
-	_solver->setInput("objective", _objective);
 	_solver->setInput("parameters", _solverParameters);
 
 	_solution = _solver->getOutput("solution");
