@@ -249,19 +249,15 @@ MultiCut::findViolatedConstraints() {
 	lemon::connectedComponents(cutGraph, _components);
 
 	// label rejected nodes with -1
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
 		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 0.5)
 			_components[n] = -1;
 
-	// propagate node labels to subsets
-	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
-
-		int numParents = 0;
-		for (Crag::SubsetOutArcIt e(_crag, n); e != lemon::INVALID; ++e)
-			numParents++;
-
-		if (numParents == 0)
-			propagateLabel(n, -1);
+		LOG_ALL(multicutlog)
+				<< _crag.id(n) << ": "
+				<< (_components[n] != -1)
+				<< std::endl;
 	}
 
 	// for each not selected edge with nodes in the same connected component, 
@@ -377,6 +373,17 @@ MultiCut::findViolatedConstraints() {
 			<< "added " << constraintsAdded
 			<< " cycle constraints" << std::endl;
 
+	// propagate node labels to subsets
+	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		int numParents = 0;
+		for (Crag::SubsetOutArcIt e(_crag, n); e != lemon::INVALID; ++e)
+			numParents++;
+
+		if (numParents == 0)
+			propagateLabel(n, -1);
+	}
+
 	return (constraintsAdded > 0);
 }
 
@@ -385,6 +392,8 @@ MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
 
 	if (label == -1)
 		label = _components[_crag.toRag(n)];
+	else
+		_components[_crag.toRag(n)] = label;
 
 	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e)
 		propagateLabel(_crag.getSubsetGraph().oppositeNode(n, e), label);
