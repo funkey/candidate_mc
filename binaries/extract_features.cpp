@@ -31,20 +31,12 @@ int main(int argc, char** argv) {
 		Crag crag;
 		cragStore.retrieveCrag(crag);
 
-		NodeFeatures nodeFeatures(crag);
-		EdgeFeatures edgeFeatures(crag);
-
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 		ExplicitVolume<float> raw;
 		volumeStore.retrieveIntensities(raw);
 
-		FeatureExtractor featureExtractor(crag, raw);
-		featureExtractor.extract(
-				nodeFeatures,
-				edgeFeatures);
-
-		cragStore.saveNodeFeatures(crag, nodeFeatures);
-		cragStore.saveEdgeFeatures(crag, edgeFeatures);
+		FeatureExtractor featureExtractor(crag, raw, &cragStore);
+		featureExtractor.extract();
 
 	} catch (boost::exception& e) {
 

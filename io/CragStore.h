@@ -28,6 +28,20 @@ public:
 	virtual void saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) = 0;
 
 	/**
+	 * Store the min and max values of the node features.
+	 */
+	virtual void saveNodeFeaturesMinMax(
+			const std::vector<double>& min,
+			const std::vector<double>& max) = 0;
+
+	/**
+	 * Store the min and max values of the edge features.
+	 */
+	virtual void saveEdgeFeaturesMinMax(
+			const std::vector<double>& min,
+			const std::vector<double>& max) = 0;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -44,6 +58,20 @@ public:
 	 * associated to this store.
 	 */
 	virtual void retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) = 0;
+
+	/**
+	 * Retrieve the min and max values of the node features.
+	 */
+	virtual void retrieveNodeFeaturesMinMax(
+			std::vector<double>& min,
+			std::vector<double>& max) = 0;
+
+	/**
+	 * Retrieve the min and max values of the edge features.
+	 */
+	virtual void retrieveEdgeFeaturesMinMax(
+			std::vector<double>& min,
+			std::vector<double>& max) = 0;
 };
 
 #endif // TREE_MC_IO_CRAG_STORE_H__

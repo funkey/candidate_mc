@@ -49,6 +49,20 @@ public:
 	void saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) override;
 
 	/**
+	 * Store the min and max values of the node features.
+	 */
+	void saveNodeFeaturesMinMax(
+			const std::vector<double>& min,
+			const std::vector<double>& max) override;
+
+	/**
+	 * Store the min and max values of the edge features.
+	 */
+	void saveEdgeFeaturesMinMax(
+			const std::vector<double>& min,
+			const std::vector<double>& max) override;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -65,6 +79,20 @@ public:
 	 * associated to this store.
 	 */
 	void retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) override;
+
+	/**
+	 * Retrieve the min and max values of the node features.
+	 */
+	void retrieveNodeFeaturesMinMax(
+			std::vector<double>& min,
+			std::vector<double>& max) override;
+
+	/**
+	 * Retrieve the min and max values of the edge features.
+	 */
+	void retrieveEdgeFeaturesMinMax(
+			std::vector<double>& min,
+			std::vector<double>& max) override;
 
 private:
 

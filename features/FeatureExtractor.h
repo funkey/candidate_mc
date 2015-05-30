@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__
 #define CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__
 
+#include <io/CragStore.h>
 #include "NodeFeatures.h"
 #include "EdgeFeatures.h"
 
@@ -8,13 +9,15 @@ class FeatureExtractor {
 
 public:
 
-	FeatureExtractor(const Crag& crag, const ExplicitVolume<float>& data) :
-			_crag(crag),
-			_data(data) {}
+	FeatureExtractor(
+			Crag&                        crag,
+			const ExplicitVolume<float>& data,
+			CragStore*                   cragStore) :
+		_crag(crag),
+		_data(data),
+		_cragStore(cragStore) {}
 
-	void extract(
-			NodeFeatures& nodeFeatures,
-			EdgeFeatures& edgeFeatures);
+	void extract();
 
 private:
 
@@ -48,9 +51,11 @@ private:
 			vigra::MultiArray<3, unsigned char>& labelImage,
 			Crag::Node                           n);
 
-	const Crag& _crag;
+	Crag& _crag;
 
 	const ExplicitVolume<float>& _data;
+
+	CragStore* _cragStore;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

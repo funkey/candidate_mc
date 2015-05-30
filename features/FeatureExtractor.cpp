@@ -53,11 +53,11 @@ util::ProgramOption optionNormalize(
 	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
 );
 
-util::ProgramOption optionFeatureMinMaxFile(
+util::ProgramOption optionMinMaxFromProject(
 	util::_module           = "candidate_mc.features",
-	util::_long_name        = "minMaxFile",
-	util::_description_text = "For the feature normalization, instead of using the min and max of the extracted features, """""
-	                          "use the min and max provided in the given file (first row min, second row max)."
+	util::_long_name        = "minMaxFromProject",
+	util::_description_text = "For the feature normalization, instead of using the min and max of the extracted features, "
+	                          "use the min and max provided in the project file."
 );
 
 util::ProgramOption optionFeaturePointinessAnglePoints(
@@ -83,10 +83,16 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 );
 
 void
-FeatureExtractor::extract(NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
+FeatureExtractor::extract() {
+
+	NodeFeatures nodeFeatures(_crag);
+	EdgeFeatures edgeFeatures(_crag);
 
 	extractNodeFeatures(nodeFeatures);
 	extractEdgeFeatures(edgeFeatures);
+
+	_cragStore->saveNodeFeatures(_crag, nodeFeatures);
+	_cragStore->saveEdgeFeatures(_crag, edgeFeatures);
 }
 
 void
@@ -171,72 +177,35 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 	// NORMALIZATION //
 	///////////////////
 
-	//if (optionNormalize) {
+	if (optionNormalize) {
 
-		//LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
+		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
 
-		//if (optionFeatureMinMaxFile) {
+		if (optionMinMaxFromProject) {
 
-			//LOG_USER(featureextractorlog)
-					//<< "reading feature minmax from "
-					//<< optionFeatureMinMaxFile.as<std::string>()
-					//<< std::endl;
+			LOG_USER(featureextractorlog)
+					<< "reading feature minmax from project file"
+					<< std::endl;
 
-			//std::vector<double> min, max;
+			std::vector<double> min, max;
+			_cragStore->retrieveNodeFeaturesMinMax(min, max);
 
-			//std::ifstream minMaxFile(optionFeatureMinMaxFile.as<std::string>().c_str());
-			//std::string line;
+			LOG_ALL(featureextractorlog)
+					<< "normalizing features with"
+					<<  std::endl << min << std::endl
+					<< "and"
+					<<  std::endl << max << std::endl;
 
-			//if (!minMaxFile.good())
-				//UTIL_THROW_EXCEPTION(
-						//IOError,
-						//"unable to open " << optionFeatureMinMaxFile.as<std::string>());
+			nodeFeatures.normalize(min, max);
 
-			//// min
-			//{
-				//std::getline(minMaxFile, line);
-				//std::stringstream lineStream(line);
+		} else {
 
-				//while (lineStream.good()) {
-
-					//double f;
-
-					//lineStream >> f;
-					//if (lineStream.good())
-						//min.push_back(f);
-				//}
-			//}
-
-			//// max
-			//{
-				//std::getline(minMaxFile, line);
-				//std::stringstream lineStream(line);
-
-				//while (lineStream.good()) {
-
-					//double f;
-
-					//lineStream >> f;
-					//if (lineStream.good())
-						//max.push_back(f);
-				//}
-			//}
-
-			//LOG_ALL(featureextractorlog)
-					//<< "normalizing features with"
-					//<<  std::endl << min << std::endl
-					//<< "and"
-					//<<  std::endl << max << std::endl;
-
-
-
-			//_features->normalize(min, max);
-
-		//} else {
-
-			//_features->normalize();
-		//}
-	//}
+			nodeFeatures.normalize();
+			_cragStore->saveNodeFeaturesMinMax(
+					nodeFeatures.getMin(),
+					nodeFeatures.getMax());
+		}
+	}
 
 	//////////////////////
 	//// POSTPROCESSING //
