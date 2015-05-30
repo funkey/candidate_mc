@@ -119,6 +119,7 @@ int main(int argc, char** argv) {
 		importImage(info, intensities.data().bind<2>(0));
 		intensities.setResolution(resolution);
 		intensities.setOffset(offset);
+		intensities.normalize();
 		volumeStore.saveIntensities(intensities);
 
 		if (optionGroundTruth) {
