@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include <vigra/impex.hxx>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
@@ -13,12 +12,31 @@
 #include <crag/MergeTreeParser.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
 #include <io/Hdf5CragStore.h>
+#include <io/Hdf5VolumeStore.h>
+#include <vigra/impex.hxx>
+#include <vigra/multi_labeling.hxx>
 
 util::ProgramOption optionMergeTree(
 		util::_long_name        = "mergeTree",
 		util::_short_name       = "m",
 		util::_description_text = "The merge-tree image.",
 		util::_default_value    = "merge_tree.tif");
+
+util::ProgramOption optionIntensities(
+		util::_long_name        = "intensities",
+		util::_short_name       = "i",
+		util::_description_text = "The raw intensity image.",
+		util::_default_value    = "raw.tif");
+
+util::ProgramOption optionGroundTruth(
+		util::_long_name        = "groundTruth",
+		util::_short_name       = "g",
+		util::_description_text = "An optional ground-truth image.");
+
+util::ProgramOption optionExtractGroundTruthLabels(
+		util::_long_name        = "extractGroundTruthLabels",
+		util::_description_text = "Indicate that the ground truth consists of a foreground/background labeling "
+		                          "(dark/bright) and each 4-connected component of foreground represents one region.");
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -92,6 +110,37 @@ int main(int argc, char** argv) {
 		boost::filesystem::remove(optionProjectFile.as<std::string>());
 		Hdf5CragStore store(optionProjectFile.as<std::string>());
 		store.saveCrag(crag);
+
+		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
+
+		filename = optionIntensities.as<std::string>();
+		info = vigra::ImageImportInfo(filename.c_str());
+		ExplicitVolume<float> intensities(info.width(), info.height(), 1);
+		importImage(info, intensities.data().bind<2>(0));
+		intensities.setResolution(resolution);
+		intensities.setOffset(offset);
+		volumeStore.saveIntensities(intensities);
+
+		if (optionGroundTruth) {
+
+			std::string filename = optionGroundTruth;
+			vigra::ImageImportInfo info(filename.c_str());
+			ExplicitVolume<int> groundTruth(info.width(), info.height(), 1);
+			importImage(info, groundTruth.data().bind<2>(0));
+
+			if (optionExtractGroundTruthLabels) {
+
+				vigra::MultiArray<3, int> tmp(groundTruth.data().shape());
+				vigra::labelMultiArrayWithBackground(
+						groundTruth.data(),
+						tmp);
+				groundTruth.data() = tmp;
+			}
+
+			groundTruth.setResolution(resolution);
+			groundTruth.setOffset(offset);
+			volumeStore.saveGroundTruth(groundTruth);
+		}
 
 	} catch (boost::exception& e) {
 

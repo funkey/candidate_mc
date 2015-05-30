@@ -16,6 +16,11 @@ public:
 	virtual void saveIntensities(const ExplicitVolume<float>& intensities) = 0;
 
 	/**
+	 * Store the given ground-truth label volume.
+	 */
+	virtual void saveGroundTruth(const ExplicitVolume<int>& groundTruth) = 0;
+
+	/**
 	 * Store the given label volume.
 	 */
 	virtual void saveLabels(const ExplicitVolume<int>& labels) = 0;
@@ -24,6 +29,11 @@ public:
 	 * Get the intensity volume.
 	 */
 	virtual void retrieveIntensities(ExplicitVolume<float>& intensities) = 0;
+
+	/**
+	 * Get the ground-truth label volume.
+	 */
+	virtual void retrieveGroundTruth(ExplicitVolume<int>& groundTruth) = 0;
 
 	/**
 	 * Get the label volume.

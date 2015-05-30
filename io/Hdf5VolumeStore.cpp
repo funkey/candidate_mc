@@ -10,6 +10,15 @@ Hdf5VolumeStore::saveIntensities(const ExplicitVolume<float>& intensities) {
 }
 
 void
+Hdf5VolumeStore::saveGroundTruth(const ExplicitVolume<int>& labels) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("volumes");
+
+	writeVolume(labels, "groundtruth");
+}
+
+void
 Hdf5VolumeStore::saveLabels(const ExplicitVolume<int>& labels) {
 
 	_hdfFile.root();
@@ -23,6 +32,13 @@ Hdf5VolumeStore::retrieveIntensities(ExplicitVolume<float>& intensities) {
 
 	_hdfFile.cd("/volumes");
 	readVolume(intensities, "intensities");
+}
+
+void
+Hdf5VolumeStore::retrieveGroundTruth(ExplicitVolume<int>& labels) {
+
+	_hdfFile.cd("/volumes");
+	readVolume(labels, "groundtruth");
 }
 
 void
