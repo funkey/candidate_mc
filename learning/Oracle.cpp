@@ -9,6 +9,7 @@ Oracle::operator()(
 	updateCosts(weights);
 
 	MultiCut::Status status = _multicut.solve();
+	_multicut.storeSolution("most-violated.tif");
 
 	if (status != MultiCut::SolutionFound)
 		UTIL_THROW_EXCEPTION(
@@ -48,9 +49,9 @@ Oracle::updateCosts(const std::vector<double>& weights) {
 	// value l', and set the actual value to l = B_c + Δ_c - l'.
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		_nodeCosts[n] = nodeCost(weights, _nodeFeatures[n]) - _loss.node[n];
+		_costs.node[n] = nodeCost(weights, _nodeFeatures[n]) - _loss.node[n];
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-		_edgeCosts[e] = edgeCost(weights, _edgeFeatures[e]) - _loss.edge[e];
+		_costs.edge[e] = edgeCost(weights, _edgeFeatures[e]) - _loss.edge[e];
 
 	_constant = _loss.constant;
 
@@ -67,8 +68,7 @@ Oracle::updateCosts(const std::vector<double>& weights) {
 	//      = max_y <wΦ,y'-y>  + <y,Δ_l> + Δ_c
 	//      = max_y <y,-wΦ + Δ_l> + <y',wΦ> + Δ_c
 
-	_multicut.setNodeCosts(_nodeCosts);
-	_multicut.setEdgeCosts(_edgeCosts);
+	_multicut.setCosts(_costs);
 }
 
 void
@@ -96,7 +96,7 @@ Oracle::accumulateGradient(std::vector<double>& gradient) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		int sign = _bestEffort.node[n] - (_multicut.getComponents()[n] >= 0);
+		int sign = _bestEffort.node[n] - _multicut.getSelectedRegions()[n];
 
 		for (unsigned int i = 0; i < numNodeFeatures; i++)
 			gradient[i] += _nodeFeatures[n][i]*sign;
@@ -104,7 +104,7 @@ Oracle::accumulateGradient(std::vector<double>& gradient) {
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
-		int sign = _bestEffort.edge[e] - _multicut.getCut()[e];
+		int sign = _bestEffort.edge[e] - _multicut.getMergedEdges()[e];
 
 		for (unsigned int i = 0; i < numEdgeFeatures; i++)
 			gradient[i + numNodeFeatures] += _edgeFeatures[e][i]*sign;

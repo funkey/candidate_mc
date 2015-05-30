@@ -28,8 +28,7 @@ public:
 		_edgeFeatures(edgeFeatures),
 		_loss(loss),
 		_bestEffort(bestEffort),
-		_nodeCosts(_crag),
-		_edgeCosts(_crag),
+		_costs(_crag),
 		_multicut(crag, parameters) {}
 
 	void operator()(
@@ -73,8 +72,7 @@ private:
 	const Loss&         _loss;
 	const BestEffort&   _bestEffort;
 
-	Crag::NodeMap<double> _nodeCosts;
-	Crag::EdgeMap<double> _edgeCosts;
+	Costs _costs;
 
 	// constant to be added to the optimal value of the multi-cut solution
 	double _constant;
