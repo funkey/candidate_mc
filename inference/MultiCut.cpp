@@ -3,12 +3,16 @@
 #include <util/Logger.h>
 #include "MultiCut.h"
 
+#include <vigra/multi_impex.hxx>
+#include <vigra/functorexpression.hxx>
+
 logger::LogChannel multicutlog("multicutlog", "[MultiCut] ");
 
 MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
 	_merged(crag),
-	_components(crag),
+	_selected(crag),
+	_labels(crag),
 	_numNodes(0),
 	_numEdges(0),
 	_parameters(parameters) {
@@ -24,21 +28,17 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 }
 
 void
-MultiCut::setNodeCosts(const Crag::NodeMap<double>& nodeCosts) {
+MultiCut::setCosts(const Costs& costs) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
 		_objective->setCoefficient(
 				nodeIdToVar(_crag.id(n)),
-				nodeCosts[n]);
-}
-
-void
-MultiCut::setEdgeCosts(const Crag::EdgeMap<double>& edgeCosts) {
+				costs.node[n]);
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
 		_objective->setCoefficient(
 				edgeIdToVar(_crag.id(e)),
-				edgeCosts[e]);
+				costs.edge[e]);
 }
 
 MultiCut::Status
@@ -66,6 +66,72 @@ MultiCut::solve(unsigned int numIterations) {
 
 	LOG_USER(multicutlog) << "maximum number of iterations reached" << std::endl;
 	return MaxIterationsReached;
+}
+
+void
+MultiCut::storeSolution(const std::string& filename) {
+
+	util::box<float, 3>   cragBB = _crag.getBoundingBox();
+	util::point<float, 3> resolution;
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		resolution = _crag.getVolumes()[n].getResolution();
+		break;
+	}
+
+	// create a vigra multi-array large enough to hold all volumes
+	vigra::MultiArray<3, int> components(
+			vigra::Shape3(
+				cragBB.width() /resolution.x(),
+				cragBB.height()/resolution.y(),
+				cragBB.depth() /resolution.z()),
+			std::numeric_limits<int>::max());
+
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		if (_crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
+			continue;
+
+		const util::point<float, 3>&      volumeOffset     = _crag.getVolumes()[n].getOffset();
+		const util::box<unsigned int, 3>& volumeDiscreteBB = _crag.getVolumes()[n].getDiscreteBoundingBox();
+
+		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
+		util::point<unsigned int, 3> end   = begin +
+				util::point<unsigned int, 3>(
+						volumeDiscreteBB.width(),
+						volumeDiscreteBB.height(),
+						volumeDiscreteBB.depth());
+
+		vigra::combineTwoMultiArrays(
+				_crag.getVolumes()[n].data(),
+				components.subarray(
+						vigra::Shape3(
+								begin.x(),
+								begin.y(),
+								begin.z()),
+						vigra::Shape3(
+								end.x(),
+								end.y(),
+								end.z())),
+				components.subarray(
+						vigra::Shape3(
+								begin.x(),
+								begin.y(),
+								begin.z()),
+						vigra::Shape3(
+								end.x(),
+								end.y(),
+								end.z())),
+				vigra::functor::ifThenElse(
+						vigra::functor::Arg1() == vigra::functor::Param(1),
+						vigra::functor::Param(_labels[n] + 1),
+						vigra::functor::Arg2()
+				));
+	}
+
+	vigra::exportImage(
+			components.bind<2>(0),
+			vigra::ImageExportInfo(filename.c_str()));
 }
 
 void
@@ -246,17 +312,24 @@ MultiCut::findViolatedConstraints() {
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
 
 	// find connected components in cut graph
-	lemon::connectedComponents(cutGraph, _components);
+	lemon::connectedComponents(cutGraph, _labels);
 
 	// label rejected nodes with -1
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 0.5)
-			_components[n] = -1;
+		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 0.5) {
+
+			_selected[n]  = false;
+			_labels[n] = -1;
+
+		} else {
+
+			_selected[n] = true;
+		}
 
 		LOG_ALL(multicutlog)
 				<< _crag.id(n) << ": "
-				<< (_components[n] != -1)
+				<< _selected[n]
 				<< std::endl;
 	}
 
@@ -272,7 +345,7 @@ MultiCut::findViolatedConstraints() {
 		Crag::Node t = _crag.v(e);
 
 		// in same component
-		if (_components[s] != _components[t] || _components[s] == -1)
+		if (_labels[s] != _labels[t] || !_selected[s])
 			continue;
 
 		LOG_DEBUG(multicutlog)
@@ -297,7 +370,7 @@ MultiCut::findViolatedConstraints() {
 				<< "nodes " << _crag.id(s)
 				<< " and " << _crag.id(t)
 				<< " are in same component "
-				<< _components[_crag.v(e)]
+				<< _labels[_crag.v(e)]
 				<< std::endl;
 
 		LinearConstraint cycleConstraint;
@@ -391,9 +464,9 @@ void
 MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
 
 	if (label == -1)
-		label = _components[_crag.toRag(n)];
+		label = _labels[_crag.toRag(n)];
 	else
-		_components[_crag.toRag(n)] = label;
+		_labels[_crag.toRag(n)] = label;
 
 	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e)
 		propagateLabel(_crag.getSubsetGraph().oppositeNode(n, e), label);

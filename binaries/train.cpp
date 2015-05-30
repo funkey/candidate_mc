@@ -11,8 +11,12 @@
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
 #include <io/Hdf5CragStore.h>
+#include <io/Hdf5VolumeStore.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
+#include <learning/OverlapCosts.h>
+#include <learning/BestEffort.h>
+#include <learning/HammingLoss.h>
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -33,7 +37,8 @@ int main(int argc, char** argv) {
 		util::ProgramOptions::init(argc, argv);
 		logger::LogManager::init();
 
-		Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
+		Hdf5CragStore   cragStore(optionProjectFile.as<std::string>());
+		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
 		Crag crag;
 		cragStore.retrieveCrag(crag);
@@ -48,10 +53,11 @@ int main(int argc, char** argv) {
 		parameters.epsStrategy = BundleOptimizer::EpsFromGap;
 		BundleOptimizer optimizer(parameters);
 
-		// TODO:
-		// • replace with real loss and best effort
-		Loss       loss(crag);
-		BestEffort bestEffort(crag);
+		ExplicitVolume<int> groundTruth;
+		volumeStore.retrieveGroundTruth(groundTruth);
+		OverlapCosts overlapCosts(crag, groundTruth);
+		BestEffort   bestEffort(crag, overlapCosts);
+		HammingLoss  loss(crag, bestEffort);
 
 		Crag::NodeIt n(crag);
 		bestEffort.node[n] = true;

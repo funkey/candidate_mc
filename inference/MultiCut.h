@@ -5,6 +5,7 @@
 #include <pipeline/Process.h>
 #include <crag/Crag.h>
 #include <solver/LinearSolver.h>
+#include "Costs.h"
 
 class MultiCut {
 
@@ -45,34 +46,43 @@ public:
 	MultiCut(const Crag& crag, const Parameters& parameters = Parameters());
 
 	/**
-	 * Set the costs (or reward, if negative) of accepting a node.
+	 * Set the costs (or reward, if negative) of accepting a node or an edge.
 	 */
-	void setNodeCosts(const Crag::NodeMap<double>& nodeCosts);
-
-	/**
-	 * Set the costs (or reward, if negative) of selecting an edge, i.e., 
-	 * merging two nodes.
-	 */
-	void setEdgeCosts(const Crag::EdgeMap<double>& edgeCosts);
+	void setCosts(const Costs& costs);
 
 	Status solve(unsigned int numIterations = 0);
 
 	/**
-	 * Get the current solution. If solve() did not return SolutionFound, the 
-	 * solution might be suboptimal and/or inconsistent.
+	 * Get the current solution in terms of edges that have been selected to 
+	 * merge regions. If solve() did not return SolutionFound, the solution 
+	 * might be suboptimal and/or inconsistent.
 	 */
-	const Crag::EdgeMap<bool>& getCut() const { return _merged; }
+	const Crag::EdgeMap<bool>& getMergedEdges() const { return _merged; }
 
 	/**
-	 * Get the current solution in terms of a connected component labelling. If 
-	 * solve() did not return SolutionFound, the solution might be suboptimal.
+	 * Get the current solution in terms of selected regions.If solve() did not 
+	 * return SolutionFound, the solution might be suboptimal.
 	 */
-	const Crag::NodeMap<int>& getComponents() const { return _components; }
+	const Crag::NodeMap<bool>& getSelectedRegions() const { return _selected; }
+
+	/**
+	 * Get the current solution in terms of a connected component labelling: 
+	 * Every region will be labelled with an id representing the connected 
+	 * component it belongs to. This label will also be set for subregions of 
+	 * selected regions. If solve() did not return SolutionFound, the solution 
+	 * might be suboptimal.
+	 */
+	const Crag::NodeMap<int>& getLabels() const { return _labels; }
 
 	/**
 	 * Get the value of the current solution.
 	 */
 	double getValue() { return _solution->getValue(); }
+
+	/**
+	 * Store the solution as label image in the given image file.
+	 */
+	void storeSolution(const std::string& filename);
 
 private:
 
@@ -106,7 +116,8 @@ private:
 	const Crag& _crag;
 
 	Crag::EdgeMap<bool> _merged;
-	Crag::NodeMap<int>  _components;
+	Crag::NodeMap<bool> _selected;
+	Crag::NodeMap<int>  _labels;
 
 	unsigned int _numNodes, _numEdges;
 

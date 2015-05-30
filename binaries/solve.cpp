@@ -13,8 +13,6 @@
 #include <io/Hdf5CragStore.h>
 #include <inference/MultiCut.h>
 
-#include <vigra/functorexpression.hxx>
-
 util::ProgramOption optionFeatureWeights(
 		util::_long_name        = "featureWeights",
 		util::_short_name       = "w",
@@ -86,8 +84,7 @@ int main(int argc, char** argv) {
 		//crag.addSubsetArc(b, a);
 		//crag.addSubsetArc(e, a);
 
-		Crag::NodeMap<double> nodeCosts(crag);
-		Crag::EdgeMap<double> edgeCosts(crag);
+		Costs costs(crag);
 
 		//nodeCosts[a] = 0;
 		//nodeCosts[b] = 0;
@@ -108,91 +105,25 @@ int main(int argc, char** argv) {
 
 		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-			nodeCosts[n] = nodeBias;
+			costs.node[n] = nodeBias;
 
 			for (unsigned int i = 0; i < numNodeFeatures; i++)
-				nodeCosts[n] += weights[i]*nodeFeatures[n][i];
+				costs.node[n] += weights[i]*nodeFeatures[n][i];
 		}
 
 		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
-			edgeCosts[e] = edgeBias;
+			costs.edge[e] = edgeBias;
 
 			for (unsigned int i = 0; i < numEdgeFeatures; i++)
-				edgeCosts[e] += weights[i + numNodeFeatures]*edgeFeatures[e][i];
+				costs.edge[e] += weights[i + numNodeFeatures]*edgeFeatures[e][i];
 		}
 
 		MultiCut multicut(crag);
 
-		multicut.setNodeCosts(nodeCosts);
-		multicut.setEdgeCosts(edgeCosts);
+		multicut.setCosts(costs);
 		multicut.solve();
-
-		//////////////////
-		// IMAGE OUTPUT //
-		//////////////////
-
-		util::box<float, 3> cragBB = crag.getBoundingBox();
-		util::point<float, 3> resolution;
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
-
-			resolution = crag.getVolumes()[n].getResolution();
-			break;
-		}
-
-		// create a vigra multi-array large enough to hold all volumes
-		vigra::MultiArray<3, int> components(
-				vigra::Shape3(
-					cragBB.width() /resolution.x(),
-					cragBB.height()/resolution.y(),
-					cragBB.depth() /resolution.z()),
-				std::numeric_limits<int>::max());
-
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
-
-			if (crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
-				continue;
-
-			const util::point<float, 3>&      volumeOffset     = crag.getVolumes()[n].getOffset();
-			const util::box<unsigned int, 3>& volumeDiscreteBB = crag.getVolumes()[n].getDiscreteBoundingBox();
-
-			util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
-			util::point<unsigned int, 3> end   = begin +
-					util::point<unsigned int, 3>(
-							volumeDiscreteBB.width(),
-							volumeDiscreteBB.height(),
-							volumeDiscreteBB.depth());
-
-			vigra::combineTwoMultiArrays(
-					crag.getVolumes()[n].data(),
-					components.subarray(
-							vigra::Shape3(
-									begin.x(),
-									begin.y(),
-									begin.z()),
-							vigra::Shape3(
-									end.x(),
-									end.y(),
-									end.z())),
-					components.subarray(
-							vigra::Shape3(
-									begin.x(),
-									begin.y(),
-									begin.z()),
-							vigra::Shape3(
-									end.x(),
-									end.y(),
-									end.z())),
-					vigra::functor::ifThenElse(
-							vigra::functor::Arg1() == vigra::functor::Param(1),
-							vigra::functor::Param(multicut.getComponents()[n] + 1),
-							vigra::functor::Arg2()
-					));
-		}
-
-		vigra::exportImage(
-				components.bind<2>(0),
-				vigra::ImageExportInfo("solution.tif"));
+		multicut.storeSolution("solution.tif");
 
 	} catch (boost::exception& e) {
 
