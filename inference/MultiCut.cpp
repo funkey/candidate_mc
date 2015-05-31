@@ -80,7 +80,7 @@ MultiCut::storeSolution(const std::string& filename) {
 	}
 
 	// create a vigra multi-array large enough to hold all volumes
-	vigra::MultiArray<3, int> components(
+	vigra::MultiArray<3, float> components(
 			vigra::Shape3(
 				cragBB.width() /resolution.x(),
 				cragBB.height()/resolution.y(),
@@ -102,6 +102,7 @@ MultiCut::storeSolution(const std::string& filename) {
 						volumeDiscreteBB.height(),
 						volumeDiscreteBB.depth());
 
+		// fill id of connected component
 		vigra::combineTwoMultiArrays(
 				_crag.getVolumes()[n].data(),
 				components.subarray(
@@ -127,7 +128,18 @@ MultiCut::storeSolution(const std::string& filename) {
 						vigra::functor::Param(_labels[n] + 1),
 						vigra::functor::Arg2()
 				));
+
 	}
+
+	// black boundary for all leaf nodes
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		if (Crag::SubsetInArcIt(_crag, _crag.toSubset(n)) == lemon::INVALID)
+			drawBoundary(n, components, 0.5);
+
+	// gray boundary for all selected nodes
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		if (_selected[n])
+			drawBoundary(n, components, 0);
 
 	vigra::exportImage(
 			components.bind<2>(0),
@@ -470,4 +482,119 @@ MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
 
 	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e)
 		propagateLabel(_crag.getSubsetGraph().oppositeNode(n, e), label);
+}
+
+void
+MultiCut::drawBoundary(Crag::Node n, vigra::MultiArray<3, float>& components, float value) {
+
+	ExplicitVolume<bool> volume = getVolume(n);
+	const util::box<unsigned int, 3>& volumeDiscreteBB = volume.getDiscreteBoundingBox();
+	const util::point<float, 3>&      volumeOffset     = volume.getOffset();
+	util::point<unsigned int, 3>      begin            = (volumeOffset - _crag.getBoundingBox().min())/volume.getResolution();
+
+	bool hasZ = (volumeDiscreteBB.depth() > 1);
+
+	// draw boundary
+	for (unsigned int z = 0; z < volumeDiscreteBB.depth();  z++)
+	for (unsigned int y = 0; y < volumeDiscreteBB.height(); y++)
+	for (unsigned int x = 0; x < volumeDiscreteBB.width();  x++) {
+
+		// only inside voxels
+		if (!volume.data()(x, y, z))
+			continue;
+
+		if ((hasZ && (z == 0 || z == volumeDiscreteBB.depth()  - 1)) ||
+			y == 0 || y == volumeDiscreteBB.height() - 1 ||
+			x == 0 || x == volumeDiscreteBB.width()  - 1) {
+
+			components(
+					begin.x() + x,
+					begin.y() + y,
+					begin.z() + z) = value;
+			continue;
+		}
+
+		bool done = false;
+		for (int dz = (hasZ ? -1 : 0); dz <= (hasZ ? 1 : 0) && !done; dz++)
+		for (int dy = -1; dy <= 1 && !done; dy++)
+		for (int dx = -1; dx <= 1 && !done; dx++) {
+
+			if (std::abs(dx) + std::abs(dy) + std::abs(dz) > 1)
+				continue;
+
+			if (!volume.data()(x + dx, y + dy, z + dz)) {
+
+				components(
+						begin.x() + x,
+						begin.y() + y,
+						begin.z() + z) = value;
+				done = true;
+			}
+		}
+	}
+}
+
+ExplicitVolume<bool>
+MultiCut::getVolume(Crag::Node n) {
+
+	util::box<unsigned int, 3> bb = getBoundingBox(n);
+	ExplicitVolume<bool> volume(bb.width(), bb.height(), bb.depth(), false);
+
+	unsigned int children = 0;
+	for (Crag::SubsetInArcIt e(_crag.getSubsetGraph(), _crag.toSubset(n)); e != lemon::INVALID; ++e) {
+
+		Crag::SubsetNode child = _crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e);
+
+		ExplicitVolume<bool>       childVolume = getVolume(_crag.toRag(child));
+		util::box<unsigned int, 3> childBb     = childVolume.getBoundingBox();
+
+		for (unsigned int z = 0; z < childBb.depth();  z++)
+		for (unsigned int y = 0; y < childBb.height(); y++)
+		for (unsigned int x = 0; x < childBb.width();  x++) {
+
+			if (childVolume(x, y, z))
+				volume.data()(
+						childBb.min().x() - bb.min().x() + x,
+						childBb.min().y() - bb.min().y() + y,
+						childBb.min().z() - bb.min().z() + z) = true;
+		}
+
+		volume.setResolution(childVolume.getResolution());
+		if (children == 0)
+			volume.setOffset(
+					childVolume.getOffset().x(),
+					childVolume.getOffset().y(),
+					childVolume.getOffset().z());
+		else
+			volume.setOffset(
+					std::min(volume.getOffset().x(), childVolume.getOffset().x()),
+					std::min(volume.getOffset().y(), childVolume.getOffset().y()),
+					std::min(volume.getOffset().z(), childVolume.getOffset().z()));
+
+		children++;
+	}
+
+	if (children == 0)
+		return _crag.getVolumes()[n];
+	else
+		return volume;
+}
+
+util::box<unsigned int, 3>
+MultiCut::getBoundingBox(Crag::Node n) {
+
+	util::box<unsigned int, 3> bb;
+
+	unsigned int children = 0;
+	for (Crag::SubsetInArcIt e(_crag.getSubsetGraph(), _crag.toSubset(n)); e != lemon::INVALID; ++e) {
+
+		Crag::SubsetNode child = _crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e);
+		bb += getBoundingBox(_crag.toRag(child));
+		children++;
+	}
+
+	if (children == 0)
+		return _crag.getVolumes()[n].getBoundingBox();
+	else
+		return bb;
 }

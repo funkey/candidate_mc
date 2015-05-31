@@ -110,6 +110,11 @@ private:
 
 	void propagateLabel(Crag::SubsetNode n, int label);
 
+	void drawBoundary(Crag::Node n, vigra::MultiArray<3, float>& components, float value);
+
+	ExplicitVolume<bool> getVolume(Crag::Node n);
+	util::box<unsigned int, 3> getBoundingBox(Crag::Node n);
+
 	inline unsigned int nodeIdToVar(int nodeId) { return nodeId; }
 	inline unsigned int edgeIdToVar(int edgeId) { return _edgeIdToVarMap[edgeId]; }
 
