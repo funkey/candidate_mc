@@ -16,14 +16,16 @@ public:
 
 private:
 
-	std::set<Crag::Node> recurseOverlapCosts(
+	std::map<int, int> recurseOverlapCosts(
 			const Crag&                         crag,
 			const Crag::Node&          n,
 			const ExplicitVolume<int>& groundTruth);
 
-	double overlap(
+	std::map<int, int> leafOverlaps(
 			const ExplicitVolume<bool>& region,
 			const ExplicitVolume<int>&  groundTruth);
+
+	Crag::NodeMap<int> _bestLabels;
 };
 
 #endif // CANDIDATE_MC_LEARNING_OVERLAP_COSTS_H__
