@@ -16,8 +16,8 @@ public:
 
 private:
 
-	std::map<int, int> recurseOverlapCosts(
-			const Crag&                         crag,
+	void recurseOverlapCosts(
+			const Crag&                crag,
 			const Crag::Node&          n,
 			const ExplicitVolume<int>& groundTruth);
 
@@ -25,7 +25,17 @@ private:
 			const ExplicitVolume<bool>& region,
 			const ExplicitVolume<int>&  groundTruth);
 
-	Crag::NodeMap<int> _bestLabels;
+	double foregroundNodeOverlapScore(
+			const std::map<int, int>& overlaps);
+
+	double foregroundEdgeOverlapScore(
+			const std::map<int, int>& overlapsU,
+			const std::map<int, int>& overlapsV);
+
+	double backgroundNodeOverlapScore(
+			const std::map<int, int>& overlaps);
+
+	Crag::NodeMap<std::map<int, int>> _overlaps;
 };
 
 #endif // CANDIDATE_MC_LEARNING_OVERLAP_COSTS_H__
