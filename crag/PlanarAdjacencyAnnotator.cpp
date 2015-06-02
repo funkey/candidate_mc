@@ -1,5 +1,6 @@
 #include <util/timing.h>
 #include <util/Logger.h>
+#include <util/ProgramOptions.h>
 #include "PlanarAdjacencyAnnotator.h"
 #include <vigra/impex.hxx>
 #include <vigra/functorexpression.hxx>
@@ -9,6 +10,14 @@
 #include <vigra/graph_algorithms.hxx>
 
 logger::LogChannel planaradjacencyannotatorlog("planaradjacencyannotatorlog", "[PlanarAdjacencyAnnotator] ");
+
+util::ProgramOption optionCragType(
+		util::_long_name        = "cragType",
+		util::_description_text = "Controls which candidates are considered for adjacency in the CRAG: "
+		                          "'full' adds edges between each adjacent candidate across all levels, "
+		                          "'flat' adds edges only between leaf nodes, and 'empty' adds no adjacency "
+		                          "edges at all. Default is 'full'.",
+		util::_default_value    = "full");
 
 namespace vigra {
 
@@ -23,6 +32,9 @@ namespace vigra {
 
 void
 PlanarAdjacencyAnnotator::annotate(Crag& crag) {
+
+	if (optionCragType.as<std::string>() == "empty")
+		return;
 
 	UTIL_TIME_METHOD;
 
@@ -132,5 +144,6 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 			<< "added " << numAdded << " leaf node adjacency edges"
 			<< std::endl;
 
-	propagateLeafAdjacencies(crag);
+	if (optionCragType.as<std::string>() == "full")
+		propagateLeafAdjacencies(crag);
 }
