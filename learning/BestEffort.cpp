@@ -11,6 +11,7 @@ BestEffort::BestEffort(
 	multicut.setCosts(costs);
 	multicut.solve();
 	multicut.storeSolution("best-effort.tif");
+	multicut.storeSolution("best-effort_boundary.tif", true);
 
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
 		node[n] = multicut.getSelectedRegions()[n];
