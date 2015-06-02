@@ -22,7 +22,7 @@ OverlapCosts::OverlapCosts(
 	// of correctly merged pairs
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-		bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
+		//bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
 
 		//if (!leafNode) {
 
@@ -32,7 +32,7 @@ OverlapCosts::OverlapCosts(
 		//}
 
 		LOG_ALL(overlapcostslog)
-				<< "getting foreground overlap score for node " << crag.id(n) << std::endl;
+				<< "getting overlap score for node " << crag.id(n) << std::endl;
 
 		node[n] = foregroundNodeOverlapScore(_overlaps[n]) + backgroundNodeOverlapScore(_overlaps[n]);
 
@@ -48,9 +48,9 @@ OverlapCosts::OverlapCosts(
 		Crag::Node u = crag.u(e);
 		Crag::Node v = crag.v(e);
 
-		bool leafEdge =
-				(Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(u)) == lemon::INVALID &&
-				 Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(v)) == lemon::INVALID);
+		//bool leafEdge =
+				//(Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(u)) == lemon::INVALID &&
+				 //Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(v)) == lemon::INVALID);
 
 		//if (!leafEdge) {
 
@@ -151,6 +151,9 @@ OverlapCosts::foregroundNodeOverlapScore(
 			if (label1 >= label2)
 				continue;
 
+			if (label1 == 0)
+				continue;
+
 			double overlap1 = p.second;
 			double overlap2 = l.second;
 
@@ -158,6 +161,7 @@ OverlapCosts::foregroundNodeOverlapScore(
 					<< "incorrectly merges " << label1
 					<< " (" << overlap1 << " voxels) and " << label2
 					<< " (" << overlap2 << " voxels)" << std::endl;
+			LOG_ALL(overlapcostslog) << "+= " << overlap1*overlap2 << std::endl;
 
 			score += overlap1*overlap2;
 		}
@@ -176,6 +180,7 @@ OverlapCosts::foregroundNodeOverlapScore(
 		LOG_ALL(overlapcostslog)
 				<< "correctly merges " << label
 				<< " (" << overlap << " voxels)" << std::endl;
+		LOG_ALL(overlapcostslog) << "-= " << overlap*(overlap -1)/2 << std::endl;
 	}
 
 	return score;
@@ -194,6 +199,9 @@ OverlapCosts::foregroundEdgeOverlapScore(
 			int label1 = p.first;
 			int label2 = l.first;
 
+			if (label1 == 0 || label2 == 0)
+				continue;
+
 			double overlap1 = p.second;
 			double overlap2 = l.second;
 
@@ -206,6 +214,7 @@ OverlapCosts::foregroundEdgeOverlapScore(
 						<< "correctly merges " << label1
 						<< " (" << overlap1 << " voxels) and " << label2
 						<< " (" << overlap2 << " voxels)" << std::endl;
+				LOG_ALL(overlapcostslog) << "-= " << overlap1*overlap2 << std::endl;
 
 			// incorrectly merged
 			} else {
@@ -216,6 +225,7 @@ OverlapCosts::foregroundEdgeOverlapScore(
 						<< "incorrectly merges " << label1
 						<< " (" << overlap1 << " voxels) and " << label2
 						<< " (" << overlap2 << " voxels)" << std::endl;
+				LOG_ALL(overlapcostslog) << "+= " << overlap1*overlap2 << std::endl;
 			}
 		}
 	}
@@ -232,6 +242,12 @@ OverlapCosts::backgroundNodeOverlapScore(
 
 	// overlap with background
 	double overlap = overlaps.at(0);
+
+	LOG_ALL(overlapcostslog)
+			<< "overlaps with " << overlap
+			<< " background voxels" << std::endl;
+	LOG_ALL(overlapcostslog)
+			<< "+= " << pow(overlap, 2) << std::endl;
 
 	// reward is -overlap^2 of not selecting this node, i.e., punishment of 
 	// overlap^2
