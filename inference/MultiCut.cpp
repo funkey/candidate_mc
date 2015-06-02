@@ -69,7 +69,7 @@ MultiCut::solve(unsigned int numIterations) {
 }
 
 void
-MultiCut::storeSolution(const std::string& filename) {
+MultiCut::storeSolution(const std::string& filename, bool boundary) {
 
 	util::box<float, 3>   cragBB = _crag.getBoundingBox();
 	util::point<float, 3> resolution;
@@ -136,15 +136,18 @@ MultiCut::storeSolution(const std::string& filename) {
 
 	}
 
-	// black boundary for all leaf nodes
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		if (Crag::SubsetInArcIt(_crag, _crag.toSubset(n)) == lemon::INVALID)
-			drawBoundary(n, components, 0.5);
+	if (boundary) {
 
-	// gray boundary for all selected nodes
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		if (_selected[n])
-			drawBoundary(n, components, 0);
+		// black boundary for all leaf nodes
+		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+			if (Crag::SubsetInArcIt(_crag, _crag.toSubset(n)) == lemon::INVALID)
+				drawBoundary(n, components, 0.5);
+
+		// gray boundary for all selected nodes
+		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+			if (_selected[n])
+				drawBoundary(n, components, 0);
+	}
 
 	vigra::exportImage(
 			components.bind<2>(0),

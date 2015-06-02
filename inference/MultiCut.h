@@ -82,7 +82,7 @@ public:
 	/**
 	 * Store the solution as label image in the given image file.
 	 */
-	void storeSolution(const std::string& filename);
+	void storeSolution(const std::string& filename, bool drawBoundary = false);
 
 private:
 
