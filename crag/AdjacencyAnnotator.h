@@ -23,6 +23,10 @@ protected:
 
 private:
 
+	/**
+	 * Find propagated edges for node n and below. Returns the set of 
+	 * descendants of n (including n).
+	 */
 	std::set<Crag::Node> recurseAdjacencies(Crag& crag, Crag::Node n);
 
 	unsigned int _numAdded;

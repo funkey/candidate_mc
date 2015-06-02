@@ -44,10 +44,14 @@ AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
 			subnodes.insert(s);
 	}
 
-	// for each leaf subnode adjacent to a non-subnode, add an adjacency edge 
-	// to the non-subnode
+	// for each leaf subnode adjacent to a non-subnode, add an adjacency edge to 
+	// the non-subnode
 	std::set<Crag::Node> neighbors;
+
+	LOG_ALL(adjacencyannotatorlog) << "subnodes of " << crag.id(n) << " are:" << std::endl;
 	for (Crag::Node s : subnodes) {
+
+		LOG_ALL(adjacencyannotatorlog) << "\t" << crag.id(s) << std::endl;
 
 		for (Crag::IncEdgeIt e(crag, s); e != lemon::INVALID; ++e) {
 
@@ -71,9 +75,9 @@ AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
 
 	_numAdded += neighbors.size();
 
-	// only leaf nodes
-	if (subnodes.empty())
-		subnodes.insert(n);
+	subnodes.insert(n);
+
+	LOG_ALL(adjacencyannotatorlog) << "leaving node " << crag.id(n) << std::endl;
 
 	return subnodes;
 }
