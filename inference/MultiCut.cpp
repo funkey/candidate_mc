@@ -545,7 +545,7 @@ MultiCut::drawBoundary(Crag::Node n, vigra::MultiArray<3, float>& components, fl
 ExplicitVolume<bool>
 MultiCut::getVolume(Crag::Node n) {
 
-	util::box<unsigned int, 3> bb = getBoundingBox(n);
+	util::box<unsigned int, 3> bb = getDiscreteBoundingBox(n);
 	ExplicitVolume<bool> volume(bb.width(), bb.height(), bb.depth(), false);
 
 	unsigned int children = 0;
@@ -554,12 +554,15 @@ MultiCut::getVolume(Crag::Node n) {
 		Crag::SubsetNode child = _crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e);
 
 		ExplicitVolume<bool>       childVolume = getVolume(_crag.toRag(child));
-		util::box<unsigned int, 3> childBb     = childVolume.getBoundingBox();
+		util::box<unsigned int, 3> childBb     = childVolume.getDiscreteBoundingBox();
+
+		LOG_ALL(multicutlog) << "child size " << childBb << std::endl;
 
 		for (unsigned int z = 0; z < childBb.depth();  z++)
 		for (unsigned int y = 0; y < childBb.height(); y++)
 		for (unsigned int x = 0; x < childBb.width();  x++) {
 
+			LOG_ALL(multicutlog) << "testing child " << x << ", " << y << ", " << z << std::endl;
 			if (childVolume(x, y, z))
 				volume.data()(
 						childBb.min().x() - bb.min().x() + x,
@@ -569,10 +572,7 @@ MultiCut::getVolume(Crag::Node n) {
 
 		volume.setResolution(childVolume.getResolution());
 		if (children == 0)
-			volume.setOffset(
-					childVolume.getOffset().x(),
-					childVolume.getOffset().y(),
-					childVolume.getOffset().z());
+			volume.setOffset(childVolume.getOffset());
 		else
 			volume.setOffset(
 					std::min(volume.getOffset().x(), childVolume.getOffset().x()),
@@ -589,7 +589,7 @@ MultiCut::getVolume(Crag::Node n) {
 }
 
 util::box<unsigned int, 3>
-MultiCut::getBoundingBox(Crag::Node n) {
+MultiCut::getDiscreteBoundingBox(Crag::Node n) {
 
 	util::box<unsigned int, 3> bb;
 
@@ -597,12 +597,12 @@ MultiCut::getBoundingBox(Crag::Node n) {
 	for (Crag::SubsetInArcIt e(_crag.getSubsetGraph(), _crag.toSubset(n)); e != lemon::INVALID; ++e) {
 
 		Crag::SubsetNode child = _crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e);
-		bb += getBoundingBox(_crag.toRag(child));
+		bb += getDiscreteBoundingBox(_crag.toRag(child));
 		children++;
 	}
 
 	if (children == 0)
-		return _crag.getVolumes()[n].getBoundingBox();
+		return _crag.getVolumes()[n].getDiscreteBoundingBox();
 	else
 		return bb;
 }
