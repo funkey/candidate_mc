@@ -8,7 +8,7 @@
 #include <vigra/adjacency_list_graph.hxx>
 #include <vigra/graph_algorithms.hxx>
 
-logger::LogChannel planaradjacenciyannotatorlog("planaradjacenciyannotatorlog", "[PlanarAdjacencyAnnotator] ");
+logger::LogChannel planaradjacencyannotatorlog("planaradjacencyannotatorlog", "[PlanarAdjacencyAnnotator] ");
 
 namespace vigra {
 
@@ -30,6 +30,9 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+		if (crag.getVolumes()[n].getBoundingBox().isZero())
+			continue;
 
 		resolution = crag.getVolumes()[n].getResolution();
 		break;
@@ -119,9 +122,13 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 				crag.nodeFromId(u),
 				crag.nodeFromId(v));
 		numAdded++;
+
+		LOG_ALL(planaradjacencyannotatorlog)
+				<< "adding leaf node adjacency between "
+				<< u << " and " << v << std::endl;
 	}
 
-	LOG_USER(planaradjacenciyannotatorlog)
+	LOG_USER(planaradjacencyannotatorlog)
 			<< "added " << numAdded << " leaf node adjacency edges"
 			<< std::endl;
 

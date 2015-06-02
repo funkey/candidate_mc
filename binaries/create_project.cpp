@@ -46,32 +46,32 @@ util::ProgramOption optionProjectFile(
 
 util::ProgramOption optionResX(
 		util::_long_name        = "resX",
-		util::_description_text = "The x resolution of one pixel in the merge-tree image.",
+		util::_description_text = "The x resolution of one pixel in the input images.",
 		util::_default_value    = 1);
 
 util::ProgramOption optionResY(
 		util::_long_name        = "resY",
-		util::_description_text = "The y resolution of one pixel in the merge-tree image.",
+		util::_description_text = "The y resolution of one pixel in the input images.",
 		util::_default_value    = 1);
 
 util::ProgramOption optionResZ(
 		util::_long_name        = "resZ",
-		util::_description_text = "The z resolution of one pixel in the merge-tree image.",
+		util::_description_text = "The z resolution of one pixel in the input images.",
 		util::_default_value    = 1);
 
 util::ProgramOption optionOffsetX(
 		util::_long_name        = "offsetX",
-		util::_description_text = "The x offset of the merge-tree image.",
+		util::_description_text = "The x offset of the input images.",
 		util::_default_value    = 0);
 
 util::ProgramOption optionOffsetY(
 		util::_long_name        = "offsetY",
-		util::_description_text = "The y offset of the merge-tree image.",
+		util::_description_text = "The y offset of the input images.",
 		util::_default_value    = 0);
 
 util::ProgramOption optionOffsetZ(
 		util::_long_name        = "offsetZ",
-		util::_description_text = "The z offset of the merge-tree image.",
+		util::_description_text = "The z offset of the input images.",
 		util::_default_value    = 0);
 
 

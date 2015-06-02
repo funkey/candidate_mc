@@ -33,7 +33,7 @@ MergeTreeParser::getCrag(Crag& crag) {
 	ImageParser parser(_mergeTree, parameters);
 
 	MergeTreeVisitor visitor(
-			(optionSpacedEdgeImage ? _mergeTree.getResolution()/2 : _mergeTree.getResolution()),
+			_mergeTree.getResolution(),
 			_mergeTree.getBoundingBox().min(),
 			crag);
 

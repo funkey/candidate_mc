@@ -75,9 +75,14 @@ MultiCut::storeSolution(const std::string& filename) {
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
+		if (_crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
+			continue;
 		resolution = _crag.getVolumes()[n].getResolution();
 		break;
 	}
+
+	LOG_ALL(multicutlog) << "CRAG bounding box is " << cragBB << std::endl;
+	LOG_ALL(multicutlog) << "CRAG resolution from volumes is " << resolution << std::endl;
 
 	// create a vigra multi-array large enough to hold all volumes
 	vigra::MultiArray<3, float> components(
