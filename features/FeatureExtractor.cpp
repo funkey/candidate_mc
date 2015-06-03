@@ -89,7 +89,7 @@ FeatureExtractor::extract() {
 	EdgeFeatures edgeFeatures(_crag);
 
 	extractNodeFeatures(nodeFeatures);
-	extractEdgeFeatures(edgeFeatures);
+	extractEdgeFeatures(nodeFeatures, edgeFeatures);
 
 	_cragStore->saveNodeFeatures(_crag, nodeFeatures);
 	_cragStore->saveEdgeFeatures(_crag, edgeFeatures);
@@ -211,39 +211,39 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 	//// POSTPROCESSING //
 	//////////////////////
 
-	//if (optionAddFeatureSquares || optionAddPairwiseFeatureProducts) {
+	if (optionAddFeatureSquares || optionAddPairwiseFeatureProducts) {
 
-		//LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
+		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
-		//foreach (boost::shared_ptr<Node> node, *_nodes) {
+		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-			//std::vector<double>& features = _features->getFeatures(node->getId());
+			std::vector<double>& features = nodeFeatures[n];
 
-			//if (optionAddPairwiseFeatureProducts) {
+			if (optionAddPairwiseFeatureProducts) {
 
-				//// compute all products of all features and add them as well
-				//unsigned int numOriginalFeatures = features.size();
-				//for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					//for (unsigned int j = i; j < numOriginalFeatures; j++)
-						//features.push_back(features[i]*features[j]);
-			//} else {
+				// compute all products of all features and add them as well
+				unsigned int numOriginalFeatures = features.size();
+				for (unsigned int i = 0; i < numOriginalFeatures; i++)
+					for (unsigned int j = i; j < numOriginalFeatures; j++)
+						features.push_back(features[i]*features[j]);
+			} else {
 
-				//// compute all squares of all features and add them as well
-				//unsigned int numOriginalFeatures = features.size();
-				//for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					//features.push_back(features[i]*features[i]);
-			//}
-		//}
-	//}
+				// compute all squares of all features and add them as well
+				unsigned int numOriginalFeatures = features.size();
+				for (unsigned int i = 0; i < numOriginalFeatures; i++)
+					features.push_back(features[i]*features[i]);
+			}
+		}
+	}
 
-	//// append a 1 for bias
-	//foreach (boost::shared_ptr<Node> node, *_nodes)
-		//_features->append(node->getId(), 1);
+	// append a 1 for bias
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		nodeFeatures.append(n, 1);
 
-	//LOG_USER(featureextractorlog)
-			//<< "after postprocessing, we have "
-			//<< _features->getFeatures((*_nodes->begin())->getId()).size()
-			//<< " features" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< "after postprocessing, we have "
+			<< nodeFeatures.dims()
+			<< " features per node" << std::endl;
 
 	LOG_USER(featureextractorlog) << "done" << std::endl;
 }
@@ -311,7 +311,7 @@ FeatureExtractor::extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::S
 
 	int numChildren    = 0;
 	int numDescendants = 0;
-	int level          = 0;
+	int level          = 1; // level of leaf nodes
 
 	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e) {
 
@@ -334,5 +334,7 @@ FeatureExtractor::extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::S
 }
 
 void
-FeatureExtractor::extractEdgeFeatures(EdgeFeatures& /*edgeFeatures*/) {
+FeatureExtractor::extractEdgeFeatures(
+		const NodeFeatures& nodeFeatures,
+		EdgeFeatures&       edgeFeatures) {
 }

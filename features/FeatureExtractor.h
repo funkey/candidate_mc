@@ -40,7 +40,7 @@ private:
 
 	void extractNodeFeatures(NodeFeatures& nodeFeatures);
 
-	void extractEdgeFeatures(EdgeFeatures& edgeFeatures);
+	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
 	std::pair<int, int> extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::SubsetNode n);
 
