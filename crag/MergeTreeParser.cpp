@@ -9,7 +9,7 @@ util::ProgramOption optionMinRegionSize(
 		util::_default_value    = 0);
 
 util::ProgramOption optionMaxRegionSize(
-		util::_long_name        = "maxSliceSize",
+		util::_long_name        = "maxRegionSize",
 		util::_description_text = "The maximal size of a region in pixels.",
 		util::_default_value    = 10e5);
 
