@@ -3,8 +3,11 @@
 
 #include <util/assert.h>
 #include <util/helpers.hpp>
+#include <util/Logger.h>
 #include "learning/BundleCollector.h"
 #include "solver/DefaultFactory.h"
+
+logger::LogChannel bundleoptimizerlog("bundleoptimizerlog", "[BundleOptimizer] ");
 
 enum OptimizerResult {
 
@@ -136,11 +139,11 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 		t++;
 
-		std::cout << std::endl << "----------------- iteration " << t << std::endl;
+		LOG_USER(bundleoptimizerlog) << std::endl << "----------------- iteration " << t << std::endl;
 
         Weights w_tm1 = w;
 
-		std::cout << "current w is " << w_tm1 << std::endl;
+		LOG_ALL(bundleoptimizerlog) << "current w is " << w_tm1 << std::endl;
 
 		// value of L at current w
 		double L_w_tm1 = 0.0;
@@ -151,18 +154,18 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 		// get current value and gradient
 		oracle(w_tm1, L_w_tm1, a_t);
 
-		std::cout << "       L(w)              is: " << L_w_tm1 << std::endl;
-		std::cout << "      ∂L(w)/∂            is: " << a_t << std::endl;
+		LOG_DEBUG(bundleoptimizerlog) << "       L(w)              is: " << L_w_tm1 << std::endl;
+		LOG_ALL(bundleoptimizerlog) << "      ∂L(w)/∂            is: " << a_t << std::endl;
 
 		// update smallest observed value of regularized L
 		minValue = std::min(minValue, L_w_tm1 + _parameter.lambda*0.5*dot(w_tm1, w_tm1));
 
-		std::cout << " min_i L(w_i) + ½λ|w_i|² is: " << minValue << std::endl;
+		LOG_DEBUG(bundleoptimizerlog) << " min_i L(w_i) + ½λ|w_i|² is: " << minValue << std::endl;
 
 		// compute hyperplane offset
 		double b_t = L_w_tm1 - dot(w_tm1, a_t);
 
-		//std::cout << "adding hyperplane " << a_t << "*w + " << b_t << std::endl;
+		//LOG_ALL(bundleoptimizerlog) << "adding hyperplane " << a_t << "*w + " << b_t << std::endl;
 
 		// update lower bound
 		_bundleCollector.addHyperplane(a_t, b_t);
@@ -173,8 +176,8 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 		// update w and get minimal value
 		findMinLowerBound(w, minLower);
 
-		std::cout << " min_w ℒ(w)   + ½λ|w|²   is: " << minLower << std::endl;
-		//std::cout << " w* of ℒ(w)   + ½λ|w|²   is: "  << w << std::endl;
+		LOG_DEBUG(bundleoptimizerlog) << " min_w ℒ(w)   + ½λ|w|²   is: " << minLower << std::endl;
+		//LOG_ALL(bundleoptimizerlog) << " w* of ℒ(w)   + ½λ|w|²   is: "  << w << std::endl;
 
 		// compute gap
 		double eps_t;
@@ -185,7 +188,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 		lastMinLower = minLower;
 
-		std::cout  << "          ε   is: " << eps_t << std::endl;
+		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << eps_t << std::endl;
 
 		// converged?
 		if (eps_t <= _parameter.min_eps)
