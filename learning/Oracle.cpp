@@ -1,4 +1,5 @@
 #include "Oracle.h"
+#include <sstream>
 
 void
 Oracle::operator()(
@@ -9,7 +10,10 @@ Oracle::operator()(
 	updateCosts(weights);
 
 	MultiCut::Status status = _multicut.solve();
-	_multicut.storeSolution("most-violated.tif");
+
+	std::stringstream filename;
+	filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration++ << ".tif";
+	_multicut.storeSolution(filename.str());
 
 	if (status != MultiCut::SolutionFound)
 		UTIL_THROW_EXCEPTION(

@@ -29,7 +29,8 @@ public:
 		_loss(loss),
 		_bestEffort(bestEffort),
 		_costs(_crag),
-		_multicut(crag, parameters) {}
+		_multicut(crag, parameters),
+		_iteration(0) {}
 
 	void operator()(
 			const std::vector<double>& weights,
@@ -78,6 +79,8 @@ private:
 	double _constant;
 
 	MultiCut _multicut;
+
+	int _iteration;
 };
 
 #endif // CANDIDATE_MC_LEARNING_ORACLE_H__
