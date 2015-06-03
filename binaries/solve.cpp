@@ -124,6 +124,7 @@ int main(int argc, char** argv) {
 		multicut.setCosts(costs);
 		multicut.solve();
 		multicut.storeSolution("solution.tif");
+		multicut.storeSolution("solution_boundary.tif", true);
 
 	} catch (boost::exception& e) {
 
