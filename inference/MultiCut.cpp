@@ -92,6 +92,12 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 				cragBB.depth() /resolution.z()),
 			std::numeric_limits<int>::max());
 
+	// background for areas without candidates
+	if (boundary)
+		components = 0.25;
+	else
+		components = 0;
+
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
 		if (_crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
