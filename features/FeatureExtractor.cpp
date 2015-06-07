@@ -1,12 +1,13 @@
 #include <fstream>
 #include <sstream>
-#include <vigra/flatmorphology.hxx>
 #include <region_features/RegionFeatures.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/helpers.hpp>
 #include <util/timing.h>
 #include "FeatureExtractor.h"
+#include <vigra/flatmorphology.hxx>
+#include <vigra/multi_morphology.hxx>
 
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
 
@@ -17,16 +18,16 @@ util::ProgramOption optionShapeFeatures(
 	util::_default_value    = true
 );
 
-util::ProgramOption optionProbabilityImageFeatures(
+util::ProgramOption optionBoundariesFeatures(
 	util::_module           = "candidate_mc.features",
-	util::_long_name        = "probabilityImageFeatures",
-	util::_description_text = "Use the probability image to compute image features for each candidate."
+	util::_long_name        = "boundariesFeatures",
+	util::_description_text = "Use the boundary image to compute image features for each candidate."
 );
 
-util::ProgramOption optionProbabilityImageBoundaryFeatures(
+util::ProgramOption optionBoundariesBoundaryFeatures(
 	util::_module           = "candidate_mc.features",
-	util::_long_name        = "probabilityImageBoundaryFeatures",
-	util::_description_text = "Use the probability image to compute image features for the boundary of each candidate."
+	util::_long_name        = "boundariesBoundaryFeatures",
+	util::_description_text = "Use the boundary image to compute image features for the boundary of each candidate."
 );
 
 util::ProgramOption optionNoCoordinatesStatistics(
@@ -98,6 +99,8 @@ FeatureExtractor::extract() {
 void
 FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
+	LOG_USER(featureextractorlog) << "extracting node featuers" << std::endl;
+
 	//////////////////////////
 	// TOPOLOGICAL FEATURES //
 	//////////////////////////
@@ -136,7 +139,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		// a view to the raw image for the node bounding box
 		typedef vigra::MultiArrayView<3, float>::difference_type Shape;
 		vigra::MultiArrayView<3, float> rawNodeImage =
-				_data.data().subarray(
+				_raw.data().subarray(
 						Shape(nodeBoundingBox.min().x(), nodeBoundingBox.min().y(), nodeBoundingBox.min().z()),
 						Shape(nodeBoundingBox.max().x(), nodeBoundingBox.max().y(), nodeBoundingBox.max().z()));
 
@@ -161,17 +164,136 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		// an adaptor to access the feature map with the right node
 		FeatureNodeAdaptor adaptor(n, nodeFeatures);
 
-		RegionFeatures<3, float, unsigned char>::Parameters p;
-		p.computeRegionprops = optionShapeFeatures;
-		if (optionNoCoordinatesStatistics)
-			p.statisticsParameters.computeCoordinateStatistics = false;
-		p.regionpropsParameters.numAnglePoints = optionFeaturePointinessAnglePoints;
-		p.regionpropsParameters.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
-		p.regionpropsParameters.numAngleHistBins = optionFeaturePointinessHistogramBins;
-		RegionFeatures<3, float, unsigned char> regionFeatures(rawNodeImage, labelImage, p);
+		if (nodeBoundingBox.depth() == 1) {
 
-		regionFeatures.fill(adaptor);
+			RegionFeatures<2, float, unsigned char>::Parameters p;
+			p.computeRegionprops = optionShapeFeatures;
+			if (optionNoCoordinatesStatistics)
+				p.statisticsParameters.computeCoordinateStatistics = false;
+			p.regionpropsParameters.numAnglePoints = optionFeaturePointinessAnglePoints;
+			p.regionpropsParameters.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
+			p.regionpropsParameters.numAngleHistBins = optionFeaturePointinessHistogramBins;
+			RegionFeatures<2, float, unsigned char> regionFeatures(rawNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
+
+			if (_crag.id(n) == 0)
+				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+
+			regionFeatures.fill(adaptor);
+
+		} else {
+
+			RegionFeatures<3, float, unsigned char>::Parameters p;
+			p.computeRegionprops = optionShapeFeatures;
+			if (optionNoCoordinatesStatistics)
+				p.statisticsParameters.computeCoordinateStatistics = false;
+			p.regionpropsParameters.numAnglePoints = optionFeaturePointinessAnglePoints;
+			p.regionpropsParameters.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
+			p.regionpropsParameters.numAngleHistBins = optionFeaturePointinessHistogramBins;
+			RegionFeatures<3, float, unsigned char> regionFeatures(rawNodeImage, labelImage, p);
+
+			if (_crag.id(n) == 0)
+				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+
+			regionFeatures.fill(adaptor);
+		}
+
+		if (optionBoundariesFeatures) {
+
+			vigra::MultiArrayView<3, float> boundariesNodeImage =
+					_boundaries.data().subarray(
+							Shape(nodeBoundingBox.min().x(), nodeBoundingBox.min().y(), nodeBoundingBox.min().z()),
+							Shape(nodeBoundingBox.max().x(), nodeBoundingBox.max().y(), nodeBoundingBox.max().z()));
+
+			if (nodeBoundingBox.depth() == 1) {
+
+				RegionFeatures<2, float, unsigned char>::Parameters p;
+				if (optionNoCoordinatesStatistics)
+					p.statisticsParameters.computeCoordinateStatistics = false;
+				RegionFeatures<2, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
+				boundariesRegionFeatures.fill(adaptor);
+
+				if (_crag.id(n) == 0)
+					LOG_DEBUG(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+
+			} else {
+
+				RegionFeatures<3, float, unsigned char>::Parameters p;
+				if (optionNoCoordinatesStatistics)
+					p.statisticsParameters.computeCoordinateStatistics = false;
+				RegionFeatures<3, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage, labelImage, p);
+				boundariesRegionFeatures.fill(adaptor);
+
+				if (_crag.id(n) == 0)
+					LOG_DEBUG(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+			}
+
+			if (optionBoundariesBoundaryFeatures) {
+
+				unsigned int width  = nodeBoundingBox.width();
+				unsigned int height = nodeBoundingBox.height();
+				unsigned int depth  = nodeBoundingBox.depth();
+
+				// create the boundary image by erosion and substraction...
+				vigra::MultiArray<3, unsigned char> erosionImage(labelImage.shape());
+				if (depth == 1)
+					vigra::discErosion(labelImage.bind<2>(0), erosionImage.bind<2>(0), 1);
+				else
+					vigra::multiBinaryErosion(labelImage, erosionImage, 1);
+				vigra::MultiArray<3, unsigned char> boundaryImage(labelImage.shape());
+				boundaryImage = labelImage;
+				boundaryImage -= erosionImage;
+
+				// ...and fix the border of the label image
+				if (depth == 1) {
+
+					for (unsigned int x = 0; x < width; x++) {
+
+						boundaryImage(x, 0, 0)        |= labelImage(x, 0, 0);
+						boundaryImage(x, height-1, 0) |= labelImage(x, height-1, 0);
+					}
+
+					for (unsigned int y = 1; y < height-1; y++) {
+
+						boundaryImage(0, y, 0)       |= labelImage(0, y, 0);
+						boundaryImage(width-1, y, 0) |= labelImage(width-1, y, 0);
+					}
+
+				} else {
+
+					for (unsigned int z = 0; z < depth;  z++)
+					for (unsigned int y = 0; y < height; y++)
+					for (unsigned int x = 0; x < width;  x++)
+						if (x == 0 || y == 0 || z == 0 || x == width - 1 || y == height -1 || z == depth - 1)
+							boundaryImage(x, y, z) |= labelImage(x, y, z);
+				}
+
+				if (depth == 1) {
+
+					RegionFeatures<2, float, unsigned char>::Parameters p;
+					if (optionNoCoordinatesStatistics)
+						p.statisticsParameters.computeCoordinateStatistics = false;
+					RegionFeatures<2, float, unsigned char> boundaryFeatures(boundariesNodeImage.bind<2>(0), boundaryImage.bind<2>(0), p);
+					boundaryFeatures.fill(adaptor);
+
+					if (_crag.id(n) == 0)
+						LOG_DEBUG(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+
+				} else {
+
+					RegionFeatures<3, float, unsigned char>::Parameters p;
+					if (optionNoCoordinatesStatistics)
+						p.statisticsParameters.computeCoordinateStatistics = false;
+					RegionFeatures<3, float, unsigned char> boundaryFeatures(boundariesNodeImage, boundaryImage, p);
+					boundaryFeatures.fill(adaptor);
+
+					if (_crag.id(n) == 0)
+						LOG_DEBUG(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+				}
+			}
+		}
 	}
+
+	LOG_USER(featureextractorlog) << "extracted " << nodeFeatures.dims() << " features" << std::endl;
 
 	///////////////////
 	// NORMALIZATION //
@@ -337,4 +459,71 @@ void
 FeatureExtractor::extractEdgeFeatures(
 		const NodeFeatures& nodeFeatures,
 		EdgeFeatures&       edgeFeatures) {
+
+	///////////////////
+	// NORMALIZATION //
+	///////////////////
+
+	if (optionNormalize && edgeFeatures.dims() > 0) {
+
+		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
+
+		if (optionMinMaxFromProject) {
+
+			LOG_USER(featureextractorlog)
+					<< "reading feature minmax from project file"
+					<< std::endl;
+
+			std::vector<double> min, max;
+			_cragStore->retrieveEdgeFeaturesMinMax(min, max);
+
+			LOG_ALL(featureextractorlog)
+					<< "normalizing features with"
+					<<  std::endl << min << std::endl
+					<< "and"
+					<<  std::endl << max << std::endl;
+
+			edgeFeatures.normalize(min, max);
+
+		} else {
+
+			edgeFeatures.normalize();
+			_cragStore->saveEdgeFeaturesMinMax(
+					edgeFeatures.getMin(),
+					edgeFeatures.getMax());
+		}
+	}
+
+	//////////////////////
+	//// POSTPROCESSING //
+	//////////////////////
+
+	if (optionAddFeatureSquares || optionAddPairwiseFeatureProducts) {
+
+		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
+
+		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+
+			std::vector<double>& features = edgeFeatures[e];
+
+			if (optionAddPairwiseFeatureProducts) {
+
+				// compute all products of all features and add them as well
+				unsigned int numOriginalFeatures = features.size();
+				for (unsigned int i = 0; i < numOriginalFeatures; i++)
+					for (unsigned int j = i; j < numOriginalFeatures; j++)
+						features.push_back(features[i]*features[j]);
+			} else {
+
+				// compute all squares of all features and add them as well
+				unsigned int numOriginalFeatures = features.size();
+				for (unsigned int i = 0; i < numOriginalFeatures; i++)
+					features.push_back(features[i]*features[i]);
+			}
+		}
+	}
+
+	// append a 1 for bias
+	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+		edgeFeatures.append(e, 1);
 }

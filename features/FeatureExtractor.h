@@ -11,10 +11,12 @@ public:
 
 	FeatureExtractor(
 			Crag&                        crag,
-			const ExplicitVolume<float>& data,
+			const ExplicitVolume<float>& raw,
+			const ExplicitVolume<float>& boundaries,
 			CragStore*                   cragStore) :
 		_crag(crag),
-		_data(data),
+		_raw(raw),
+		_boundaries(boundaries),
 		_cragStore(cragStore) {}
 
 	void extract();
@@ -53,7 +55,8 @@ private:
 
 	Crag& _crag;
 
-	const ExplicitVolume<float>& _data;
+	const ExplicitVolume<float>& _raw;
+	const ExplicitVolume<float>& _boundaries;
 
 	CragStore* _cragStore;
 };

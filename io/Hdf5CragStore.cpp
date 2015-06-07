@@ -70,40 +70,6 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 }
 
 void
-Hdf5CragStore::saveNodeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"node_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"node_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
-Hdf5CragStore::saveEdgeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"edge_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"edge_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
 Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 
 	_hdfFile.root();
@@ -127,11 +93,59 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 void
 Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) {
 
+	_hdfFile.root();
+	_hdfFile.cd_mk("crag");
+	_hdfFile.cd_mk("features");
+	_hdfFile.cd_mk("edges");
+
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+
+		const std::vector<double>& f = features[e];
+
+		_hdfFile.write(
+				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
+				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
+				vigra::ArrayVectorView<double>(f.size(), const_cast<double*>(&f[0])));
+	}
 }
 
 void
 Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 
+	_hdfFile.root();
+	_hdfFile.cd("crag");
+	_hdfFile.cd("features");
+	_hdfFile.cd("edges");
+
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+
+		vigra::ArrayVector<double> f;
+
+		_hdfFile.readAndResize(
+				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
+				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
+				f);
+
+		features[e].resize(f.size());
+		std::copy(f.begin(), f.end(), features[e].begin());
+	}
+}
+
+void
+Hdf5CragStore::saveNodeFeaturesMinMax(
+		const std::vector<double>& min,
+		const std::vector<double>& max) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("crag");
+	_hdfFile.cd_mk("features");
+
+	_hdfFile.write(
+			"node_features_min",
+			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
+	_hdfFile.write(
+			"node_features_max",
+			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
 }
 
 void
@@ -154,6 +168,23 @@ Hdf5CragStore::retrieveNodeFeaturesMinMax(
 			f);
 	max.resize(f.size());
 	std::copy(f.begin(), f.end(), max.begin());
+}
+
+void
+Hdf5CragStore::saveEdgeFeaturesMinMax(
+		const std::vector<double>& min,
+		const std::vector<double>& max) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("crag");
+	_hdfFile.cd_mk("features");
+
+	_hdfFile.write(
+			"edge_features_min",
+			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
+	_hdfFile.write(
+			"edge_features_max",
+			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
 }
 
 void

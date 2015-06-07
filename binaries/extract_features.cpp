@@ -33,9 +33,11 @@ int main(int argc, char** argv) {
 
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 		ExplicitVolume<float> raw;
+		ExplicitVolume<float> boundaries;
 		volumeStore.retrieveIntensities(raw);
+		volumeStore.retrieveBoundaries(boundaries);
 
-		FeatureExtractor featureExtractor(crag, raw, &cragStore);
+		FeatureExtractor featureExtractor(crag, raw, boundaries, &cragStore);
 		featureExtractor.extract();
 
 	} catch (boost::exception& e) {

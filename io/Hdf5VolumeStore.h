@@ -18,11 +18,15 @@ public:
 
 	void saveIntensities(const ExplicitVolume<float>& intensities) override;
 
+	void saveBoundaries(const ExplicitVolume<float>& boundaries) override;
+
 	void saveGroundTruth(const ExplicitVolume<int>& groundTruth) override;
 
 	void saveLabels(const ExplicitVolume<int>& labels) override;
 
 	void retrieveIntensities(ExplicitVolume<float>& intensities) override;
+
+	void retrieveBoundaries(ExplicitVolume<float>& boundaries) override;
 
 	void retrieveGroundTruth(ExplicitVolume<int>& groundTruth) override;
 

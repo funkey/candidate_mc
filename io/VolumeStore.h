@@ -16,6 +16,11 @@ public:
 	virtual void saveIntensities(const ExplicitVolume<float>& intensities) = 0;
 
 	/**
+	 * Store the given boundary prediction volume.
+	 */
+	virtual void saveBoundaries(const ExplicitVolume<float>& boundaries) = 0;
+
+	/**
 	 * Store the given ground-truth label volume.
 	 */
 	virtual void saveGroundTruth(const ExplicitVolume<int>& groundTruth) = 0;
@@ -29,6 +34,11 @@ public:
 	 * Get the intensity volume.
 	 */
 	virtual void retrieveIntensities(ExplicitVolume<float>& intensities) = 0;
+
+	/**
+	 * Get the boundary prediction volume.
+	 */
+	virtual void retrieveBoundaries(ExplicitVolume<float>& boundaries) = 0;
 
 	/**
 	 * Get the ground-truth label volume.

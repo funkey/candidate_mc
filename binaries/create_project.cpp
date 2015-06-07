@@ -28,6 +28,12 @@ util::ProgramOption optionIntensities(
 		util::_description_text = "The raw intensity image.",
 		util::_default_value    = "raw.tif");
 
+util::ProgramOption optionBoundaries(
+		util::_long_name        = "boundaries",
+		util::_short_name       = "b",
+		util::_description_text = "The boundary prediciton image.",
+		util::_default_value    = "prob.tif");
+
 util::ProgramOption optionGroundTruth(
 		util::_long_name        = "groundTruth",
 		util::_short_name       = "g",
@@ -141,6 +147,18 @@ int main(int argc, char** argv) {
 			groundTruth.setResolution(resolution);
 			groundTruth.setOffset(offset);
 			volumeStore.saveGroundTruth(groundTruth);
+		}
+
+		if (optionBoundaries) {
+
+			std::string filename = optionBoundaries;
+			vigra::ImageImportInfo info(filename.c_str());
+			ExplicitVolume<float> boundaries(info.width(), info.height(), 1);
+			importImage(info, boundaries.data().bind<2>(0));
+			boundaries.setResolution(resolution);
+			boundaries.setOffset(offset);
+			boundaries.normalize();
+			volumeStore.saveBoundaries(boundaries);
 		}
 
 	} catch (boost::exception& e) {
