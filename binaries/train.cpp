@@ -14,9 +14,8 @@
 #include <io/Hdf5VolumeStore.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
-#include <learning/OverlapCosts.h>
+#include <learning/OverlapLoss.h>
 #include <learning/BestEffort.h>
-#include <learning/HammingLoss.h>
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -29,6 +28,15 @@ util::ProgramOption optionFeatureWeights(
 		util::_short_name       = "w",
 		util::_description_text = "A file to store the learnt feature weights.",
 		util::_default_value    = "feature_weights.txt");
+
+util::ProgramOption optionNormalizeLoss(
+		util::_long_name        = "normalizeLoss",
+		util::_description_text = "Normalize the loss, such that values on valid solutions are in [0,1].");
+
+util::ProgramOption optionRegularizerWeight(
+		util::_long_name        = "regularizerWeight",
+		util::_description_text = "The factor of the quadratic regularizer on w.",
+		util::_default_value    = 1.0);
 
 int main(int argc, char** argv) {
 
@@ -50,23 +58,23 @@ int main(int argc, char** argv) {
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
 		BundleOptimizer::Parameters parameters;
+		parameters.lambda      = optionRegularizerWeight;
 		parameters.epsStrategy = BundleOptimizer::EpsFromGap;
 		BundleOptimizer optimizer(parameters);
 
 		ExplicitVolume<int> groundTruth;
 		volumeStore.retrieveGroundTruth(groundTruth);
-		OverlapCosts overlapCosts(crag, groundTruth);
-		BestEffort   bestEffort(crag, overlapCosts);
-		HammingLoss  loss(crag, bestEffort);
+		OverlapLoss overlapLoss(crag, groundTruth);
+		BestEffort  bestEffort(crag, overlapLoss);
 
-		Crag::NodeIt n(crag);
-		bestEffort.node[n] = true;
+		if (optionNormalizeLoss)
+			overlapLoss.normalize(crag, MultiCut::Parameters());
 
 		Oracle oracle(
 				crag,
 				nodeFeatures,
 				edgeFeatures,
-				loss,
+				overlapLoss,
 				bestEffort);
 
 		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), 0);
