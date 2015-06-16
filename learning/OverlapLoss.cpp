@@ -1,5 +1,14 @@
 #include "OverlapLoss.h"
 #include <util/Logger.h>
+#include <util/ProgramOptions.h>
+
+util::ProgramOption optionBalanceOverlapLoss(
+		util::_long_name        = "balanceOverlapLoss",
+		util::_description_text = "Compute the overlap loss only for leaf node and edges, "
+		                          "and propagate the values upwards, such that each solution "
+		                          "resulting in the same segmentation has the same loss. Note "
+		                          "that this sacrifices approximation quality of the overlap "
+		                          "loss, since even fewer transitive contributions are considered.");
 
 logger::LogChannel overlaplosslog("overlaplosslog", "[OverlapLoss] ");
 
@@ -8,6 +17,8 @@ OverlapLoss::OverlapLoss(
 		const ExplicitVolume<int>& groundTruth) :
 	Loss(crag),
 	_overlaps(crag) {
+
+	bool balance = optionBalanceOverlapLoss;
 
 	LOG_DEBUG(overlaplosslog) << "getting candidate overlaps..." << std::endl;
 
@@ -24,7 +35,7 @@ OverlapLoss::OverlapLoss(
 
 		bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
 
-		if (!leafNode) {
+		if (balance && !leafNode) {
 
 			node[n] = 0;
 			continue;
@@ -51,7 +62,7 @@ OverlapLoss::OverlapLoss(
 				(Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(u)) == lemon::INVALID &&
 				 Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(v)) == lemon::INVALID);
 
-		if (!leafEdge) {
+		if (balance && !leafEdge) {
 
 			// scores only for leaf edges
 			edge[e] = 0;
@@ -72,7 +83,8 @@ OverlapLoss::OverlapLoss(
 				<< "): "    << edge[e] << std::endl;
 	}
 
-	propagateLeafLoss(crag);
+	if (balance)
+		propagateLeafLoss(crag);
 }
 
 void
