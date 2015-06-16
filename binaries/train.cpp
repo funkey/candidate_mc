@@ -15,6 +15,7 @@
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
 #include <learning/OverlapLoss.h>
+#include <learning/HammingLoss.h>
 #include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
@@ -28,6 +29,14 @@ util::ProgramOption optionFeatureWeights(
 		util::_short_name       = "w",
 		util::_description_text = "A file to store the learnt feature weights.",
 		util::_default_value    = "feature_weights.txt");
+
+util::ProgramOption optionLoss(
+		util::_long_name        = "loss",
+		util::_description_text = "The loss to use for training: hamming (Hamming distance "
+		                          "to best effort, default) or overlap (RAND index approximation "
+		                          "to ground-truth).",
+		util::_default_value    = "hamming");
+
 
 util::ProgramOption optionNormalizeLoss(
 		util::_long_name        = "normalizeLoss",
@@ -67,14 +76,35 @@ int main(int argc, char** argv) {
 		OverlapLoss overlapLoss(crag, groundTruth);
 		BestEffort  bestEffort(crag, overlapLoss);
 
+		Loss* loss = 0;
+		bool  destructLoss = false;
+
+		if (optionLoss.as<std::string>() == "hamming") {
+
+			loss = new HammingLoss(crag, bestEffort);
+			destructLoss = true;
+
+		} else if (optionLoss.as<std::string>() == "overlap") {
+
+			loss = &overlapLoss;
+
+		} else {
+
+			LOG_ERROR(logger::out)
+					<< "unknown loss: "
+					<< optionLoss.as<std::string>()
+					<< std::endl;
+			return 1;
+		}
+
 		if (optionNormalizeLoss)
-			overlapLoss.normalize(crag, MultiCut::Parameters());
+			loss->normalize(crag, MultiCut::Parameters());
 
 		Oracle oracle(
 				crag,
 				nodeFeatures,
 				edgeFeatures,
-				overlapLoss,
+				*loss,
 				bestEffort);
 
 		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), 0);
@@ -83,6 +113,9 @@ int main(int argc, char** argv) {
 		std::ofstream weightsFile(optionFeatureWeights.as<std::string>());
 		for (double f : weights)
 			weightsFile << f << std::endl;
+
+		if (destructLoss && loss != 0)
+			delete loss;
 
 	} catch (boost::exception& e) {
 
