@@ -1,42 +1,41 @@
-#include "OverlapCosts.h"
+#include "OverlapLoss.h"
 #include <util/Logger.h>
 
-logger::LogChannel overlapcostslog("overlapcostslog", "[OverlapCosts] ");
+logger::LogChannel overlaplosslog("overlaplosslog", "[OverlapLoss] ");
 
-OverlapCosts::OverlapCosts(
+OverlapLoss::OverlapLoss(
 		const Crag&                crag,
 		const ExplicitVolume<int>& groundTruth) :
-	Costs(crag),
+	Loss(crag),
 	_overlaps(crag) {
 
-	LOG_DEBUG(overlapcostslog) << "getting candidate overlaps..." << std::endl;
+	LOG_DEBUG(overlaplosslog) << "getting candidate overlaps..." << std::endl;
 
 	// annotate all nodes with the max overlap area to any gt label
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
 		if (Crag::SubsetOutArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID)
-			recurseOverlapCosts(crag, n, groundTruth);
+			recurseOverlapLoss(crag, n, groundTruth);
 
-	LOG_DEBUG(overlapcostslog) << "setting foreground overlap costs" << std::endl;
+	LOG_DEBUG(overlaplosslog) << "setting foreground overlap loss" << std::endl;
 
-	// annotate nodes: costs is number of incorrectly merged pairs, minus number 
+	// annotate nodes: loss is number of incorrectly merged pairs, minus number 
 	// of correctly merged pairs
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-		//bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
+		bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
 
-		//if (!leafNode) {
+		if (!leafNode) {
 
-			//// scores only for leaf nodes
-			//node[n] = 0;
-			//continue;
-		//}
+			node[n] = 0;
+			continue;
+		}
 
-		LOG_ALL(overlapcostslog)
+		LOG_ALL(overlaplosslog)
 				<< "getting overlap score for node " << crag.id(n) << std::endl;
 
 		node[n] = foregroundNodeOverlapScore(_overlaps[n]) + backgroundNodeOverlapScore(_overlaps[n]);
 
-		LOG_ALL(overlapcostslog)
+		LOG_ALL(overlaplosslog)
 				<< "node " << crag.id(n)
 				<< ": "    << node[n]
 				<< std::endl;
@@ -48,18 +47,18 @@ OverlapCosts::OverlapCosts(
 		Crag::Node u = crag.u(e);
 		Crag::Node v = crag.v(e);
 
-		//bool leafEdge =
-				//(Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(u)) == lemon::INVALID &&
-				 //Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(v)) == lemon::INVALID);
+		bool leafEdge =
+				(Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(u)) == lemon::INVALID &&
+				 Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(v)) == lemon::INVALID);
 
-		//if (!leafEdge) {
+		if (!leafEdge) {
 
-			//// scores only for leaf edges
-			//edge[e] = 0;
-			//continue;
-		//}
+			// scores only for leaf edges
+			edge[e] = 0;
+			continue;
+		}
 
-		LOG_ALL(overlapcostslog)
+		LOG_ALL(overlaplosslog)
 				<< "getting foreground overlap score for "
 				<< "edge (" << crag.id(crag.u(e))
 				<< ", "     << crag.id(crag.v(e)) << ")"
@@ -67,15 +66,17 @@ OverlapCosts::OverlapCosts(
 
 		edge[e] = foregroundEdgeOverlapScore(_overlaps[u], _overlaps[v]);
 
-		LOG_ALL(overlapcostslog)
+		LOG_ALL(overlaplosslog)
 				<< "edge (" << crag.id(crag.u(e))
 				<< ", "     << crag.id(crag.v(e))
 				<< "): "    << edge[e] << std::endl;
 	}
+
+	propagateLeafLoss(crag);
 }
 
 void
-OverlapCosts::recurseOverlapCosts(
+OverlapLoss::recurseOverlapLoss(
 		const Crag&                crag,
 		const Crag::Node&          n,
 		const ExplicitVolume<int>& groundTruth) {
@@ -83,7 +84,7 @@ OverlapCosts::recurseOverlapCosts(
 	bool leafNode = (Crag::SubsetInArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID);
 	if (leafNode) {
 
-		LOG_ALL(overlapcostslog) << "getting leaf overlap for node " << crag.id(n) << std::endl;
+		LOG_ALL(overlaplosslog) << "getting leaf overlap for node " << crag.id(n) << std::endl;
 		_overlaps[n] = leafOverlaps(crag.getVolumes()[n], groundTruth);
 
 	} else {
@@ -93,7 +94,7 @@ OverlapCosts::recurseOverlapCosts(
 
 			Crag::Node child = crag.toRag(crag.getSubsetGraph().source(a));
 
-			recurseOverlapCosts(crag, child, groundTruth);
+			recurseOverlapLoss(crag, child, groundTruth);
 
 			for (auto p : _overlaps[child])
 				if (!_overlaps[n].count(p.first))
@@ -105,7 +106,7 @@ OverlapCosts::recurseOverlapCosts(
 }
 
 std::map<int, int>
-OverlapCosts::leafOverlaps(
+OverlapLoss::leafOverlaps(
 		const ExplicitVolume<bool>& region,
 		const ExplicitVolume<int>&  groundTruth) {
 
@@ -115,7 +116,7 @@ OverlapCosts::leafOverlaps(
 			(region.getOffset() - groundTruth.getOffset())/
 			groundTruth.getResolution();
 
-	LOG_ALL(overlapcostslog) << "offset into ground-truth image: " << offset << std::endl;
+	LOG_ALL(overlaplosslog) << "offset into ground-truth image: " << offset << std::endl;
 
 	for (unsigned int z = 0; z < region.getDiscreteBoundingBox().depth();  z++)
 	for (unsigned int y = 0; y < region.getDiscreteBoundingBox().height(); y++)
@@ -136,7 +137,7 @@ OverlapCosts::leafOverlaps(
 }
 
 double
-OverlapCosts::foregroundNodeOverlapScore(
+OverlapLoss::foregroundNodeOverlapScore(
 		const std::map<int, int>& overlaps) {
 
 	double score = 0;
@@ -157,11 +158,11 @@ OverlapCosts::foregroundNodeOverlapScore(
 			double overlap1 = p.second;
 			double overlap2 = l.second;
 
-			LOG_ALL(overlapcostslog)
+			LOG_ALL(overlaplosslog)
 					<< "incorrectly merges " << label1
 					<< " (" << overlap1 << " voxels) and " << label2
 					<< " (" << overlap2 << " voxels)" << std::endl;
-			LOG_ALL(overlapcostslog) << "+= " << overlap1*overlap2 << std::endl;
+			LOG_ALL(overlaplosslog) << "+= " << overlap1*overlap2 << std::endl;
 
 			score += overlap1*overlap2;
 		}
@@ -177,17 +178,17 @@ OverlapCosts::foregroundNodeOverlapScore(
 		double overlap = p.second;
 		score -= overlap*(overlap - 1)/2;
 
-		LOG_ALL(overlapcostslog)
+		LOG_ALL(overlaplosslog)
 				<< "correctly merges " << label
 				<< " (" << overlap << " voxels)" << std::endl;
-		LOG_ALL(overlapcostslog) << "-= " << overlap*(overlap -1)/2 << std::endl;
+		LOG_ALL(overlaplosslog) << "-= " << overlap*(overlap -1)/2 << std::endl;
 	}
 
 	return score;
 }
 
 double
-OverlapCosts::foregroundEdgeOverlapScore(
+OverlapLoss::foregroundEdgeOverlapScore(
 		const std::map<int, int>& overlapsU,
 		const std::map<int, int>& overlapsV) {
 
@@ -210,22 +211,22 @@ OverlapCosts::foregroundEdgeOverlapScore(
 
 				score -= overlap1*overlap2;
 
-				LOG_ALL(overlapcostslog)
+				LOG_ALL(overlaplosslog)
 						<< "correctly merges " << label1
 						<< " (" << overlap1 << " voxels) and " << label2
 						<< " (" << overlap2 << " voxels)" << std::endl;
-				LOG_ALL(overlapcostslog) << "-= " << overlap1*overlap2 << std::endl;
+				LOG_ALL(overlaplosslog) << "-= " << overlap1*overlap2 << std::endl;
 
 			// incorrectly merged
 			} else {
 
 				score += overlap1*overlap2;
 
-				LOG_ALL(overlapcostslog)
+				LOG_ALL(overlaplosslog)
 						<< "incorrectly merges " << label1
 						<< " (" << overlap1 << " voxels) and " << label2
 						<< " (" << overlap2 << " voxels)" << std::endl;
-				LOG_ALL(overlapcostslog) << "+= " << overlap1*overlap2 << std::endl;
+				LOG_ALL(overlaplosslog) << "+= " << overlap1*overlap2 << std::endl;
 			}
 		}
 	}
@@ -234,7 +235,7 @@ OverlapCosts::foregroundEdgeOverlapScore(
 }
 
 double
-OverlapCosts::backgroundNodeOverlapScore(
+OverlapLoss::backgroundNodeOverlapScore(
 		const std::map<int, int>& overlaps) {
 
 	if (!overlaps.count(0))
@@ -243,10 +244,10 @@ OverlapCosts::backgroundNodeOverlapScore(
 	// overlap with background
 	double overlap = overlaps.at(0);
 
-	LOG_ALL(overlapcostslog)
+	LOG_ALL(overlaplosslog)
 			<< "overlaps with " << overlap
 			<< " background voxels" << std::endl;
-	LOG_ALL(overlapcostslog)
+	LOG_ALL(overlaplosslog)
 			<< "+= " << pow(overlap, 2) << std::endl;
 
 	// reward is -overlap^2 of not selecting this node, i.e., punishment of 

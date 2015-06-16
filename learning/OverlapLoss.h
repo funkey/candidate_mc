@@ -1,22 +1,22 @@
-#ifndef CANDIDATE_MC_LEARNING_OVERLAP_COSTS_H__
-#define CANDIDATE_MC_LEARNING_OVERLAP_COSTS_H__
+#ifndef CANDIDATE_MC_LEARNING_OVERLAP_LOSS_H__
+#define CANDIDATE_MC_LEARNING_OVERLAP_LOSS_H__
 
-#include <inference/Costs.h>
+#include <learning/Loss.h>
 
 /**
- * Costs that reflect the overlap of each region with the ground truth.
+ * Loss that reflect the overlap of each region with the ground truth.
  */
-class OverlapCosts : public Costs {
+class OverlapLoss : public Loss {
 
 public:
 
-	OverlapCosts(
+	OverlapLoss(
 			const Crag&                crag,
 			const ExplicitVolume<int>& groundTruth);
 
 private:
 
-	void recurseOverlapCosts(
+	void recurseOverlapLoss(
 			const Crag&                crag,
 			const Crag::Node&          n,
 			const ExplicitVolume<int>& groundTruth);
@@ -38,5 +38,5 @@ private:
 	Crag::NodeMap<std::map<int, int>> _overlaps;
 };
 
-#endif // CANDIDATE_MC_LEARNING_OVERLAP_COSTS_H__
+#endif // CANDIDATE_MC_LEARNING_OVERLAP_LOSS_H__
 
