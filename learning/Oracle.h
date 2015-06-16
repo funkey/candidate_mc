@@ -29,7 +29,8 @@ public:
 		_loss(loss),
 		_bestEffort(bestEffort),
 		_costs(_crag),
-		_multicut(crag, parameters),
+		_mostViolatedMulticut(crag, parameters),
+		_currentBestMulticut(crag, parameters),
 		_iteration(0) {}
 
 	void operator()(
@@ -78,7 +79,11 @@ private:
 	// constant to be added to the optimal value of the multi-cut solution
 	double _constant;
 
-	MultiCut _multicut;
+	// best-effort part of _constant
+	double _B_c;
+
+	MultiCut _mostViolatedMulticut;
+	MultiCut _currentBestMulticut;
 
 	int _iteration;
 };
