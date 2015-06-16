@@ -16,7 +16,8 @@ public:
 		Parameters() :
 			forceExplanation(false),
 			numIterations(100),
-			maxConstraintsPerIteration(0) {}
+			maxConstraintsPerIteration(0),
+			minimize(true) {}
 
 		/**
 		 * If true, force exactly one region to be chosen for each root-to-leaf 
@@ -34,6 +35,8 @@ public:
 		 * The maximal number of cycle constraints to add per iteration.
 		 */
 		int maxConstraintsPerIteration;
+
+		bool minimize;
 	};
 
 	enum Status {

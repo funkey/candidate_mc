@@ -59,7 +59,11 @@ MultiCut::solve(unsigned int numIterations) {
 
 		if (!findViolatedConstraints()) {
 
-			LOG_USER(multicutlog) << "optimal solution found" << std::endl;
+			LOG_USER(multicutlog)
+					<< "optimal solution with value "
+					<< _solution->getValue() << " found"
+					<< std::endl;
+
 			return SolutionFound;
 		}
 	}
@@ -167,6 +171,7 @@ MultiCut::prepareSolver() {
 
 	// one binary indicator per node and edge
 	_objective->resize(_numNodes + _numEdges);
+	_objective->setSense(_parameters.minimize ? Minimize : Maximize);
 	_solverParameters->setVariableType(Binary);
 
 	_solver->setInput("parameters", _solverParameters);
