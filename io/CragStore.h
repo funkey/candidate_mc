@@ -12,6 +12,8 @@ class CragStore {
 
 public:
 
+	virtual ~CragStore() {}
+
 	/**
 	 * Store a candidate region adjacency graph (CRAG).
 	 */
