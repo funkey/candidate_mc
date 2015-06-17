@@ -99,11 +99,11 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 
 		for (PixelList::const_iterator i = begin; i != end; i++)
 			boundingBox.fit(
-					util::point<unsigned int, 3>(
-							i->x(), i->y(), 0));
-		boundingBox.max().x() += 1;
-		boundingBox.max().y() += 1;
-		boundingBox.max().z() += 1;
+					util::box<unsigned int, 3>(
+							util::point<unsigned int, 3>(
+									i->x(),     i->y(),     0),
+							util::point<unsigned int, 3>(
+									i->x() + 1, i->y() + 1, 1)));
 
 		ExplicitVolume<unsigned char> volume(
 				boundingBox.width(),
