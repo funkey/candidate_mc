@@ -12,14 +12,14 @@ public:
 	FeatureExtractor(
 			Crag&                        crag,
 			const ExplicitVolume<float>& raw,
-			const ExplicitVolume<float>& boundaries,
-			CragStore*                   cragStore) :
+			const ExplicitVolume<float>& boundaries) :
 		_crag(crag),
 		_raw(raw),
-		_boundaries(boundaries),
-		_cragStore(cragStore) {}
+		_boundaries(boundaries) {}
 
-	void extract();
+	void extract(
+			NodeFeatures& nodeFeatures,
+			EdgeFeatures& edgeFeatures);
 
 private:
 
@@ -57,8 +57,6 @@ private:
 
 	const ExplicitVolume<float>& _raw;
 	const ExplicitVolume<float>& _boundaries;
-
-	CragStore* _cragStore;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

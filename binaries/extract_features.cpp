@@ -37,8 +37,14 @@ int main(int argc, char** argv) {
 		volumeStore.retrieveIntensities(raw);
 		volumeStore.retrieveBoundaries(boundaries);
 
-		FeatureExtractor featureExtractor(crag, raw, boundaries, &cragStore);
-		featureExtractor.extract();
+		NodeFeatures nodeFeatures(crag);
+		EdgeFeatures edgeFeatures(crag);
+
+		FeatureExtractor featureExtractor(crag, raw, boundaries);
+		featureExtractor.extract(nodeFeatures, edgeFeatures);
+
+		cragStore.saveNodeFeatures(crag, nodeFeatures);
+		cragStore.saveEdgeFeatures(crag, edgeFeatures);
 
 	} catch (boost::exception& e) {
 

@@ -1,6 +1,7 @@
 #include <fstream>
 #include <sstream>
 #include <region_features/RegionFeatures.h>
+#include <io/vectors.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/helpers.hpp>
@@ -54,11 +55,39 @@ util::ProgramOption optionNormalize(
 	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
 );
 
-util::ProgramOption optionMinMaxFromProject(
+util::ProgramOption optionMinMaxFromFiles(
 	util::_module           = "candidate_mc.features",
-	util::_long_name        = "minMaxFromProject",
+	util::_long_name        = "minMaxFromFiles",
 	util::_description_text = "For the feature normalization, instead of using the min and max of the extracted features, "
-	                          "use the min and max provided in the project file."
+	                          "use the min and max provided in the files (see {min,max}{Node,Edge}Features)."
+);
+
+util::ProgramOption optionMinNodeFeatures(
+	util::_module           = "candidate_mc.features",
+	util::_long_name        = "minNodeFeatures",
+	util::_description_text = "A file containing the minimal values of the node features.",
+	util::_default_value    = "node_features_min.txt"
+);
+
+util::ProgramOption optionMaxNodeFeatures(
+	util::_module           = "candidate_mc.features",
+	util::_long_name        = "maxNodeFeatures",
+	util::_description_text = "A file containing the minimal values of the node features.",
+	util::_default_value    = "node_features_max.txt"
+);
+
+util::ProgramOption optionMinEdgeFeatures(
+	util::_module           = "candidate_mc.features",
+	util::_long_name        = "minEdgeFeatures",
+	util::_description_text = "A file containing the minimal values of the edge features.",
+	util::_default_value    = "edge_features_min.txt"
+);
+
+util::ProgramOption optionMaxEdgeFeatures(
+	util::_module           = "candidate_mc.features",
+	util::_long_name        = "maxEdgeFeatures",
+	util::_description_text = "A file containing the minimal values of the edge features.",
+	util::_default_value    = "edge_features_max.txt"
 );
 
 util::ProgramOption optionFeaturePointinessAnglePoints(
@@ -84,16 +113,12 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 );
 
 void
-FeatureExtractor::extract() {
-
-	NodeFeatures nodeFeatures(_crag);
-	EdgeFeatures edgeFeatures(_crag);
+FeatureExtractor::extract(
+		NodeFeatures& nodeFeatures,
+		EdgeFeatures& edgeFeatures) {
 
 	extractNodeFeatures(nodeFeatures);
 	extractEdgeFeatures(nodeFeatures, edgeFeatures);
-
-	_cragStore->saveNodeFeatures(_crag, nodeFeatures);
-	_cragStore->saveEdgeFeatures(_crag, edgeFeatures);
 }
 
 void
@@ -303,14 +328,14 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
 
-		if (optionMinMaxFromProject) {
+		if (optionMinMaxFromFiles) {
 
 			LOG_USER(featureextractorlog)
-					<< "reading feature minmax from project file"
+					<< "reading feature minmax from files"
 					<< std::endl;
 
-			std::vector<double> min, max;
-			_cragStore->retrieveNodeFeaturesMinMax(min, max);
+			std::vector<double> min = retrieveVector<double>(optionMinNodeFeatures);
+			std::vector<double> max = retrieveVector<double>(optionMaxNodeFeatures);
 
 			LOG_ALL(featureextractorlog)
 					<< "normalizing features with"
@@ -323,9 +348,8 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		} else {
 
 			nodeFeatures.normalize();
-			_cragStore->saveNodeFeaturesMinMax(
-					nodeFeatures.getMin(),
-					nodeFeatures.getMax());
+			storeVector(nodeFeatures.getMin(), optionMinNodeFeatures);
+			storeVector(nodeFeatures.getMax(), optionMaxNodeFeatures);
 		}
 	}
 
@@ -468,14 +492,14 @@ FeatureExtractor::extractEdgeFeatures(
 
 		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
 
-		if (optionMinMaxFromProject) {
+		if (optionMinMaxFromFiles) {
 
 			LOG_USER(featureextractorlog)
 					<< "reading feature minmax from project file"
 					<< std::endl;
 
-			std::vector<double> min, max;
-			_cragStore->retrieveEdgeFeaturesMinMax(min, max);
+			std::vector<double> min = retrieveVector<double>(optionMinEdgeFeatures);
+			std::vector<double> max = retrieveVector<double>(optionMaxEdgeFeatures);
 
 			LOG_ALL(featureextractorlog)
 					<< "normalizing features with"
@@ -488,9 +512,8 @@ FeatureExtractor::extractEdgeFeatures(
 		} else {
 
 			edgeFeatures.normalize();
-			_cragStore->saveEdgeFeaturesMinMax(
-					edgeFeatures.getMin(),
-					edgeFeatures.getMax());
+			storeVector(edgeFeatures.getMin(), optionMinEdgeFeatures);
+			storeVector(edgeFeatures.getMax(), optionMaxEdgeFeatures);
 		}
 	}
 
