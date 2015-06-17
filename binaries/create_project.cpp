@@ -9,10 +9,9 @@
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
 #include <crag/Crag.h>
-#include <crag/MergeTreeParser.h>
-#include <crag/PlanarAdjacencyAnnotator.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
+#include <io/volumes.h>
 #include <vigra/impex.hxx>
 #include <vigra/multi_labeling.hxx>
 
@@ -25,7 +24,7 @@ util::ProgramOption optionMergeTree(
 util::ProgramOption optionIntensities(
 		util::_long_name        = "intensities",
 		util::_short_name       = "i",
-		util::_description_text = "The raw intensity image.",
+		util::_description_text = "The raw intensity image or directory of images.",
 		util::_default_value    = "raw.tif");
 
 util::ProgramOption optionBoundaries(
@@ -80,7 +79,6 @@ util::ProgramOption optionOffsetZ(
 		util::_description_text = "The z offset of the input images.",
 		util::_default_value    = 0);
 
-
 int main(int argc, char** argv) {
 
 	try {
@@ -97,21 +95,14 @@ int main(int argc, char** argv) {
 				optionOffsetY,
 				optionOffsetZ);
 
-		// get information about the image to read
-		std::string filename = optionMergeTree;
-		vigra::ImageImportInfo info(filename.c_str());
-		Image mergeTree(info.width(), info.height());
-		importImage(info, vigra::destImage(mergeTree));
-		mergeTree.setResolution(resolution);
-		mergeTree.setOffset(offset);
-
-		MergeTreeParser parser(mergeTree);
-
 		Crag crag;
-		parser.getCrag(crag);
 
-		PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
-		annotator.annotate(crag);
+		// get information about the image to read
+		std::string mergeTreePath = optionMergeTree;
+
+
+
+		readCrag(mergeTreePath, crag, resolution, offset);
 
 		boost::filesystem::remove(optionProjectFile.as<std::string>());
 		Hdf5CragStore store(optionProjectFile.as<std::string>());
@@ -119,10 +110,7 @@ int main(int argc, char** argv) {
 
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
-		filename = optionIntensities.as<std::string>();
-		info = vigra::ImageImportInfo(filename.c_str());
-		ExplicitVolume<float> intensities(info.width(), info.height(), 1);
-		importImage(info, intensities.data().bind<2>(0));
+		ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
 		intensities.setResolution(resolution);
 		intensities.setOffset(offset);
 		intensities.normalize();
@@ -130,10 +118,7 @@ int main(int argc, char** argv) {
 
 		if (optionGroundTruth) {
 
-			std::string filename = optionGroundTruth;
-			vigra::ImageImportInfo info(filename.c_str());
-			ExplicitVolume<int> groundTruth(info.width(), info.height(), 1);
-			importImage(info, groundTruth.data().bind<2>(0));
+			ExplicitVolume<int> groundTruth = readVolume<int>(getImageFiles(optionGroundTruth));
 
 			if (optionExtractGroundTruthLabels) {
 
@@ -151,10 +136,7 @@ int main(int argc, char** argv) {
 
 		if (optionBoundaries) {
 
-			std::string filename = optionBoundaries;
-			vigra::ImageImportInfo info(filename.c_str());
-			ExplicitVolume<float> boundaries(info.width(), info.height(), 1);
-			importImage(info, boundaries.data().bind<2>(0));
+			ExplicitVolume<float> boundaries = readVolume<float>(getImageFiles(optionBoundaries));
 			boundaries.setResolution(resolution);
 			boundaries.setOffset(offset);
 			boundaries.normalize();
