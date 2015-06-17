@@ -12,6 +12,7 @@
 #include <util/exceptions.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
+#include <io/vectors.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
 #include <learning/OverlapLoss.h>
@@ -110,9 +111,7 @@ int main(int argc, char** argv) {
 		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), 0);
 		optimizer.optimize(oracle, weights);
 
-		std::ofstream weightsFile(optionFeatureWeights.as<std::string>());
-		for (double f : weights)
-			weightsFile << f << std::endl;
+		storeVector(weights, optionFeatureWeights);
 
 		if (destructLoss && loss != 0)
 			delete loss;
