@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
+		LOG_USER(logger::out) << "reading features" << std::endl;
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
@@ -72,20 +73,27 @@ int main(int argc, char** argv) {
 		parameters.epsStrategy = BundleOptimizer::EpsFromGap;
 		BundleOptimizer optimizer(parameters);
 
+		LOG_USER(logger::out) << "reading ground-truth" << std::endl;
 		ExplicitVolume<int> groundTruth;
 		volumeStore.retrieveGroundTruth(groundTruth);
+
+		LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
 		OverlapLoss overlapLoss(crag, groundTruth);
-		BestEffort  bestEffort(crag, overlapLoss);
+		BestEffort bestEffort(crag, overlapLoss);
 
 		Loss* loss = 0;
 		bool  destructLoss = false;
 
 		if (optionLoss.as<std::string>() == "hamming") {
 
+			LOG_USER(logger::out) << "using Hamming loss" << std::endl;
+
 			loss = new HammingLoss(crag, bestEffort);
 			destructLoss = true;
 
 		} else if (optionLoss.as<std::string>() == "overlap") {
+
+			LOG_USER(logger::out) << "using overlap loss" << std::endl;
 
 			loss = &overlapLoss;
 
@@ -98,8 +106,11 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		if (optionNormalizeLoss)
+		if (optionNormalizeLoss) {
+
+			LOG_USER(logger::out) << "normalizing loss..." << std::endl;
 			loss->normalize(crag, MultiCut::Parameters());
+		}
 
 		Oracle oracle(
 				crag,

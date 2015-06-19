@@ -32,6 +32,10 @@ getImageFiles(std::string path) {
 			))
 				filenames.push_back(i->path().native());
 
+		std::sort(filenames.begin(), filenames.end());
+
+		filenames.resize(2);
+
 	} else {
 
 		filenames.push_back(path);

@@ -124,7 +124,7 @@ FeatureExtractor::extract(
 void
 FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
-	LOG_USER(featureextractorlog) << "extracting node featuers" << std::endl;
+	LOG_USER(featureextractorlog) << "extracting node features" << std::endl;
 
 	//////////////////////////
 	// TOPOLOGICAL FEATURES //

@@ -20,8 +20,8 @@ Oracle::operator()(
 	MultiCut::Status status = _mostViolatedMulticut.solve();
 
 	std::stringstream filename;
-	filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration++ << ".tif";
-	_mostViolatedMulticut.storeSolution(filename.str());
+	filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
+	_mostViolatedMulticut.storeSolution(filename.str(), true);
 
 	if (status != MultiCut::SolutionFound)
 		UTIL_THROW_EXCEPTION(
@@ -57,9 +57,11 @@ Oracle::operator()(
 		_currentBestMulticut.solve();
 
 		std::stringstream filename;
-		filename << "current-best_" << std::setw(6) << std::setfill('0') << _iteration++ << ".tif";
-		_currentBestMulticut.storeSolution(filename.str());
+		filename << "current-best_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
+		_currentBestMulticut.storeSolution(filename.str(), true);
 	}
+
+	_iteration++;
 }
 
 void
