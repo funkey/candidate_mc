@@ -20,8 +20,16 @@ util::ProgramOption optionMergeTree(
 		util::_long_name        = "mergeTree",
 		util::_short_name       = "m",
 		util::_description_text = "The merge-tree image. If this is a directory, one mergtree will be extracted "
-		                          "per image in the directory and adjacencies introduced across subsequent images.",
-		util::_default_value    = "merge_tree.tif");
+		                          "per image in the directory and adjacencies introduced across subsequent images.");
+
+util::ProgramOption optionSupervoxels(
+		util::_long_name        = "supervoxels",
+		util::_description_text = "A volume (single image or directory of images) with supervoxel ids. Use this together "
+		                          "with mergeHistory.");
+
+util::ProgramOption optionMergeHistory(
+		util::_long_name        = "mergeHistory",
+		util::_description_text = "A file containing lines 'a b c' to indicate that regions a and b merged into region c.");
 
 util::ProgramOption optionIntensities(
 		util::_long_name        = "intensities",
@@ -32,8 +40,7 @@ util::ProgramOption optionIntensities(
 util::ProgramOption optionBoundaries(
 		util::_long_name        = "boundaries",
 		util::_short_name       = "b",
-		util::_description_text = "The boundary prediciton image or directory of images.",
-		util::_default_value    = "prob.tif");
+		util::_description_text = "The boundary prediciton image or directory of images.");
 
 util::ProgramOption optionGroundTruth(
 		util::_long_name        = "groundTruth",
@@ -99,32 +106,45 @@ int main(int argc, char** argv) {
 
 		Crag crag;
 
-		// get information about the image to read
-		std::string mergeTreePath = optionMergeTree;
+		if (optionMergeTree) {
 
-		if (boost::filesystem::is_directory(boost::filesystem::path(mergeTreePath))) {
+			// get information about the image to read
+			std::string mergeTreePath = optionMergeTree;
 
-			std::vector<std::string> files = getImageFiles(mergeTreePath);
+			if (boost::filesystem::is_directory(boost::filesystem::path(mergeTreePath))) {
 
-			// process one image after another
-			std::vector<Crag> crags(files.size());
+				std::vector<std::string> files = getImageFiles(mergeTreePath);
 
-			int i = 0;
-			for (std::string file : files) {
-				
-				LOG_USER(logger::out) << "reading crag from " << file << std::endl;
+				// process one image after another
+				std::vector<Crag> crags(files.size());
 
-				readCrag(file, crags[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
-				i++;
+				int i = 0;
+				for (std::string file : files) {
+					
+					LOG_USER(logger::out) << "reading crag from " << file << std::endl;
+
+					readCrag(file, crags[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+					i++;
+				}
+
+				// combine crags
+				CragStackCombiner combiner;
+				combiner.combine(crags, crag);
+
+			} else {
+
+				readCrag(mergeTreePath, crag, resolution, offset);
 			}
 
-			// combine crags
-			CragStackCombiner combiner;
-			combiner.combine(crags, crag);
+		} else if (optionSupervoxels.as<bool>() && optionMergeHistory.as<bool>()) {
+
+			readCrag(optionSupervoxels, optionMergeHistory, crag, resolution, offset);
 
 		} else {
 
-			readCrag(mergeTreePath, crag, resolution, offset);
+			LOG_ERROR(logger::out)
+					<< "at least one of mergtree or (supervoxels && mergeHistory) "
+					<< "have to be given to create a CRAG" << std::endl;
 		}
 
 		boost::filesystem::remove(optionProjectFile.as<std::string>());
@@ -166,7 +186,7 @@ int main(int argc, char** argv) {
 			volumeStore.saveBoundaries(boundaries);
 		}
 
-	} catch (boost::exception& e) {
+	} catch (Exception& e) {
 
 		handleException(e, std::cerr);
 	}

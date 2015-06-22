@@ -6,7 +6,9 @@
 #include <crag/MergeTreeParser.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
 
-void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset);
+void readCrag(std::string mergetree, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset);
+
+void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset);
 
 template <typename T>
 ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
