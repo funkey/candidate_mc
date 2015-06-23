@@ -106,11 +106,24 @@ public:
 	      lemon::ListDigraph& getSubsetGraph()          { return _ssg; }
 
 	/**
+	 * Get the bounding box of a candidate.
+	 */
+	util::box<float, 3> getBoundingBox(Crag::Node n) const;
+
+	using Volume::getBoundingBox;
+
+	/**
 	 * Get a node map for the volumes of the candidates. Only leaf candidates 
 	 * will have a non-empty volume.
 	 */
 	const NodeMap<ExplicitVolume<unsigned char>>& getVolumes() const { return _volumes; }
 	      NodeMap<ExplicitVolume<unsigned char>>& getVolumes()       { return _volumes; }
+
+	/**
+	 * Get the volume for a candidate. For non-leaf node candidates, the volume 
+	 * will be created on-the-fly.
+	 */
+	const ExplicitVolume<unsigned char>& getVolume(Crag::Node n) const;
 
 	/**
 	 * Implicit conversion operators for iteratos, node-, edge-, and arc-map 
@@ -166,6 +179,11 @@ protected:
 
 private:
 
+	void recFill(
+			const util::box<float, 3>&     boundingBox,
+			ExplicitVolume<unsigned char>& volume,
+			Crag::Node                     n) const;
+
 	// adjacency graph
 	lemon::ListGraph _rag;
 
@@ -173,7 +191,7 @@ private:
 	lemon::ListDigraph _ssg;
 
 	// volumes of leaf candidates
-	NodeMap<ExplicitVolume<unsigned char>> _volumes;
+	mutable NodeMap<ExplicitVolume<unsigned char>> _volumes;
 
 	vigra::GridGraph<3> _gridGraph;
 

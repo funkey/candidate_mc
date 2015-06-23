@@ -2,3 +2,4 @@ define_module(create_project           BINARY SOURCES create_project.cpp        
 define_module(extract_features         BINARY SOURCES extract_features.cpp        LINKS crag features io util)
 define_module(train                    BINARY SOURCES train.cpp                   LINKS learning crag io util)
 define_module(solve                    BINARY SOURCES solve.cpp                   LINKS crag inference io util)
+define_module(crag_viewer              BINARY SOURCES crag_viewer.cpp             LINKS crag gui io)
