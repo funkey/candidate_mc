@@ -16,8 +16,8 @@ Crag::getBoundingBox(Crag::Node n) const {
 	if (numChildren == 0) {
 
 		// leaf node
-		return getVolumes()[n].getBoundingBox()/
-			   getVolumes()[n].getResolution();
+		return _volumes[n].getBoundingBox()/
+			   _volumes[n].getResolution();
 	}
 
 	return bb;
@@ -25,6 +25,20 @@ Crag::getBoundingBox(Crag::Node n) const {
 
 const ExplicitVolume<unsigned char>&
 Crag::getVolume(Crag::Node n) const {
+
+	if (_volumes[n].getBoundingBox().isZero()) {
+
+		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
+		recFill(nodeBoundingBox, _volumes[n], n);
+
+		UTIL_ASSERT_REL(nodeBoundingBox, ==, _volumes[n].getBoundingBox());
+	}
+
+	return _volumes[n];
+}
+
+ExplicitVolume<unsigned char>&
+Crag::getVolume(Crag::Node n) {
 
 	if (_volumes[n].getBoundingBox().isZero()) {
 
@@ -54,7 +68,11 @@ Crag::recFill(
 
 		const ExplicitVolume<unsigned char>& leaf = _volumes[n];
 
-		util::point<unsigned int, 3> volumeOffset = boundingBox.min();
+		UTIL_ASSERT(!leaf.getBoundingBox().isZero());
+
+		util::point<unsigned int, 3> volumeOffset =
+				boundingBox.min()/
+				leaf.getResolution();
 		util::point<unsigned int, 3> leafOffset =
 				leaf.getBoundingBox().min()/
 				leaf.getResolution();

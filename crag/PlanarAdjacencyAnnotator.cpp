@@ -43,10 +43,10 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-		if (crag.getVolumes()[n].getBoundingBox().isZero())
+		if (!crag.isLeafNode(n))
 			continue;
 
-		resolution = crag.getVolumes()[n].getResolution();
+		resolution = crag.getVolume(n).getResolution();
 		break;
 	}
 
@@ -64,11 +64,11 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-		if (crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
+		if (!crag.isLeafNode(n))
 			continue;
 
-		const util::point<float, 3>&      volumeOffset         = crag.getVolumes()[n].getOffset();
-		const util::box<unsigned int, 3>& volumeDiscreteBB     = crag.getVolumes()[n].getDiscreteBoundingBox();
+		const util::point<float, 3>&      volumeOffset     = crag.getVolume(n).getOffset();
+		const util::box<unsigned int, 3>& volumeDiscreteBB = crag.getVolume(n).getDiscreteBoundingBox();
 
 		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
@@ -78,7 +78,7 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 						volumeDiscreteBB.depth());
 
 		vigra::combineTwoMultiArrays(
-				crag.getVolumes()[n].data(),
+				crag.getVolume(n).data(),
 				ids.subarray(
 						vigra::Shape3(
 								begin.x(),

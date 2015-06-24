@@ -58,8 +58,8 @@ HausdorffDistance::leafDistance(Crag::Node i, Crag::Node j, double& i_j, double&
 		return;
 	}
 
-	const ExplicitVolume<unsigned char>& volume_i = _a.getVolumes()[i];
-	const ExplicitVolume<unsigned char>& volume_j = _b.getVolumes()[j];
+	const ExplicitVolume<unsigned char>& volume_i = _a.getVolume(i);
+	const ExplicitVolume<unsigned char>& volume_j = _b.getVolume(j);
 
 	//std::cout << "checking leaf nodes " << _a.id(i) << "a and " << _b.id(j) << "b" << std::endl;
 	leafDistance(volume_i, volume_j, i_j);

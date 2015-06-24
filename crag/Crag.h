@@ -113,17 +113,27 @@ public:
 	using Volume::getBoundingBox;
 
 	/**
-	 * Get a node map for the volumes of the candidates. Only leaf candidates 
-	 * will have a non-empty volume.
-	 */
-	const NodeMap<ExplicitVolume<unsigned char>>& getVolumes() const { return _volumes; }
-	      NodeMap<ExplicitVolume<unsigned char>>& getVolumes()       { return _volumes; }
-
-	/**
 	 * Get the volume for a candidate. For non-leaf node candidates, the volume 
 	 * will be created on-the-fly.
 	 */
 	const ExplicitVolume<unsigned char>& getVolume(Crag::Node n) const;
+	      ExplicitVolume<unsigned char>& getVolume(Crag::Node n);
+
+	/**
+	 * Low-level access to the volumes stored for each node. Used to populate 
+	 * the leaf nodes with initial volumes.
+	 */
+	NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() { return _volumes; }
+
+	/**
+	 * Return true for candidates that are leaf nodes in the subset graph.
+	 */
+	bool isLeafNode(Crag::Node n) const { return (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID); }
+
+	/**
+	 * Return true for candidates that are root nodes in the subset graph.
+	 */
+	bool isRootNode(Crag::Node n) const { return (SubsetOutArcIt(*this, toSubset(n)) == lemon::INVALID); }
 
 	/**
 	 * Implicit conversion operators for iteratos, node-, edge-, and arc-map 

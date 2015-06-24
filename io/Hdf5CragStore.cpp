@@ -1,5 +1,6 @@
 #include <boost/lexical_cast.hpp>
 #include <util/Logger.h>
+#include <util/assert.h>
 #include "Hdf5CragStore.h"
 
 logger::LogChannel hdf5storelog("hdf5storelog", "[Hdf5CragStore] ");
@@ -20,8 +21,8 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("volumes");
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		if (!crag.getVolumes()[n].getBoundingBox().isZero())
-			writeVolume(crag.getVolumes()[n], boost::lexical_cast<std::string>(crag.id(n)));
+		if (crag.isLeafNode(n))
+			writeVolume(crag.getVolume(n), boost::lexical_cast<std::string>(crag.id(n)));
 }
 
 void
@@ -47,7 +48,9 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 		int id = boost::lexical_cast<int>(vol);
 
 		Crag::Node n = crag.nodeFromId(id);
-		readVolume(crag.getVolumes()[n], vol);
+		readVolume(crag.getVolumeMap()[n], vol);
+
+		UTIL_ASSERT(!crag.getBoundingBox(n).isZero());
 	}
 }
 

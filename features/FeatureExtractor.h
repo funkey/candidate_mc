@@ -46,13 +46,6 @@ private:
 
 	std::pair<int, int> extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::SubsetNode n);
 
-	util::box<float, 3> getBoundingBox(Crag::Node n);
-
-	void recFill(
-			const util::box<float, 3>&           boundingBox,
-			vigra::MultiArray<3, unsigned char>& labelImage,
-			Crag::Node                           n);
-
 	Crag& _crag;
 
 	const ExplicitVolume<float>& _raw;

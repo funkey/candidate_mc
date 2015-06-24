@@ -24,9 +24,9 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 	ids.data().minmax(&_, &maxId);
 
 	std::map<int, util::box<int, 3>> bbs;
-	for (int z = 0; z < ids.depth();  z++)
-	for (int y = 0; y < ids.height(); y++)
-	for (int x = 0; x < ids.width();  x++) {
+	for (unsigned int z = 0; z < ids.depth();  z++)
+	for (unsigned int y = 0; y < ids.height(); y++)
+	for (unsigned int x = 0; x < ids.width();  x++) {
 
 		int id = ids(x, y, z);
 		bbs[id].fit(
@@ -42,20 +42,20 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 		const util::box<int, 3>& bb = p.second;
 
 		Crag::Node n = crag.addNode();
-		crag.getVolumes()[n] = ExplicitVolume<unsigned char>(bb.width(), bb.height(), bb.depth(), 0);
-		crag.getVolumes()[n].setResolution(resolution);
-		crag.getVolumes()[n].setOffset(offset + bb.min()*resolution);
+		crag.getVolumeMap()[n] = ExplicitVolume<unsigned char>(bb.width(), bb.height(), bb.depth(), 0);
+		crag.getVolumeMap()[n].setResolution(resolution);
+		crag.getVolumeMap()[n].setOffset(offset + bb.min()*resolution);
 		idToNode[id] = n;
 	}
 
-	for (int z = 0; z < ids.depth();  z++)
-	for (int y = 0; y < ids.height(); y++)
-	for (int x = 0; x < ids.width();  x++) {
+	for (unsigned int z = 0; z < ids.depth();  z++)
+	for (unsigned int y = 0; y < ids.height(); y++)
+	for (unsigned int x = 0; x < ids.width();  x++) {
 
 		int id = ids(x, y, z);
 		Crag::Node n = idToNode[id];
 
-		crag.getVolumes()[n](x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
+		crag.getVolumeMap()[n](x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
 	}
 
 	std::ifstream file(mergeHistory);

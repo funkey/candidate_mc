@@ -97,7 +97,7 @@ OverlapLoss::recurseOverlapLoss(
 	if (leafNode) {
 
 		LOG_ALL(overlaplosslog) << "getting leaf overlap for node " << crag.id(n) << std::endl;
-		_overlaps[n] = leafOverlaps(crag.getVolumes()[n], groundTruth);
+		_overlaps[n] = leafOverlaps(crag.getVolume(n), groundTruth);
 
 	} else {
 

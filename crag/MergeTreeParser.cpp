@@ -118,7 +118,7 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 
 		volume.setResolution(_resolution);
 		volume.setOffset(volumeOffset);
-		_crag.getVolumes()[node] = std::move(volume);
+		_crag.getVolume(node) = std::move(volume);
 	}
 
 	_isLeafeNode[node] = isLeafNode;

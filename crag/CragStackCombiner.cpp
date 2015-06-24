@@ -69,10 +69,10 @@ CragStackCombiner::copyNodes(const Crag& source, Crag& target) {
 
 		Crag::Node n = target.addNode();
 
-		ExplicitVolume<unsigned char> volume = source.getVolumes()[i];
+		ExplicitVolume<unsigned char> volume = source.getVolume(i);
 
 		if (!volume.getBoundingBox().isZero())
-			target.getVolumes()[n] = volume;
+			target.getVolume(n) = volume;
 
 		nodeMap[i] = n;
 	}
@@ -113,8 +113,8 @@ CragStackCombiner::findLinks(const Crag& a, const Crag& b) {
 
 			if (_requireBbOverlap) {
 
-				util::box<float, 2> bb_i = a.getVolumes()[i].getBoundingBox().project<2>();
-				util::box<float, 2> bb_j = b.getVolumes()[j].getBoundingBox().project<2>();
+				util::box<float, 2> bb_i = a.getVolume(i).getBoundingBox().project<2>();
+				util::box<float, 2> bb_j = b.getVolume(j).getBoundingBox().project<2>();
 
 				if (!bb_i.intersects(bb_j))
 					continue;

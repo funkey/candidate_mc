@@ -155,7 +155,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< _crag.id(n) << std::endl;
 
 		// the bounding box of the volume
-		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
+		const util::box<float, 3>& nodeBoundingBox = _crag.getBoundingBox(n);
 
 		LOG_ALL(featureextractorlog)
 				<< "node volume bounding box is "
@@ -174,12 +174,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< std::endl;
 
 		// the "label" image
-		vigra::MultiArray<3, unsigned char> labelImage(
-				vigra::Shape3(
-						nodeBoundingBox.width(),
-						nodeBoundingBox.height(),
-						nodeBoundingBox.depth()));
-		recFill(nodeBoundingBox, labelImage, n);
+		const vigra::MultiArray<3, unsigned char>& labelImage = _crag.getVolume(n).data();
 
 		LOG_ALL(featureextractorlog)
 				<< "label image has size "
@@ -392,64 +387,6 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 			<< " features per node" << std::endl;
 
 	LOG_USER(featureextractorlog) << "done" << std::endl;
-}
-
-util::box<float, 3>
-FeatureExtractor::getBoundingBox(Crag::Node n) {
-
-	util::box<float, 3> bb;
-
-	int numChildren = 0;
-	for (Crag::SubsetInArcIt e(_crag, _crag.toSubset(n)); e != lemon::INVALID; ++e) {
-
-		bb += getBoundingBox(_crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e)));
-		numChildren++;
-	}
-
-	if (numChildren == 0) {
-
-		// leaf node
-		return _crag.getVolumes()[n].getBoundingBox()/
-			   _crag.getVolumes()[n].getResolution();
-	}
-
-	return bb;
-}
-
-void
-FeatureExtractor::recFill(
-		const util::box<float, 3>&           boundingBox,
-		vigra::MultiArray<3, unsigned char>& labelImage,
-		Crag::Node                           n) {
-
-	int numChildren = 0;
-	for (Crag::SubsetInArcIt e(_crag, _crag.toSubset(n)); e != lemon::INVALID; ++e) {
-
-		recFill(boundingBox, labelImage, _crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e)));
-		numChildren++;
-	}
-
-	if (numChildren == 0) {
-
-		const ExplicitVolume<unsigned char>& volume = _crag.getVolumes()[n];
-
-		util::point<unsigned int, 3> labelImageOffset = boundingBox.min();
-		util::point<unsigned int, 3> nodeVolumeOffset =
-				volume.getBoundingBox().min()/
-				volume.getResolution();
-		util::point<unsigned int, 3> offset = nodeVolumeOffset - labelImageOffset;
-
-		for (unsigned int z = 0; z < volume.depth();  z++)
-		for (unsigned int y = 0; y < volume.height(); y++)
-		for (unsigned int x = 0; x < volume.width();  x++) {
-
-			if (volume(x, y, z) > 0)
-				labelImage(
-						offset.x() + x,
-						offset.y() + y,
-						offset.z() + z) = volume(x, y, z);
-		}
-	}
 }
 
 std::pair<int, int>

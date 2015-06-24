@@ -118,8 +118,6 @@ private:
 			vigra::MultiArray<3, float>& components,
 			float                        value);
 
-	ExplicitVolume<bool> getVolume(Crag::SubsetNode n);
-
 	inline unsigned int nodeIdToVar(int nodeId) { return nodeId; }
 	inline unsigned int edgeIdToVar(int edgeId) { return _edgeIdToVarMap[edgeId]; }
 

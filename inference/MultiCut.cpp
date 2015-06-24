@@ -79,9 +79,9 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		if (_crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
+		if (!_crag.isLeafNode(n))
 			continue;
-		resolution = _crag.getVolumes()[n].getResolution();
+		resolution = _crag.getVolume(n).getResolution();
 		break;
 	}
 
@@ -104,11 +104,11 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		if (_crag.getVolumes()[n].getDiscreteBoundingBox().isZero())
+		if (!_crag.isLeafNode(n))
 			continue;
 
-		const util::point<float, 3>&      volumeOffset     = _crag.getVolumes()[n].getOffset();
-		const util::box<unsigned int, 3>& volumeDiscreteBB = _crag.getVolumes()[n].getDiscreteBoundingBox();
+		const util::point<float, 3>&      volumeOffset     = _crag.getVolume(n).getOffset();
+		const util::box<unsigned int, 3>& volumeDiscreteBB = _crag.getVolume(n).getDiscreteBoundingBox();
 
 		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
@@ -119,7 +119,7 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 
 		// fill id of connected component
 		vigra::combineTwoMultiArrays(
-				_crag.getVolumes()[n].data(),
+				_crag.getVolume(n).data(),
 				components.subarray(
 						vigra::Shape3(
 								begin.x(),
@@ -509,7 +509,7 @@ MultiCut::drawBoundary(
 		vigra::MultiArray<3, float>& components,
 		float                        value) {
 
-	ExplicitVolume<bool> volume = getVolume(_crag.toSubset(n));
+	ExplicitVolume<bool> volume = _crag.getVolume(n);
 	const util::box<unsigned int, 3>& volumeDiscreteBB = volume.getDiscreteBoundingBox();
 	const util::point<float, 3>&      volumeOffset     = volume.getOffset();
 	util::point<unsigned int, 3>      begin            = (volumeOffset - _crag.getBoundingBox().min())/volume.getResolution();
@@ -554,73 +554,5 @@ MultiCut::drawBoundary(
 			}
 		}
 	}
-}
-
-ExplicitVolume<bool>
-MultiCut::getVolume(Crag::SubsetNode n) {
-
-	// bounding box of the volume of node n
-	util::box<float, 3> bb;
-
-	// volumes of all children
-	std::vector<ExplicitVolume<bool>> childVolumes;
-
-	// resolution of volumes
-	util::point<float, 3> resolution;
-
-	unsigned int children = 0;
-	for (Crag::SubsetInArcIt e(_crag.getSubsetGraph(), n); e != lemon::INVALID; ++e) {
-
-		Crag::SubsetNode child = _crag.getSubsetGraph().source(e);
-
-		childVolumes.push_back(getVolume(child));
-		bb.fit(childVolumes.back().getBoundingBox());
-
-		if (resolution.isZero()) {
-
-			resolution = childVolumes.back().getResolution();
-
-		} else {
-
-			if (resolution != childVolumes.back().getResolution())
-				UTIL_THROW_EXCEPTION(
-						Exception,
-						"volumes in CRAG have different resolutions");
-		}
-
-		children++;
-	}
-
-	// we are a leaf node
-	if (children == 0)
-		return _crag.getVolumes()[_crag.toRag(n)];
-
-	util::box<unsigned int, 3> dbb = (bb - bb.min())/resolution;
-
-	ExplicitVolume<bool> volume(dbb.width(), dbb.height(), dbb.depth());
-	volume.setResolution(resolution);
-	volume.setOffset(bb.min());
-
-	for (const ExplicitVolume<bool>& childVolume : childVolumes) {
-
-		util::box<unsigned int, 3>   childDbb     = childVolume.getDiscreteBoundingBox();
-		util::point<unsigned int, 3> childDOffset = (childVolume.getOffset() - volume.getOffset())/resolution;
-
-		LOG_ALL(multicutlog) << "child size " << childDbb << std::endl;
-
-		for (unsigned int z = 0; z < childDbb.depth();  z++)
-		for (unsigned int y = 0; y < childDbb.height(); y++)
-		for (unsigned int x = 0; x < childDbb.width();  x++) {
-
-			LOG_ALL(multicutlog) << "testing child " << x << ", " << y << ", " << z << std::endl;
-			if (childVolume(x, y, z))
-				volume.data()(
-						childDOffset.x() + x,
-						childDOffset.y() + y,
-						childDOffset.z() + z) = true;
-		}
-	}
-
-	return volume;
 }
 
