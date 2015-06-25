@@ -41,7 +41,8 @@ class MeshViewController :
 		public sg::Agent<
 				MeshViewController,
 				sg::Accepts<
-						sg_gui::VolumePointSelected
+						sg_gui::VolumePointSelected,
+						sg_gui::MouseDown
 				>,
 				sg::Provides<
 						sg_gui::SetMeshes
@@ -58,7 +59,15 @@ public:
 
 	void onSignal(sg_gui::VolumePointSelected& signal);
 
+	void onSignal(sg_gui::MouseDown& signal);
+
 private:
+
+	void nextVolume();
+
+	void prevVolume();
+
+	void loadMesh(Crag::Node n);
 
 	void addMesh(Crag::Node n);
 
@@ -69,6 +78,12 @@ private:
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 
 	std::shared_ptr<sg_gui::Meshes> _meshes;
+
+	std::map<Crag::Node, std::shared_ptr<sg_gui::Mesh>> _meshCache;
+
+	Crag::Node _current;
+
+	std::vector<Crag::Node> _path;
 };
 
 #endif // CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__

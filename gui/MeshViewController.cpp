@@ -12,7 +12,8 @@ MeshViewController::MeshViewController(
 		std::shared_ptr<ExplicitVolume<float>> labels) :
 	_crag(crag),
 	_labels(labels),
-	_meshes(std::make_shared<sg_gui::Meshes>()) {}
+	_meshes(std::make_shared<sg_gui::Meshes>()),
+	_current(lemon::INVALID) {}
 
 void
 MeshViewController::loadMeshes(const std::vector<Crag::Node>& nodes) {
@@ -40,13 +41,83 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 	if (_meshes->contains(_crag.id(n)))
 		removeMesh(n);
 	else
-		addMesh(n);
+		loadMesh(n);
+
+	_current = n;
+	_path.clear();
 
 	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
+MeshViewController::onSignal(sg_gui::MouseDown& signal) {
+
+	if (signal.processed)
+		return;
+
+	if (signal.button == sg_gui::buttons::WheelUp && signal.modifiers & sg_gui::keys::ShiftDown)
+		nextVolume();
+	else if (signal.button == sg_gui::buttons::WheelDown && signal.modifiers & sg_gui::keys::ShiftDown)
+		prevVolume();
+	else
+		return;
+
+	signal.processed = true;
+}
+
+void
+MeshViewController::nextVolume() {
+
+	if (_current == lemon::INVALID)
+		return;
+
+	Crag::SubsetOutArcIt parentEdge(_crag, _crag.toSubset(_current));
+
+	if (parentEdge == lemon::INVALID)
+		return;
+
+	Crag::Node parent = _crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(_current), parentEdge));
+
+	_path.push_back(_current);
+	_current = parent;
+
+	loadMesh(_current);
+
+	send<sg_gui::SetMeshes>(_meshes);
+}
+
+void
+MeshViewController::prevVolume() {
+
+	if (_current == lemon::INVALID)
+		return;
+
+	if (_path.size() == 0)
+		return;
+
+	_current = _path.back();
+	_path.pop_back();
+
+	loadMesh(_current);
+
+	send<sg_gui::SetMeshes>(_meshes);
+}
+
+void
+MeshViewController::loadMesh(Crag::Node n) {
+
+	_meshes->clear();
+	addMesh(n);
+}
+
+void
 MeshViewController::addMesh(Crag::Node n) {
+
+	if (_meshCache.count(n)) {
+
+		_meshes->add(_crag.id(n), _meshCache[n]);
+		return;
+	}
 
 	const ExplicitVolume<unsigned char>& volume = _crag.getVolume(n);
 
@@ -61,6 +132,8 @@ MeshViewController::addMesh(Crag::Node n) {
 			optionCubeSize,
 			optionCubeSize);
 	_meshes->add(_crag.id(n), mesh);
+
+	_meshCache[n] = mesh;
 }
 
 void
