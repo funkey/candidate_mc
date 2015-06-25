@@ -16,8 +16,7 @@ Crag::getBoundingBox(Crag::Node n) const {
 	if (numChildren == 0) {
 
 		// leaf node
-		return _volumes[n].getBoundingBox()/
-			   _volumes[n].getResolution();
+		return _volumes[n].getBoundingBox();
 	}
 
 	return bb;

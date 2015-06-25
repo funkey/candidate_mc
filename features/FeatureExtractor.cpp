@@ -155,18 +155,30 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< _crag.id(n) << std::endl;
 
 		// the bounding box of the volume
-		const util::box<float, 3>& nodeBoundingBox = _crag.getBoundingBox(n);
+		const util::box<float, 3>&   nodeBoundingBox    = _crag.getBoundingBox(n);
+		util::point<unsigned int, 3> nodeSize           = (nodeBoundingBox.max() - nodeBoundingBox.min())/_crag.getVolume(n).getResolution();
+		util::point<float, 3>        nodeOffset         = nodeBoundingBox.min() - _raw.getBoundingBox().min();
+		util::point<unsigned int, 3> nodeDiscreteOffset = nodeOffset/_crag.getVolume(n).getResolution();
 
 		LOG_ALL(featureextractorlog)
 				<< "node volume bounding box is "
 				<< nodeBoundingBox << std::endl;
+		LOG_ALL(featureextractorlog)
+				<< "node volume discrete size is "
+				<< nodeSize << std::endl;
 
 		// a view to the raw image for the node bounding box
 		typedef vigra::MultiArrayView<3, float>::difference_type Shape;
 		vigra::MultiArrayView<3, float> rawNodeImage =
 				_raw.data().subarray(
-						Shape(nodeBoundingBox.min().x(), nodeBoundingBox.min().y(), nodeBoundingBox.min().z()),
-						Shape(nodeBoundingBox.max().x(), nodeBoundingBox.max().y(), nodeBoundingBox.max().z()));
+						Shape(
+								nodeDiscreteOffset.x(),
+								nodeDiscreteOffset.y(),
+								nodeDiscreteOffset.z()),
+						Shape(
+								nodeDiscreteOffset.x() + nodeSize.x(),
+								nodeDiscreteOffset.y() + nodeSize.y(),
+								nodeDiscreteOffset.z() + nodeSize.z()));
 
 		LOG_ALL(featureextractorlog)
 				<< "raw image has size "
@@ -184,7 +196,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		// an adaptor to access the feature map with the right node
 		FeatureNodeAdaptor adaptor(n, nodeFeatures);
 
-		if (nodeBoundingBox.depth() == 1) {
+		if (nodeSize.z() == 1) {
 
 			RegionFeatures<2, float, unsigned char>::Parameters p;
 			p.computeRegionprops = optionShapeFeatures;
@@ -221,10 +233,16 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 			vigra::MultiArrayView<3, float> boundariesNodeImage =
 					_boundaries.data().subarray(
-							Shape(nodeBoundingBox.min().x(), nodeBoundingBox.min().y(), nodeBoundingBox.min().z()),
-							Shape(nodeBoundingBox.max().x(), nodeBoundingBox.max().y(), nodeBoundingBox.max().z()));
+						Shape(
+								nodeDiscreteOffset.x(),
+								nodeDiscreteOffset.y(),
+								nodeDiscreteOffset.z()),
+						Shape(
+								nodeDiscreteOffset.x() + nodeSize.x(),
+								nodeDiscreteOffset.y() + nodeSize.y(),
+								nodeDiscreteOffset.z() + nodeSize.z()));
 
-			if (nodeBoundingBox.depth() == 1) {
+			if (nodeSize.z() == 1) {
 
 				RegionFeatures<2, float, unsigned char>::Parameters p;
 				if (optionNoCoordinatesStatistics)
@@ -249,9 +267,9 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 			if (optionBoundariesBoundaryFeatures) {
 
-				unsigned int width  = nodeBoundingBox.width();
-				unsigned int height = nodeBoundingBox.height();
-				unsigned int depth  = nodeBoundingBox.depth();
+				unsigned int width  = nodeSize.x();
+				unsigned int height = nodeSize.y();
+				unsigned int depth  = nodeSize.z();
 
 				// create the boundary image by erosion and substraction...
 				vigra::MultiArray<3, unsigned char> erosionImage(labelImage.shape());
