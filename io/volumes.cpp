@@ -1,4 +1,5 @@
 #include <fstream>
+#include <util/Logger.h>
 #include "volumes.h"
 
 void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
@@ -22,6 +23,8 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 
 	int _, maxId;
 	ids.data().minmax(&_, &maxId);
+
+	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << _ << " and " << maxId << std::endl;
 
 	std::map<int, util::box<int, 3>> bbs;
 	for (unsigned int z = 0; z < ids.depth();  z++)
@@ -61,7 +64,7 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 	std::ifstream file(mergeHistory);
 	if (file.fail()) {
 
-		std::cerr << "could not read merge history" << std::endl;
+		LOG_ERROR(logger::out) << "could not read merge history" << std::endl;
 		return;
 	}
 
@@ -75,6 +78,11 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 
 		Crag::Node n = crag.addNode();
 		idToNode[c] = n;
+
+		if (!idToNode.count(a))
+			std::cerr << "node " << a << " is used for merging, but was not encountered before" << std::endl;
+		if (!idToNode.count(b))
+			std::cerr << "node " << b << " is used for merging, but was not encountered before" << std::endl;
 
 		crag.addSubsetArc(
 				idToNode[a],
@@ -106,8 +114,6 @@ getImageFiles(std::string path) {
 				filenames.push_back(i->path().native());
 
 		std::sort(filenames.begin(), filenames.end());
-
-		filenames.resize(2);
 
 	} else {
 
