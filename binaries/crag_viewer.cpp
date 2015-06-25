@@ -52,11 +52,10 @@ int main(int argc, char** argv) {
 
 		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-			const ExplicitVolume<unsigned char>& volume = crag.getVolume(n);
-
-			if (volume.getBoundingBox().isZero())
+			if (!crag.isLeafNode(n))
 				continue;
 
+			const ExplicitVolume<unsigned char>& volume = crag.getVolume(n);
 			util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
 
 			for (int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
