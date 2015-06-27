@@ -126,6 +126,12 @@ public:
 	NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() { return _volumes; }
 
 	/**
+	 * Get the level of a node, i.e., the size of the longest subset-tree path 
+	 * to a leaf node. Leaf nodes have a value of zero.
+	 */
+	int getLevel(Crag::Node n) const;
+
+	/**
 	 * Return true for candidates that are leaf nodes in the subset graph.
 	 */
 	bool isLeafNode(Crag::Node n) const { return (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID); }

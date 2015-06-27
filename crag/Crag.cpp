@@ -50,6 +50,21 @@ Crag::getVolume(Crag::Node n) {
 	return _volumes[n];
 }
 
+int
+Crag::getLevel(Crag::Node n) const {
+
+	if (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID)
+		return 0;
+
+	int level = 0;
+	for (SubsetInArcIt e(*this, toSubset(n)); e != lemon::INVALID; ++e) {
+
+		level = std::max(getLevel(toRag(getSubsetGraph().oppositeNode(toSubset(n), e))), level);
+	}
+
+	return level + 1;
+}
+
 void
 Crag::recFill(
 		const util::box<float, 3>&     boundingBox,
