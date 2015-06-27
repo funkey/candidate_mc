@@ -13,7 +13,8 @@ MeshViewController::MeshViewController(
 	_crag(crag),
 	_labels(labels),
 	_meshes(std::make_shared<sg_gui::Meshes>()),
-	_current(lemon::INVALID) {}
+	_current(lemon::INVALID),
+	_currentNeighbor(-1) {}
 
 void
 MeshViewController::loadMeshes(const std::vector<Crag::Node>& nodes) {
@@ -38,15 +39,15 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 	if (n == lemon::INVALID)
 		return;
 
-	if (_meshes->contains(_crag.id(n)))
+	if (_meshes->contains(_crag.id(n))) {
+
+		_current = lemon::INVALID;
 		removeMesh(n);
-	else
-		loadMesh(n);
 
-	_current = n;
+	} else
+		showSingleMesh(n);
+
 	_path.clear();
-
-	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
@@ -59,6 +60,10 @@ MeshViewController::onSignal(sg_gui::MouseDown& signal) {
 		nextVolume();
 	else if (signal.button == sg_gui::buttons::WheelDown && signal.modifiers & sg_gui::keys::ShiftDown)
 		prevVolume();
+	else if (signal.button == sg_gui::buttons::WheelUp && signal.modifiers & sg_gui::keys::AltDown)
+		nextNeighbor();
+	else if (signal.button == sg_gui::buttons::WheelDown && signal.modifiers & sg_gui::keys::AltDown)
+		prevNeighbor();
 	else
 		return;
 
@@ -77,13 +82,9 @@ MeshViewController::nextVolume() {
 		return;
 
 	Crag::Node parent = _crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(_current), parentEdge));
-
 	_path.push_back(_current);
-	_current = parent;
 
-	loadMesh(_current);
-
-	send<sg_gui::SetMeshes>(_meshes);
+	showSingleMesh(parent);
 }
 
 void
@@ -95,19 +96,65 @@ MeshViewController::prevVolume() {
 	if (_path.size() == 0)
 		return;
 
-	_current = _path.back();
+	std::cout << "foo" << std::endl;
+
+	Crag::Node child = _path.back();
 	_path.pop_back();
 
-	loadMesh(_current);
+	showSingleMesh(child);
+}
+
+void
+MeshViewController::nextNeighbor() {
+
+	std::cout << "showing next neighbor" << std::endl;
+
+	if (_neighbors.size() == 0)
+		return;
+
+	if (_currentNeighbor >= 0)
+		removeMesh(_neighbors[_currentNeighbor]);
+
+	_currentNeighbor = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
+
+	addMesh(_neighbors[_currentNeighbor]);
 
 	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void
-MeshViewController::loadMesh(Crag::Node n) {
+MeshViewController::prevNeighbor() {
 
+	std::cout << "showing prev neighbor" << std::endl;
+
+	if (_neighbors.size() == 0)
+		return;
+
+	if (_currentNeighbor >= 0)
+		removeMesh(_neighbors[_currentNeighbor]);
+
+	_currentNeighbor = std::max(0, _currentNeighbor - 1);
+
+	addMesh(_neighbors[_currentNeighbor]);
+
+	send<sg_gui::SetMeshes>(_meshes);
+}
+
+void
+MeshViewController::showSingleMesh(Crag::Node n) {
+
+	_current = n;
 	_meshes->clear();
 	addMesh(n);
+
+	_neighbors.clear();
+	for (Crag::IncEdgeIt e(_crag, _current); e != lemon::INVALID; ++e)
+		_neighbors.push_back(_crag.getAdjacencyGraph().oppositeNode(_current, e));
+	_currentNeighbor = -1;
+
+	std::cout << "found " << _neighbors.size() << " neighbors" << std::endl;
+
+	send<sg_gui::SetMeshes>(_meshes);
 }
 
 void

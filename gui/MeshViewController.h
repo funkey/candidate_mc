@@ -67,7 +67,11 @@ private:
 
 	void prevVolume();
 
-	void loadMesh(Crag::Node n);
+	void nextNeighbor();
+
+	void prevNeighbor();
+
+	void showSingleMesh(Crag::Node n);
 
 	void addMesh(Crag::Node n);
 
@@ -84,6 +88,10 @@ private:
 	Crag::Node _current;
 
 	std::vector<Crag::Node> _path;
+
+	std::vector<Crag::Node> _neighbors;
+
+	int _currentNeighbor;
 };
 
 #endif // CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__
