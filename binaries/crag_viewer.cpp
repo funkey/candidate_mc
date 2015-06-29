@@ -20,6 +20,10 @@ util::ProgramOption optionProjectFile(
 		util::_description_text = "The project file to read the CRAG from.",
 		util::_default_value    = "project.hdf");
 
+util::ProgramOption optionShowLabels(
+		util::_long_name        = "showLabels",
+		util::_description_text = "Instead of showing the CRAG leaf nodes, show the labels (i.e., a segmentation) stored in the project file.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -35,12 +39,24 @@ int main(int argc, char** argv) {
 		// get crag
 
 		Crag crag;
-		cragStore.retrieveCrag(crag);
+
+		try {
+
+			cragStore.retrieveCrag(crag);
+
+		} catch (std::exception& e) {
+
+			LOG_USER(logger::out) << "could not find a CRAG" << std::endl;
+		}
 
 		// get intensities and supervoxel labels
 
 		auto intensities = std::make_shared<ExplicitVolume<float>>();
 		volumeStore.retrieveIntensities(*intensities);
+		intensities->normalize();
+		float min, max;
+		intensities->data().minmax(&min, &max);
+
 		auto supervoxels =
 				std::make_shared<ExplicitVolume<float>>(
 						intensities->width(),
@@ -50,24 +66,33 @@ int main(int argc, char** argv) {
 		supervoxels->setOffset(intensities->getOffset());
 		supervoxels->data() = 0;
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		if (optionShowLabels) {
 
-			if (!crag.isLeafNode(n))
-				continue;
+			ExplicitVolume<int> labels;
+			volumeStore.retrieveLabels(labels);
+			supervoxels->data() = labels.data();
 
-			const ExplicitVolume<unsigned char>& volume = crag.getVolume(n);
-			util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+		} else {
 
-			for (int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
-			for (int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
-			for (int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-				if (volume.data()(x, y, z))
-					(*supervoxels)(
-							offset.x() + x,
-							offset.y() + y,
-							offset.z() + z)
-									= crag.id(n);
+				if (!crag.isLeafNode(n))
+					continue;
+
+				const ExplicitVolume<unsigned char>& volume = crag.getVolume(n);
+				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+
+				for (int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+				for (int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+				for (int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+
+					if (volume.data()(x, y, z))
+						(*supervoxels)(
+								offset.x() + x,
+								offset.y() + y,
+								offset.z() + z)
+										= crag.id(n);
+				}
 			}
 		}
 
