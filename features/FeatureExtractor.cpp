@@ -124,11 +124,17 @@ FeatureExtractor::extract(
 void
 FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
-	LOG_USER(featureextractorlog) << "extracting node features" << std::endl;
+	int numNodes = 0;
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		numNodes++;
+
+	LOG_USER(featureextractorlog) << "extracting features for " << numNodes << " nodes" << std::endl;
 
 	//////////////////////////
 	// TOPOLOGICAL FEATURES //
 	//////////////////////////
+
+	LOG_DEBUG(featureextractorlog) << "extracting topological node features..." << std::endl;
 
 	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
 
@@ -146,7 +152,14 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 	// REGION FEATURES //
 	/////////////////////
 
+	LOG_DEBUG(featureextractorlog) << "extracting region node features..." << std::endl;
+
+	int i = 0;
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		if (i%10 == 0)
+			LOG_USER(featureextractorlog) << logger::delline << i << "/" << numNodes << std::flush;
+		i++;
 
 		UTIL_TIME_SCOPE("extract node region features");
 
@@ -196,7 +209,12 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		// an adaptor to access the feature map with the right node
 		FeatureNodeAdaptor adaptor(n, nodeFeatures);
 
-		if (nodeSize.z() == 1) {
+		LOG_ALL(featureextractorlog)
+				<< "computing region features..."
+				<< std::endl;
+
+		// flat candidates, extract 2D features
+		if (_crag.getBoundingBox().depth()/_crag.getVolume(n).getResolution().z() == 1) {
 
 			RegionFeatures<2, float, unsigned char>::Parameters p;
 			p.computeRegionprops = optionShapeFeatures;
@@ -212,6 +230,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 			regionFeatures.fill(adaptor);
 
+		// volumetric candidates
 		} else {
 
 			RegionFeatures<3, float, unsigned char>::Parameters p;
@@ -230,6 +249,10 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		}
 
 		if (optionBoundariesFeatures) {
+
+			LOG_ALL(featureextractorlog)
+					<< "computing region features on boundary map..."
+					<< std::endl;
 
 			vigra::MultiArrayView<3, float> boundariesNodeImage =
 					_boundaries.data().subarray(
@@ -266,6 +289,10 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 			}
 
 			if (optionBoundariesBoundaryFeatures) {
+
+				LOG_ALL(featureextractorlog)
+						<< "computing boundary region features on boundary map..."
+						<< std::endl;
 
 				unsigned int width  = nodeSize.x();
 				unsigned int height = nodeSize.y();
@@ -331,7 +358,9 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		}
 	}
 
-	LOG_USER(featureextractorlog) << "extracted " << nodeFeatures.dims() << " features" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< std::endl << "extracted " << nodeFeatures.dims()
+			<< " features per node" << std::endl;
 
 	///////////////////
 	// NORMALIZATION //
@@ -439,6 +468,8 @@ FeatureExtractor::extractEdgeFeatures(
 		const NodeFeatures& nodeFeatures,
 		EdgeFeatures&       edgeFeatures) {
 
+	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
+
 	///////////////////
 	// NORMALIZATION //
 	///////////////////
@@ -504,4 +535,9 @@ FeatureExtractor::extractEdgeFeatures(
 	// append a 1 for bias
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
 		edgeFeatures.append(e, 1);
+
+	LOG_USER(featureextractorlog)
+			<< "after postprocessing, we have "
+			<< edgeFeatures.dims()
+			<< " features per edge" << std::endl;
 }
