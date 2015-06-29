@@ -1,6 +1,11 @@
 #include <fstream>
 #include <util/Logger.h>
+#include <util/ProgramOptions.h>
 #include "volumes.h"
+
+util::ProgramOption optionMaxMerges(
+		util::_long_name        = "maxMerges",
+		util::_description_text = "The maximal depth of the CRAG subset tree, starting counting from the leaf nodes.");
 
 void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
 
@@ -18,6 +23,10 @@ void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution
 }
 
 void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+
+	int maxMerges = -1;
+	if (optionMaxMerges)
+		maxMerges = optionMaxMerges;
 
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(superpixels));
 
@@ -75,6 +84,22 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 		file >> c;
 		if (!file.good())
 			break;
+
+		// are we limiting the number of merges?
+		if (maxMerges >= 0) {
+
+			// we might encounter ids that we didn't add, since they are too 
+			// high in the merge tree
+			if (!idToNode.count(a))
+				continue;
+			if (!idToNode.count(b))
+				continue;
+
+			if (crag.getLevel(idToNode[a]) >= maxMerges)
+				continue;
+			if (crag.getLevel(idToNode[b]) >= maxMerges)
+				continue;
+		}
 
 		Crag::Node n = crag.addNode();
 		idToNode[c] = n;
