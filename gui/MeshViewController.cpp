@@ -1,6 +1,9 @@
 #include "MeshViewController.h"
 #include <sg_gui/MarchingCubes.h>
 #include <util/ProgramOptions.h>
+#include <util/Logger.h>
+
+logger::LogChannel meshviewcontrollerlog("meshviewcontrollerlog", "[MeshViewController] ");
 
 util::ProgramOption optionCubeSize(
 		util::_long_name        = "cubeSize",
@@ -34,6 +37,9 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 			signal.position().y(),
 			signal.position().z(),
 			x, y, z);
+
+	LOG_USER(meshviewcontrollerlog) << "volume with id " << (*_labels)(x, y, z) << " selected" << std::endl;
+
 	Crag::Node n = _crag.nodeFromId((*_labels)(x, y, z));
 
 	if (n == lemon::INVALID)
