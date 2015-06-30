@@ -147,6 +147,43 @@ int main(int argc, char** argv) {
 					<< "have to be given to create a CRAG" << std::endl;
 		}
 
+		int numNodes = 0;
+		int numRootNodes = 0;
+		double sumSubsetDepth = 0;
+		int maxSubsetDepth = 0;
+		int minSubsetDepth = 1e6;
+
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+			if (crag.isRootNode(n)) {
+
+				int depth = crag.getLevel(n);
+
+				sumSubsetDepth += depth;
+				minSubsetDepth = std::min(minSubsetDepth, depth);
+				maxSubsetDepth = std::max(minSubsetDepth, depth);
+				numRootNodes++;
+			}
+
+			numNodes++;
+		}
+
+		int numAdjEdges = 0;
+		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+			numAdjEdges++;
+		int numSubEdges = 0;
+		for (Crag::SubsetArcIt e(crag); e != lemon::INVALID; ++e)
+			numSubEdges++;
+
+		LOG_USER(logger::out) << "created CRAG" << std::endl;
+		LOG_USER(logger::out) << "\t# nodes          : " << numNodes << std::endl;
+		LOG_USER(logger::out) << "\t# root nodes     : " << numRootNodes << std::endl;
+		LOG_USER(logger::out) << "\t# adjacencies    : " << numAdjEdges << std::endl;
+		LOG_USER(logger::out) << "\t# subset edges   : " << numSubEdges << std::endl;
+		LOG_USER(logger::out) << "\tmax subset depth : " << maxSubsetDepth << std::endl;
+		LOG_USER(logger::out) << "\tmin subset depth : " << minSubsetDepth << std::endl;
+		LOG_USER(logger::out) << "\tmean subset depth: " << sumSubsetDepth/numRootNodes << std::endl;
+
 		boost::filesystem::remove(optionProjectFile.as<std::string>());
 		Hdf5CragStore store(optionProjectFile.as<std::string>());
 		store.saveCrag(crag);
