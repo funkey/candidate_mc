@@ -8,8 +8,11 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
+#include <util/timing.h>
 #include <crag/Crag.h>
 #include <crag/CragStackCombiner.h>
+#include <crag/DownSampler.h>
+#include <crag/PlanarAdjacencyAnnotator.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/volumes.h>
@@ -30,6 +33,10 @@ util::ProgramOption optionSupervoxels(
 util::ProgramOption optionMergeHistory(
 		util::_long_name        = "mergeHistory",
 		util::_description_text = "A file containing lines 'a b c' to indicate that regions a and b merged into region c.");
+
+util::ProgramOption optionMergeScores(
+		util::_long_name        = "mergeScores",
+		util::_description_text = "An optional file containing the scores of the merges in mergeHistory. See maxMergeScore.");
 
 util::ProgramOption optionIntensities(
 		util::_long_name        = "intensities",
@@ -88,6 +95,51 @@ util::ProgramOption optionOffsetZ(
 		util::_description_text = "The z offset of the input images.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionDownsampleCrag(
+		util::_long_name        = "downSampleCrag",
+		util::_description_text = "Reduce the number of candidates in the CRAG by removing candidates smaller than minCandidateSize, "
+		                          "followed by contraction of single children with their parents.");
+
+util::ProgramOption optionMinCandidateSize(
+		util::_long_name        = "minCandidateSize",
+		util::_description_text = "The minimal size for a candidate to keep it during downsampling (see downSampleCrag).",
+		util::_default_value    = 100);
+
+util::ProgramOption optionAppendSegmentationOnly(
+		util::_long_name        = "appendSegmentationOnly",
+		util::_description_text = "Instead of creating a new project, convert the extracted CRAG into a segmentation and store it "
+		                          "in the given project file. This assumes that the CRAG in the given project file uses the same "
+		                          "leave nodes. A segmentation is created by grouping all leaf nodes under each root node together. "
+		                          "Use it together with options maxMerges and maxMergeScore.");
+
+util::ProgramOption optionSegmentationName(
+		util::_long_name        = "segmentationName",
+		util::_description_text = "The name under which to store the segmentation (see option appendSegmentationOnly).");
+
+std::set<Crag::Node>
+collectLeafNodes(const Crag& crag, Crag::Node n) {
+
+	std::set<Crag::Node> leafNodes;
+
+	if (crag.isLeafNode(n)) {
+
+		leafNodes.insert(n);
+
+	} else {
+
+		for (Crag::SubsetInArcIt e(crag, crag.toSubset(n)); e != lemon::INVALID; ++e) {
+
+			Crag::Node child = crag.toRag(crag.getSubsetGraph().source(e));
+			std::set<Crag::Node> leafs = collectLeafNodes(crag, child);
+
+			for (Crag::Node l : leafs)
+				leafNodes.insert(l);
+		}
+	}
+
+	return leafNodes;
+}
+
 int main(int argc, char** argv) {
 
 	try {
@@ -104,9 +156,11 @@ int main(int argc, char** argv) {
 				optionOffsetY,
 				optionOffsetZ);
 
-		Crag crag;
+		Crag* crag = new Crag();
 
 		if (optionMergeTree) {
+
+			UTIL_TIME_SCOPE("read CRAG from mergetree");
 
 			// get information about the image to read
 			std::string mergeTreePath = optionMergeTree;
@@ -129,22 +183,67 @@ int main(int argc, char** argv) {
 
 				// combine crags
 				CragStackCombiner combiner;
-				combiner.combine(crags, crag);
+				combiner.combine(crags, *crag);
 
 			} else {
 
-				readCrag(mergeTreePath, crag, resolution, offset);
+				readCrag(mergeTreePath, *crag, resolution, offset);
 			}
 
 		} else if (optionSupervoxels.as<bool>() && optionMergeHistory.as<bool>()) {
 
-			readCrag(optionSupervoxels, optionMergeHistory, crag, resolution, offset);
+			UTIL_TIME_SCOPE("read CRAG from merge history");
+
+			readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, resolution, offset);
 
 		} else {
 
 			LOG_ERROR(logger::out)
 					<< "at least one of mergtree or (supervoxels && mergeHistory) "
 					<< "have to be given to create a CRAG" << std::endl;
+
+			return 1;
+		}
+
+		if (optionAppendSegmentationOnly) {
+
+			// we do that before downsampling, since we want to make sure we 
+			// still have all the leaf nodes
+
+			std::vector<std::set<Crag::Node>> segmentation;
+			for (Crag::NodeIt n(*crag); n != lemon::INVALID; ++n) {
+
+				if (crag->isRootNode(n))
+					segmentation.push_back(collectLeafNodes(*crag, n));
+			}
+
+			Hdf5CragStore store(optionProjectFile.as<std::string>());
+			store.saveSegmentation(*crag, segmentation, optionSegmentationName);
+
+			LOG_USER(logger::out)
+					<< "appended segmentation with " << segmentation.size()
+					<< " segments to project file" << std::endl;
+			return 0;
+		}
+
+		if (optionDownsampleCrag) {
+
+			UTIL_TIME_SCOPE("downsample CRAG");
+
+			Crag* downSampled = new Crag();
+
+			DownSampler downSampler(optionMinCandidateSize.as<int>());
+			downSampler.process(*crag, downSampled);
+
+			delete crag;
+			crag = downSampled;
+		}
+
+		{
+			UTIL_TIME_SCOPE("find CRAG adjacencies");
+
+			PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
+			annotator.annotate(*crag);
 		}
 
 		int numNodes = 0;
@@ -153,15 +252,15 @@ int main(int argc, char** argv) {
 		int maxSubsetDepth = 0;
 		int minSubsetDepth = 1e6;
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		for (Crag::NodeIt n(*crag); n != lemon::INVALID; ++n) {
 
-			if (crag.isRootNode(n)) {
+			if (crag->isRootNode(n)) {
 
-				int depth = crag.getLevel(n);
+				int depth = crag->getLevel(n);
 
 				sumSubsetDepth += depth;
 				minSubsetDepth = std::min(minSubsetDepth, depth);
-				maxSubsetDepth = std::max(minSubsetDepth, depth);
+				maxSubsetDepth = std::max(maxSubsetDepth, depth);
 				numRootNodes++;
 			}
 
@@ -169,10 +268,10 @@ int main(int argc, char** argv) {
 		}
 
 		int numAdjEdges = 0;
-		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+		for (Crag::EdgeIt e(*crag); e != lemon::INVALID; ++e)
 			numAdjEdges++;
 		int numSubEdges = 0;
-		for (Crag::SubsetArcIt e(crag); e != lemon::INVALID; ++e)
+		for (Crag::SubsetArcIt e(*crag); e != lemon::INVALID; ++e)
 			numSubEdges++;
 
 		LOG_USER(logger::out) << "created CRAG" << std::endl;
@@ -184,44 +283,55 @@ int main(int argc, char** argv) {
 		LOG_USER(logger::out) << "\tmin subset depth : " << minSubsetDepth << std::endl;
 		LOG_USER(logger::out) << "\tmean subset depth: " << sumSubsetDepth/numRootNodes << std::endl;
 
-		boost::filesystem::remove(optionProjectFile.as<std::string>());
-		Hdf5CragStore store(optionProjectFile.as<std::string>());
-		store.saveCrag(crag);
+		{
+			UTIL_TIME_SCOPE("saving CRAG");
 
-		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
+			boost::filesystem::remove(optionProjectFile.as<std::string>());
+			Hdf5CragStore store(optionProjectFile.as<std::string>());
+			store.saveCrag(*crag);
+		}
 
-		ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
-		intensities.setResolution(resolution);
-		intensities.setOffset(offset);
-		intensities.normalize();
-		volumeStore.saveIntensities(intensities);
+		{
 
-		if (optionGroundTruth) {
+			UTIL_TIME_SCOPE("saving volumes");
 
-			ExplicitVolume<int> groundTruth = readVolume<int>(getImageFiles(optionGroundTruth));
+			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
-			if (optionExtractGroundTruthLabels) {
+			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
+			intensities.setResolution(resolution);
+			intensities.setOffset(offset);
+			intensities.normalize();
+			volumeStore.saveIntensities(intensities);
 
-				vigra::MultiArray<3, int> tmp(groundTruth.data().shape());
-				vigra::labelMultiArrayWithBackground(
-						groundTruth.data(),
-						tmp);
-				groundTruth.data() = tmp;
+			if (optionGroundTruth) {
+
+				ExplicitVolume<int> groundTruth = readVolume<int>(getImageFiles(optionGroundTruth));
+
+				if (optionExtractGroundTruthLabels) {
+
+					vigra::MultiArray<3, int> tmp(groundTruth.data().shape());
+					vigra::labelMultiArrayWithBackground(
+							groundTruth.data(),
+							tmp);
+					groundTruth.data() = tmp;
+				}
+
+				groundTruth.setResolution(resolution);
+				groundTruth.setOffset(offset);
+				volumeStore.saveGroundTruth(groundTruth);
 			}
 
-			groundTruth.setResolution(resolution);
-			groundTruth.setOffset(offset);
-			volumeStore.saveGroundTruth(groundTruth);
+			if (optionBoundaries) {
+
+				ExplicitVolume<float> boundaries = readVolume<float>(getImageFiles(optionBoundaries));
+				boundaries.setResolution(resolution);
+				boundaries.setOffset(offset);
+				boundaries.normalize();
+				volumeStore.saveBoundaries(boundaries);
+			}
 		}
 
-		if (optionBoundaries) {
-
-			ExplicitVolume<float> boundaries = readVolume<float>(getImageFiles(optionBoundaries));
-			boundaries.setResolution(resolution);
-			boundaries.setOffset(offset);
-			boundaries.normalize();
-			volumeStore.saveBoundaries(boundaries);
-		}
+		delete crag;
 
 	} catch (Exception& e) {
 

@@ -74,6 +74,22 @@ public:
 	virtual void retrieveEdgeFeaturesMinMax(
 			std::vector<double>& min,
 			std::vector<double>& max) = 0;
+
+	/**
+	 * Store a segmentation, represented by sets of leaf nodes.
+	 */
+	virtual void saveSegmentation(
+			const Crag&                              crag,
+			const std::vector<std::set<Crag::Node>>& segmentation,
+			std::string                              name) = 0;
+
+	/**
+	 * Retrieve a segmentation, represented by sets of leaf nodes.
+	 */
+	virtual void retrieveSegmentation(
+			const Crag&                        crag,
+			std::vector<std::set<Crag::Node>>& segmentation,
+			std::string                        name) = 0;
 };
 
 #endif // TREE_MC_IO_CRAG_STORE_H__

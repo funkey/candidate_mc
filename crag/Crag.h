@@ -41,6 +41,8 @@ public:
 		_volumes(_rag),
 		_affiliatedEdges(_rag) {}
 
+	virtual ~Crag() {}
+
 	/**
 	 * Add a node to the CRAG.
 	 */
@@ -48,6 +50,20 @@ public:
 
 		_ssg.addNode();
 		return _rag.addNode();
+	}
+
+	/**
+	 * Remove a node an its adjacency edges and subset arcs.
+	 */
+	inline void erase(Crag::Node n) {
+
+		_ssg.erase(toSubset(n));
+		_rag.erase(n);
+	}
+	inline void erase(Crag::SubsetNode n) {
+
+		_ssg.erase(n);
+		_rag.erase(toRag(n));
 	}
 
 	/**
@@ -123,7 +139,8 @@ public:
 	 * Low-level access to the volumes stored for each node. Used to populate 
 	 * the leaf nodes with initial volumes.
 	 */
-	NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() { return _volumes; }
+	      NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() { return _volumes; }
+	const NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() const { return _volumes; }
 
 	/**
 	 * Get the level of a node, i.e., the size of the longest subset-tree path 

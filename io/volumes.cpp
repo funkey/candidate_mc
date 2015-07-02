@@ -7,6 +7,10 @@ util::ProgramOption optionMaxMerges(
 		util::_long_name        = "maxMerges",
 		util::_description_text = "The maximal depth of the CRAG subset tree, starting counting from the leaf nodes.");
 
+util::ProgramOption optionMaxMergeScore(
+		util::_long_name        = "maxMergeScore",
+		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from file mergeScores.");
+
 void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
 
 	vigra::ImageImportInfo info(filename.c_str());
@@ -17,12 +21,9 @@ void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution
 
 	MergeTreeParser parser(mergeTree);
 	parser.getCrag(crag);
-
-	PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
-	annotator.annotate(crag);
 }
 
-void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+void readCrag(std::string superpixels, std::string mergeHistory, std::string mergeScores, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
 
 	int maxMerges = -1;
 	if (optionMaxMerges)
@@ -77,6 +78,16 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 		return;
 	}
 
+	std::ifstream scores(mergeScores);
+	if (optionMaxMerges && scores.fail()) {
+
+		LOG_ERROR(logger::out) << "could not read merge scores" << std::endl;
+		return;
+	}
+
+	bool useScores = (mergeScores.size() > 0) && optionMaxMergeScore;
+	double maxScore = optionMaxMergeScore.as<double>();
+
 	while (true) {
 		int a, b, c;
 		file >> a;
@@ -85,21 +96,29 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 		if (!file.good())
 			break;
 
+		double score = 0;
+		if (useScores)
+			scores >> score;
+
+		// we might encounter ids that we didn't add, since they are too high in 
+		// the merge tree or have a score exceeding maxScore
+		if (!idToNode.count(a))
+			continue;
+		if (!idToNode.count(b))
+			continue;
+
 		// are we limiting the number of merges?
 		if (maxMerges >= 0) {
-
-			// we might encounter ids that we didn't add, since they are too 
-			// high in the merge tree
-			if (!idToNode.count(a))
-				continue;
-			if (!idToNode.count(b))
-				continue;
 
 			if (crag.getLevel(idToNode[a]) >= maxMerges)
 				continue;
 			if (crag.getLevel(idToNode[b]) >= maxMerges)
 				continue;
 		}
+
+		// are we limiting the merge score?
+		if (useScores && score >= maxScore)
+			continue;
 
 		Crag::Node n = crag.addNode();
 		idToNode[c] = n;
@@ -116,9 +135,6 @@ void readCrag(std::string superpixels, std::string mergeHistory, Crag& crag, uti
 				idToNode[b],
 				n);
 	}
-
-	PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
-	annotator.annotate(crag);
 }
 
 std::vector<std::string>

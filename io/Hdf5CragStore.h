@@ -94,6 +94,22 @@ public:
 			std::vector<double>& min,
 			std::vector<double>& max) override;
 
+	/**
+	 * Store a segmentation, represented by sets of leaf nodes.
+	 */
+	void saveSegmentation(
+			const Crag&                              crag,
+			const std::vector<std::set<Crag::Node>>& segmentation,
+			std::string                              name) override;
+
+	/**
+	 * Retrieve a segmentation, represented by sets of leaf nodes.
+	 */
+	void retrieveSegmentation(
+			const Crag&                        crag,
+			std::vector<std::set<Crag::Node>>& segmentation,
+			std::string                        name) override;
+
 private:
 
 	vigra::HDF5File _hdfFile;

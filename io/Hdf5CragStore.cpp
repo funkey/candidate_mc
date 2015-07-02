@@ -211,3 +211,54 @@ Hdf5CragStore::retrieveEdgeFeaturesMinMax(
 	max.resize(f.size());
 	std::copy(f.begin(), f.end(), max.begin());
 }
+
+void
+Hdf5CragStore::saveSegmentation(
+		const Crag&                              crag,
+		const std::vector<std::set<Crag::Node>>& segmentation,
+		std::string                              name) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("segmentations");
+	_hdfFile.cd_mk(name);
+
+	for (unsigned int i = 0; i < segmentation.size(); i++) {
+
+		std::string segmentName = "segment_";
+		segmentName += boost::lexical_cast<std::string>(i);
+
+		vigra::ArrayVector<int> nodes;
+		for (Crag::Node node : segmentation[i])
+			nodes.push_back(crag.id(node));
+		_hdfFile.write(
+				segmentName,
+				nodes);
+	}
+}
+
+void
+Hdf5CragStore::retrieveSegmentation(
+		const Crag&                        crag,
+		std::vector<std::set<Crag::Node>>& segmentation,
+		std::string                        name) {
+
+	_hdfFile.root();
+	_hdfFile.cd("segmentations");
+	_hdfFile.cd(name);
+
+	std::vector<std::string> segmentNames = _hdfFile.ls();
+
+	for (std::string segmentName : segmentNames) {
+
+		vigra::ArrayVector<int> ids;
+		_hdfFile.readAndResize(
+				segmentName,
+				ids);
+
+		std::set<Crag::Node> nodes;
+		for (int id : ids)
+			nodes.insert(crag.nodeFromId(id));
+
+		segmentation.push_back(nodes);
+	}
+}

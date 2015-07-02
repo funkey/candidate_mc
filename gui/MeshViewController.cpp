@@ -102,8 +102,6 @@ MeshViewController::prevVolume() {
 	if (_path.size() == 0)
 		return;
 
-	std::cout << "foo" << std::endl;
-
 	Crag::Node child = _path.back();
 	_path.pop_back();
 
@@ -112,8 +110,6 @@ MeshViewController::prevVolume() {
 
 void
 MeshViewController::nextNeighbor() {
-
-	std::cout << "showing next neighbor" << std::endl;
 
 	if (_neighbors.size() == 0)
 		return;
@@ -130,8 +126,6 @@ MeshViewController::nextNeighbor() {
 
 void
 MeshViewController::prevNeighbor() {
-
-	std::cout << "showing prev neighbor" << std::endl;
 
 	if (_neighbors.size() == 0)
 		return;
@@ -158,7 +152,7 @@ MeshViewController::showSingleMesh(Crag::Node n) {
 		_neighbors.push_back(_crag.getAdjacencyGraph().oppositeNode(_current, e));
 	_currentNeighbor = -1;
 
-	std::cout << "found " << _neighbors.size() << " neighbors" << std::endl;
+	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
 
 	send<sg_gui::SetMeshes>(_meshes);
 }
