@@ -137,9 +137,6 @@ int main(int argc, char** argv) {
 			featureExtractor.extract(nodeFeatures, edgeFeatures);
 		}
 
-		Crag::Node n = Crag::NodeIt(crag);
-		std::cout << "node " << crag.id(n) << " " << nodeFeatures[n] << std::endl;
-
 		std::vector<double> weights = retrieveVector<double>(optionFeatureWeights);
 
 		Costs costs(crag);

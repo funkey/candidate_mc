@@ -110,6 +110,11 @@ public:
 			std::vector<std::set<Crag::Node>>& segmentation,
 			std::string                        name) override;
 
+	/**
+	 * Get a list of the names of all stored segmentations.
+	 */
+	std::vector<std::string> getSegmentationNames() override;
+
 private:
 
 	vigra::HDF5File _hdfFile;

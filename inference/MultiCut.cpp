@@ -1,3 +1,4 @@
+#include <boost/filesystem.hpp>
 #include <lemon/dijkstra.h>
 #include <lemon/connectivity.h>
 #include <util/Logger.h>
@@ -62,6 +63,20 @@ MultiCut::solve(unsigned int numIterations) {
 			LOG_USER(multicutlog)
 					<< "optimal solution with value "
 					<< _solution->getValue() << " found"
+					<< std::endl;
+
+			int numSelected = 0;
+			int numMerged = 0;
+			for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+				if (_selected[n])
+					numSelected++;
+			for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+				if (_merged[e])
+					numMerged++;
+
+			LOG_USER(multicutlog)
+					<< numSelected << " candidates selected, "
+					<< numMerged << " adjacent candidates merged"
 					<< std::endl;
 
 			return SolutionFound;
@@ -159,9 +174,24 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 				drawBoundary(n, components, 0);
 	}
 
-	vigra::exportImage(
-			components.bind<2>(0),
-			vigra::ImageExportInfo(filename.c_str()));
+	if (components.shape(2) > 1) {
+
+		boost::filesystem::create_directory(filename);
+		for (unsigned int z = 0; z < components.shape(2); z++) {
+
+			std::stringstream ss;
+			ss << std::setw(4) << std::setfill('0') << z;
+			vigra::exportImage(
+					components.bind<2>(z),
+					vigra::ImageExportInfo((filename + "/" + ss.str() + ".tif").c_str()));
+		}
+
+	} else {
+
+		vigra::exportImage(
+				components.bind<2>(0),
+				vigra::ImageExportInfo(filename.c_str()));
+	}
 }
 
 void

@@ -17,6 +17,17 @@ public:
 		_raw(raw),
 		_boundaries(boundaries) {}
 
+	/**
+	 * Set a list of sample segmentations. A segmentation is a list of sets of 
+	 * CRAG leaf nodes. If set, those will be used to compute edge affinities 
+	 * based on the number of times the adjacent candidates have been part of a 
+	 * segment.
+	 */
+	void setSampleSegmentations(const std::vector<std::vector<std::set<Crag::Node>>>& sampleSegmentations) {
+
+		_segmentations = sampleSegmentations;
+	}
+
 	void extract(
 			NodeFeatures& nodeFeatures,
 			EdgeFeatures& edgeFeatures);
@@ -50,6 +61,8 @@ private:
 
 	const ExplicitVolume<float>& _raw;
 	const ExplicitVolume<float>& _boundaries;
+
+	std::vector<std::vector<std::set<Crag::Node>>> _segmentations;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

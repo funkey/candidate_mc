@@ -262,3 +262,11 @@ Hdf5CragStore::retrieveSegmentation(
 		segmentation.push_back(nodes);
 	}
 }
+
+std::vector<std::string>
+Hdf5CragStore::getSegmentationNames() {
+
+	_hdfFile.root();
+	_hdfFile.cd("segmentations");
+	return _hdfFile.ls();
+}

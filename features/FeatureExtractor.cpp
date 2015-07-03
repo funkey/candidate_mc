@@ -470,6 +470,24 @@ FeatureExtractor::extractEdgeFeatures(
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
 
+	if (_segmentations.size() > 0) {
+
+		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+
+			Crag::Node u = _crag.u(e);
+			Crag::Node v = _crag.v(e);
+
+			// count how many times u and v were connected in all segmentations
+			int connected = 0;
+			for (auto& segmentation : _segmentations)
+				for (auto& segment : segmentation)
+					if (segment.count(u) && segment.count(v))
+						connected++;
+
+			edgeFeatures.append(e, connected);
+		}
+	}
+
 	///////////////////
 	// NORMALIZATION //
 	///////////////////

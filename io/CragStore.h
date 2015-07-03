@@ -90,6 +90,11 @@ public:
 			const Crag&                        crag,
 			std::vector<std::set<Crag::Node>>& segmentation,
 			std::string                        name) = 0;
+
+	/**
+	 * Get a list of the names of all stored segmentations.
+	 */
+	virtual std::vector<std::string> getSegmentationNames() = 0;
 };
 
 #endif // TREE_MC_IO_CRAG_STORE_H__
