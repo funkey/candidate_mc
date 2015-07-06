@@ -9,6 +9,10 @@ void readCrag(std::string mergetree, Crag& crag, util::point<float, 3> resolutio
 
 void readCrag(std::string superpixels, std::string mergeHistory, std::string mergeScores, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset);
 
+void readCrag(std::string superpixels, std::string candidateSegmentation, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset);
+
+std::map<int, Crag::Node> readSupervoxels(Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset, std::string supervoxels);
+
 template <typename T>
 ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
 

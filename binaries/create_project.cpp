@@ -28,11 +28,17 @@ util::ProgramOption optionMergeTree(
 util::ProgramOption optionSupervoxels(
 		util::_long_name        = "supervoxels",
 		util::_description_text = "A volume (single image or directory of images) with supervoxel ids. Use this together "
-		                          "with mergeHistory.");
+		                          "with mergeHistory or candidateSegmentation.");
 
 util::ProgramOption optionMergeHistory(
 		util::_long_name        = "mergeHistory",
 		util::_description_text = "A file containing lines 'a b c' to indicate that regions a and b merged into region c.");
+
+util::ProgramOption optionCandidateSegmentation(
+		util::_long_name        = "candidateSegmentation",
+		util::_description_text = "A volume (single image or directory of images) with a segmentation (segment id per pixel). "
+		                          "Candidates will be added to the CRAG for each segment. For that, supervoxels will be assigned "
+		                          "to the segment with maximal overlap.");
 
 util::ProgramOption optionMergeScores(
 		util::_long_name        = "mergeScores",
@@ -190,11 +196,14 @@ int main(int argc, char** argv) {
 				readCrag(mergeTreePath, *crag, resolution, offset);
 			}
 
-		} else if (optionSupervoxels.as<bool>() && optionMergeHistory.as<bool>()) {
+		} else if (optionSupervoxels.as<bool>() && (optionMergeHistory.as<bool>() || optionCandidateSegmentation.as<bool>())) {
 
 			UTIL_TIME_SCOPE("read CRAG from merge history");
 
-			readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, resolution, offset);
+			if (optionMergeHistory)
+				readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, resolution, offset);
+			else
+				readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, resolution, offset);
 
 		} else {
 

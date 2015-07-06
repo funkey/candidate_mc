@@ -25,51 +25,11 @@ void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution
 
 void readCrag(std::string superpixels, std::string mergeHistory, std::string mergeScores, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
 
+	std::map<int, Crag::Node> idToNode = readSupervoxels(crag, resolution, offset, superpixels);
+
 	int maxMerges = -1;
 	if (optionMaxMerges)
 		maxMerges = optionMaxMerges;
-
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(superpixels));
-
-	int _, maxId;
-	ids.data().minmax(&_, &maxId);
-
-	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << _ << " and " << maxId << std::endl;
-
-	std::map<int, util::box<int, 3>> bbs;
-	for (unsigned int z = 0; z < ids.depth();  z++)
-	for (unsigned int y = 0; y < ids.height(); y++)
-	for (unsigned int x = 0; x < ids.width();  x++) {
-
-		int id = ids(x, y, z);
-		bbs[id].fit(
-				util::box<int, 3>(
-						x,   y,   z,
-						x+1, y+1, z+1));
-	}
-
-	std::map<int, Crag::Node> idToNode;
-	for (const auto& p : bbs) {
-
-		const int& id               = p.first;
-		const util::box<int, 3>& bb = p.second;
-
-		Crag::Node n = crag.addNode();
-		crag.getVolumeMap()[n] = ExplicitVolume<unsigned char>(bb.width(), bb.height(), bb.depth(), 0);
-		crag.getVolumeMap()[n].setResolution(resolution);
-		crag.getVolumeMap()[n].setOffset(offset + bb.min()*resolution);
-		idToNode[id] = n;
-	}
-
-	for (unsigned int z = 0; z < ids.depth();  z++)
-	for (unsigned int y = 0; y < ids.height(); y++)
-	for (unsigned int x = 0; x < ids.width();  x++) {
-
-		int id = ids(x, y, z);
-		Crag::Node n = idToNode[id];
-
-		crag.getVolumeMap()[n](x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
-	}
 
 	std::ifstream file(mergeHistory);
 	if (file.fail()) {
@@ -135,6 +95,125 @@ void readCrag(std::string superpixels, std::string mergeHistory, std::string mer
 				idToNode[b],
 				n);
 	}
+}
+
+void readCrag(std::string superpixels, std::string candidateSegmentation, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+
+	std::map<int, Crag::Node> svIdToNode = readSupervoxels(crag, resolution, offset, superpixels);
+
+	LOG_USER(logger::out) << "reading segmentation" << std::endl;
+
+	ExplicitVolume<int> segmentation = readVolume<int>(getImageFiles(candidateSegmentation));
+
+	LOG_USER(logger::out) << "grouping supervoxels" << std::endl;
+
+	// get all segments
+	std::set<int> segmentIds;
+	for (int id : segmentation.data())
+		segmentIds.insert(id);
+
+	// get overlap of each node with segments
+	std::map<Crag::Node, std::map<int, int>> overlap;
+	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+		// Here, we assume that the given volumes (supervoxels and candidate 
+		// segmentation) have the same resolution.
+
+		//if (segmentation.getResolution() != crag.getVolume(n).getResolution())
+			//UTIL_THROW_EXCEPTION(
+					//UsageError,
+					//"candidate segmentation has different resolution (" << segmentation.getResolution() <<
+					//" than supervoxels " << crag.getVolume(n).getResolution());
+
+		util::point<int, 3> offset = crag.getVolume(n).getOffset()/crag.getVolume(n).getResolution() - segmentation.getOffset();
+
+		const util::box<int, 3>& bb = crag.getVolume(n).getDiscreteBoundingBox();
+		for (unsigned int z = 0; z < bb.depth();  z++)
+		for (unsigned int y = 0; y < bb.height(); y++)
+		for (unsigned int x = 0; x < bb.width();  x++) {
+
+			int segId = segmentation(
+					offset.x() + x,
+					offset.y() + y,
+					offset.z() + z);
+
+			overlap[n][segId]++;
+		}
+	}
+
+	// create a node for each segment (that has overlapping supervoxels) and 
+	// link to max-overlap nodes
+	std::map<int, Crag::Node> segIdToNode;
+	for (const auto& nodeSegOverlap : overlap) {
+
+		Crag::Node leaf = nodeSegOverlap.first;
+		int maxOverlap = 0;
+		int maxSegmentId = 0;
+
+		for (const auto& segOverlap : nodeSegOverlap.second) {
+
+			if (segOverlap.first != 0 && segOverlap.second >= maxOverlap) {
+
+				maxOverlap = segOverlap.second;
+				maxSegmentId = segOverlap.first;
+			}
+		}
+
+		if (!segIdToNode.count(maxSegmentId)) {
+
+			Crag::Node candidate = crag.addNode();
+			segIdToNode[maxSegmentId] = candidate;
+		}
+
+		crag.addSubsetArc(leaf, segIdToNode[maxSegmentId]);
+	}
+}
+
+std::map<int, Crag::Node> readSupervoxels(Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset, std::string supervoxels) {
+
+	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+
+	int _, maxId;
+	ids.data().minmax(&_, &maxId);
+
+	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << _ << " and " << maxId << std::endl;
+
+	std::map<int, util::box<int, 3>> bbs;
+	for (unsigned int z = 0; z < ids.depth();  z++)
+	for (unsigned int y = 0; y < ids.height(); y++)
+	for (unsigned int x = 0; x < ids.width();  x++) {
+
+		int id = ids(x, y, z);
+		bbs[id].fit(
+				util::box<int, 3>(
+						x,   y,   z,
+						x+1, y+1, z+1));
+	}
+
+	std::map<int, Crag::Node> idToNode;
+	for (const auto& p : bbs) {
+
+		const int& id               = p.first;
+		const util::box<int, 3>& bb = p.second;
+
+		Crag::Node n = crag.addNode();
+		crag.getVolumeMap()[n] = ExplicitVolume<unsigned char>(bb.width(), bb.height(), bb.depth(), 0);
+		crag.getVolumeMap()[n].setResolution(resolution);
+		crag.getVolumeMap()[n].setOffset(offset + bb.min()*resolution);
+		idToNode[id] = n;
+	}
+
+	for (unsigned int z = 0; z < ids.depth();  z++)
+	for (unsigned int y = 0; y < ids.height(); y++)
+	for (unsigned int x = 0; x < ids.width();  x++) {
+
+		int id = ids(x, y, z);
+		Crag::Node n = idToNode[id];
+
+		crag.getVolumeMap()[n](x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
+	}
+
+	return idToNode;
 }
 
 std::vector<std::string>
