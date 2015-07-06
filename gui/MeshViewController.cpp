@@ -119,9 +119,7 @@ MeshViewController::nextNeighbor() {
 
 	_currentNeighbor = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
 
-	addMesh(_neighbors[_currentNeighbor]);
-
-	send<sg_gui::SetMeshes>(_meshes);
+	showNeighbor(_neighbors[_currentNeighbor]);
 }
 
 void
@@ -135,9 +133,7 @@ MeshViewController::prevNeighbor() {
 
 	_currentNeighbor = std::max(0, _currentNeighbor - 1);
 
-	addMesh(_neighbors[_currentNeighbor]);
-
-	send<sg_gui::SetMeshes>(_meshes);
+	showNeighbor(_neighbors[_currentNeighbor]);
 }
 
 void
@@ -155,6 +151,22 @@ MeshViewController::showSingleMesh(Crag::Node n) {
 	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
 
 	send<sg_gui::SetMeshes>(_meshes);
+	send<SetCandidate>(n);
+}
+
+void
+MeshViewController::showNeighbor(Crag::Node n) {
+
+	addMesh(n);
+
+	send<sg_gui::SetMeshes>(_meshes);
+
+	for (Crag::IncEdgeIt e(_crag, _current); e != lemon::INVALID; ++e)
+		if (_crag.getAdjacencyGraph().oppositeNode(_current, e) == _neighbors[_currentNeighbor]) {
+
+			send<SetEdge>(e);
+			break;
+		}
 }
 
 void

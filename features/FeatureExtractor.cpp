@@ -7,6 +7,7 @@
 #include <util/helpers.hpp>
 #include <util/timing.h>
 #include "FeatureExtractor.h"
+#include <vigra/multi_impex.hxx>
 #include <vigra/flatmorphology.hxx>
 #include <vigra/multi_morphology.hxx>
 
@@ -119,6 +120,8 @@ FeatureExtractor::extract(
 
 	extractNodeFeatures(nodeFeatures);
 	extractEdgeFeatures(nodeFeatures, edgeFeatures);
+
+	visualizeEdgeFeatures(edgeFeatures);
 }
 
 void
@@ -558,4 +561,49 @@ FeatureExtractor::extractEdgeFeatures(
 			<< "after postprocessing, we have "
 			<< edgeFeatures.dims()
 			<< " features per edge" << std::endl;
+}
+
+void
+FeatureExtractor::visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures) {
+
+	LOG_USER(featureextractorlog) << "visualizing edge features... " << std::flush;
+
+	util::box<float, 3>   cragBB = _crag.getBoundingBox();
+	util::point<float, 3> resolution;
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		if (!_crag.isLeafNode(n))
+			continue;
+		resolution = _crag.getVolume(n).getResolution();
+		break;
+	}
+
+	// create a vigra multi-array large enough to hold all volumes
+	vigra::MultiArray<3, float> edges(
+			vigra::Shape3(
+				cragBB.width() /resolution.x(),
+				cragBB.height()/resolution.y(),
+				cragBB.depth() /resolution.z()),
+			std::numeric_limits<int>::max());
+	edges = 0;
+
+	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+		for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(e)) {
+
+			edges[_crag.getGridGraph().u(ae)] = edgeFeatures[e][0];
+			edges[_crag.getGridGraph().v(ae)] = edgeFeatures[e][0];
+		}
+
+	boost::filesystem::create_directory("affinities");
+
+	for (unsigned int z = 0; z < edges.shape(2); z++) {
+
+		std::stringstream ss;
+		ss << std::setw(4) << std::setfill('0') << z;
+		vigra::exportImage(
+				edges.bind<2>(z),
+				vigra::ImageExportInfo((std::string("affinities/") + ss.str() + ".tif").c_str()));
+	}
+
+	LOG_USER(featureextractorlog) << "done" << std::endl;
 }

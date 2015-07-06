@@ -8,6 +8,7 @@
 #include <imageprocessing/ExplicitVolume.h>
 #include <gui/CragView.h>
 #include <gui/MeshViewController.h>
+#include <gui/FeaturesView.h>
 #include <sg_gui/RotateView.h>
 #include <sg_gui/ZoomView.h>
 #include <sg_gui/Window.h>
@@ -96,10 +97,26 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		// get features
+
+		NodeFeatures nodeFeatures(crag);
+		EdgeFeatures edgeFeatures(crag);
+
+		try {
+
+			cragStore.retrieveNodeFeatures(crag, nodeFeatures);
+			cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
+
+		} catch (std::exception& e) {
+
+			LOG_USER(logger::out) << "could not find features" << std::endl;
+		}
+
 		// visualize
 
 		auto cragView       = std::make_shared<CragView>();
 		auto meshController = std::make_shared<MeshViewController>(crag, supervoxels);
+		auto featuresView   = std::make_shared<FeaturesView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);
 		auto window         = std::make_shared<sg_gui::Window>("CRAG viewer");
@@ -108,6 +125,7 @@ int main(int argc, char** argv) {
 		zoomView->add(rotateView);
 		rotateView->add(cragView);
 		rotateView->add(meshController);
+		rotateView->add(featuresView);
 
 		cragView->setRawVolume(intensities);
 		cragView->setLabelsVolume(supervoxels);

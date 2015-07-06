@@ -6,6 +6,7 @@
 #include <sg_gui/VolumeView.h>
 #include <sg_gui/MeshView.h>
 #include <sg_gui/Meshes.h>
+#include "Signals.h"
 
 template <typename EV>
 class ExplicitVolumeAdaptor {
@@ -45,7 +46,9 @@ class MeshViewController :
 						sg_gui::MouseDown
 				>,
 				sg::Provides<
-						sg_gui::SetMeshes
+						sg_gui::SetMeshes,
+						SetCandidate,
+						SetEdge
 				>
 		> {
 
@@ -72,6 +75,8 @@ private:
 	void prevNeighbor();
 
 	void showSingleMesh(Crag::Node n);
+
+	void showNeighbor(Crag::Node n);
 
 	void addMesh(Crag::Node n);
 

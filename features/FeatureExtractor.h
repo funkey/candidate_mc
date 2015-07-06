@@ -57,6 +57,8 @@ private:
 
 	std::pair<int, int> extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::SubsetNode n);
 
+	void visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures);
+
 	Crag& _crag;
 
 	const ExplicitVolume<float>& _raw;
