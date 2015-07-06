@@ -104,9 +104,9 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 				));
 	}
 
-	vigra::exportImage(
-			ids.bind<2>(0),
-			vigra::ImageExportInfo("debug/ids.tif"));
+	//vigra::exportImage(
+			//ids.bind<2>(0),
+			//vigra::ImageExportInfo("debug/ids.tif"));
 
 	typedef vigra::GridGraph<3>       GridGraphType;
 	typedef vigra::AdjacencyListGraph RagType;
