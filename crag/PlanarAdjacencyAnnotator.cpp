@@ -125,14 +125,18 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 			std::numeric_limits<int>::max());
 
 	unsigned int numAdded = 0;
+	crag.setGridGraph(grid);
 	for (RagType::EdgeIt e(rag); e != lemon::INVALID; ++e) {
 
 		int u = rag.id(rag.u(*e));
 		int v = rag.id(rag.v(*e));
 
-		crag.addAdjacencyEdge(
+		Crag::Edge newEdge = crag.addAdjacencyEdge(
 				crag.nodeFromId(u),
 				crag.nodeFromId(v));
+		crag.setAffiliatedEdges(
+				newEdge,
+				affiliatedEdges[*e]);
 		numAdded++;
 
 		LOG_ALL(planaradjacencyannotatorlog)

@@ -23,6 +23,28 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
 		if (crag.isLeafNode(n))
 			writeVolume(crag.getVolume(n), boost::lexical_cast<std::string>(crag.id(n)));
+
+	_hdfFile.cd("/crag");
+	_hdfFile.cd_mk("grid_graph");
+	vigra::ArrayVector<int> shape(3);
+	shape[0] = crag.getGridGraph().shape()[0];
+	shape[1] = crag.getGridGraph().shape()[1];
+	shape[2] = crag.getGridGraph().shape()[2];
+	_hdfFile.write("shape", shape);
+
+	_hdfFile.cd("/crag");
+	_hdfFile.cd_mk("affiliated_edges");
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+
+		std::vector<int> aeIds;
+		for (vigra::GridGraph<3>::Edge ae : crag.getAffiliatedEdges(e))
+			aeIds.push_back(crag.getGridGraph().id(ae));
+
+		_hdfFile.write(
+				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
+				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
+				vigra::ArrayVectorView<int>(aeIds.size(), const_cast<int*>(&aeIds[0])));
+	}
 }
 
 void
@@ -51,6 +73,34 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 		readVolume(crag.getVolumeMap()[n], vol);
 
 		UTIL_ASSERT(!crag.getBoundingBox(n).isZero());
+	}
+
+	_hdfFile.cd("/crag");
+	_hdfFile.cd("grid_graph");
+	vigra::ArrayVector<int> s;
+	_hdfFile.readAndResize("shape", s);
+	vigra::Shape3 shape;
+	shape[0] = s[0];
+	shape[1] = s[1];
+	shape[2] = s[2];
+	vigra::GridGraph<3> gridGraph(shape, vigra::DirectNeighborhood);
+	crag.setGridGraph(gridGraph);
+
+	_hdfFile.cd("/crag");
+	_hdfFile.cd("affiliated_edges");
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+
+		vigra::ArrayVector<int> aeIds;
+
+		_hdfFile.readAndResize(
+				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
+				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
+				aeIds);
+
+		std::vector<vigra::GridGraph<3>::Edge> affiliatedEdges;
+		for (int aeId : aeIds)
+			affiliatedEdges.push_back(crag.getGridGraph().edgeFromId(aeId));
+		crag.setAffiliatedEdges(e, affiliatedEdges);
 	}
 }
 
