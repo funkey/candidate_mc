@@ -97,21 +97,11 @@ public:
 	 * Associate affiliated edges to a pair of adjacent leaf node regions. It is 
 	 * assumed that an adjacency edge has already been added between u and v.
 	 */
-	void setAffiliatedEdges(Node u, Node v, const std::vector<vigra::GridGraph<3>::Edge>& edges) {
+	void setAffiliatedEdges(Edge e, const std::vector<vigra::GridGraph<3>::Edge>& edges) { _affiliatedEdges[e] = edges; }
 
-		for (IncEdgeIt e(_rag, u); e != lemon::INVALID; ++e)
-			if (_rag.oppositeNode(u, e) == v) {
+	const std::vector<vigra::GridGraph<3>::Edge>& getAffiliatedEdges(Edge e) const { return _affiliatedEdges[e]; }
 
-				_affiliatedEdges[e] = edges;
-				return;
-			}
-
-		UTIL_THROW_EXCEPTION(
-				UsageError,
-				"no rag edge between "
-				<< _rag.id(u) << " and "
-				<< _rag.id(v) << " has been added.");
-	}
+	const vigra::GridGraph<3>& getGridGraph() const { return _gridGraph; }
 
 	/**
 	 * Get direct access to the underlying lemon graphs.
