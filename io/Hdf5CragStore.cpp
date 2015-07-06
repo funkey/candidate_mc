@@ -20,9 +20,17 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("volumes");
+	int numNodes = 0;
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		if (crag.isLeafNode(n))
+		if (crag.isLeafNode(n)) {
+
+			if (numNodes%100 == 0)
+				LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
+
 			writeVolume(crag.getVolume(n), boost::lexical_cast<std::string>(crag.id(n)));
+			numNodes++;
+		}
+	LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::endl;
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("grid_graph");
@@ -34,17 +42,36 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("affiliated_edges");
+	int numEdges = 0;
+
+	// list of affilitated edges:
+	//
+	// u v n id_1 ... id_n
+	//
+	// (u, v) ajacency edge
+	// n      number of affiliated edges
+	// id_i   id of ith affiliated edge
+	std::vector<int> aeIds;
 	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
-		std::vector<int> aeIds;
+			if (numEdges%100 == 0)
+				LOG_USER(hdf5storelog) << logger::delline << numEdges << " affiliated egde lists prepared" << std::flush;
+
+		aeIds.push_back(crag.id(crag.u(e)));
+		aeIds.push_back(crag.id(crag.v(e)));
+		aeIds.push_back(crag.getAffiliatedEdges(e).size());
 		for (vigra::GridGraph<3>::Edge ae : crag.getAffiliatedEdges(e))
 			aeIds.push_back(crag.getGridGraph().id(ae));
 
-		_hdfFile.write(
-				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
-				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
-				vigra::ArrayVectorView<int>(aeIds.size(), const_cast<int*>(&aeIds[0])));
+		numEdges++;
 	}
+	LOG_USER(hdf5storelog) << logger::delline << numEdges << " affiliated egde lists prepared" << std::endl;
+
+	LOG_USER(hdf5storelog) << "writing affiliated edge lists..." << std::flush;
+	_hdfFile.write(
+			"list",
+			vigra::ArrayVectorView<int>(aeIds.size(), const_cast<int*>(&aeIds[0])));
+	LOG_USER(hdf5storelog) << " done." << std::endl;
 }
 
 void
@@ -88,19 +115,31 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd("affiliated_edges");
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
-		vigra::ArrayVector<int> aeIds;
+	vigra::ArrayVector<int> aeIds;
+	_hdfFile.readAndResize(
+			"list",
+			aeIds);
 
-		_hdfFile.readAndResize(
-				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
-				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
-				aeIds);
+	for (int i = 0; i < aeIds.size();) {
+
+		Crag::Node u = crag.nodeFromId(aeIds[i]);
+		Crag::Node v = crag.nodeFromId(aeIds[i+1]);
+		int n = aeIds[i+2];
+		i += 3;
 
 		std::vector<vigra::GridGraph<3>::Edge> affiliatedEdges;
-		for (int aeId : aeIds)
-			affiliatedEdges.push_back(crag.getGridGraph().edgeFromId(aeId));
-		crag.setAffiliatedEdges(e, affiliatedEdges);
+		for (int j = 0; j < n; j++)
+			affiliatedEdges.push_back(crag.getGridGraph().edgeFromId(aeIds[i+j]));
+		i += n;
+
+		// find edge in CRAG and set affiliated edge list
+		for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
+			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+
+				crag.setAffiliatedEdges(e, affiliatedEdges);
+				break;
+			}
 	}
 }
 
