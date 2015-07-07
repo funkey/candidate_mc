@@ -63,6 +63,11 @@ public:
 			const std::vector<double>& max) override;
 
 	/**
+	 * Store the skeletons for candidates of a CRAG.
+	 */
+	void saveSkeletons(const Crag& crag, const Skeletons& skeletons);
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -95,6 +100,11 @@ public:
 			std::vector<double>& max) override;
 
 	/**
+	 * Retrieve skeletons for the candidates of the CRAG.
+	 */
+	void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) override;
+
+	/**
 	 * Store a segmentation, represented by sets of leaf nodes.
 	 */
 	void saveSegmentation(
@@ -116,6 +126,36 @@ public:
 	std::vector<std::string> getSegmentationNames() override;
 
 private:
+
+	/**
+	 * Converts Position objects into array-like objects for HDF5 storage.
+	 */
+	struct PositionConverter {
+
+		typedef float    ArrayValueType;
+		static const int ArraySize = 3;
+
+		vigra::ArrayVector<float> operator()(const Skeleton::Position& pos) const {
+
+			vigra::ArrayVector<float> array(3);
+			for (int i = 0; i < 3; i++)
+				array[i] = pos[i];
+			return array;
+		}
+
+		Skeleton::Position operator()(const vigra::ArrayVectorView<float>& array) const {
+
+			Skeleton::Position pos;
+			for (int i = 0; i < 3; i++)
+				pos[i] = array[i];
+
+			return pos;
+		}
+
+	};
+
+	void writeGraphVolume(const GraphVolume& graphVolume);
+	void readGraphVolume(GraphVolume& graphVolume);
 
 	vigra::HDF5File _hdfFile;
 };

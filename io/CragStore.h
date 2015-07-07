@@ -4,6 +4,7 @@
 #include <crag/Crag.h>
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
+#include <features/Skeletons.h>
 
 /**
  * Interface definition for crag stores.
@@ -44,6 +45,11 @@ public:
 			const std::vector<double>& max) = 0;
 
 	/**
+	 * Store the skeletons for candidates of a CRAG.
+	 */
+	virtual void saveSkeletons(const Crag& crag, const Skeletons& skeletons) = 0;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -74,6 +80,11 @@ public:
 	virtual void retrieveEdgeFeaturesMinMax(
 			std::vector<double>& min,
 			std::vector<double>& max) = 0;
+
+	/**
+	 * Retrieve skeletons for the candidates of the CRAG.
+	 */
+	virtual void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) = 0;
 
 	/**
 	 * Store a segmentation, represented by sets of leaf nodes.

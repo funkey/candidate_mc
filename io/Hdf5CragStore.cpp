@@ -302,6 +302,64 @@ Hdf5CragStore::retrieveEdgeFeaturesMinMax(
 }
 
 void
+Hdf5CragStore::saveSkeletons(const Crag& crag, const Skeletons& skeletons) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("crag");
+	_hdfFile.cd_mk("skeletons");
+
+	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+		int id                   = crag.id(n);
+		const Skeleton& skeleton = skeletons[n];
+		std::string     name     = boost::lexical_cast<std::string>(id);
+
+		_hdfFile.cd_mk(name);
+
+		writeGraphVolume(skeleton);
+		Hdf5GraphWriter::writeNodeMap(skeleton.graph(), skeleton.diameters(), "diameters");
+
+		_hdfFile.cd_up();
+	}
+}
+
+void
+Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
+
+	try {
+
+		_hdfFile.cd("/crag/skeletons");
+
+	} catch (vigra::PreconditionViolation& e) {
+
+		return;
+	}
+
+	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+		LOG_ALL(hdf5storelog) << "reading skeleton for node " << crag.id(n) << std::endl;
+
+		std::string name = boost::lexical_cast<std::string>(crag.id(n));
+
+		try {
+
+			_hdfFile.cd(name);
+
+		} catch (vigra::PreconditionViolation& e) {
+
+			continue;
+		}
+
+		Skeleton skeleton;
+		readGraphVolume(skeleton);
+		Hdf5GraphReader::readNodeMap(skeleton.graph(), skeleton.diameters(), "diameters");
+		skeletons[n] = std::move(skeleton);
+
+		_hdfFile.cd_up();
+	}
+}
+
+void
 Hdf5CragStore::saveSegmentation(
 		const Crag&                              crag,
 		const std::vector<std::set<Crag::Node>>& segmentation,
@@ -355,7 +413,57 @@ Hdf5CragStore::retrieveSegmentation(
 std::vector<std::string>
 Hdf5CragStore::getSegmentationNames() {
 
-	_hdfFile.root();
-	_hdfFile.cd("segmentations");
-	return _hdfFile.ls();
+	try {
+
+		_hdfFile.root();
+		_hdfFile.cd("segmentations");
+
+		return _hdfFile.ls();
+
+	} catch (std::exception& e) {
+
+		return std::vector<std::string>();
+	}
+}
+
+void
+Hdf5CragStore::writeGraphVolume(const GraphVolume& graphVolume) {
+
+	PositionConverter positionConverter;
+
+	writeGraph(graphVolume.graph());
+	Hdf5GraphWriter::writeNodeMap(graphVolume.graph(), graphVolume.positions(), "positions", positionConverter);
+
+	vigra::MultiArray<1, float> p(3);
+
+	// resolution
+	p[0] = graphVolume.getResolutionX();
+	p[1] = graphVolume.getResolutionY();
+	p[2] = graphVolume.getResolutionZ();
+	_hdfFile.write("resolution", p);
+
+	// offset
+	p[0] = graphVolume.getOffset().x();
+	p[1] = graphVolume.getOffset().y();
+	p[2] = graphVolume.getOffset().z();
+	_hdfFile.write("offset", p);
+}
+
+void
+Hdf5CragStore::readGraphVolume(GraphVolume& graphVolume) {
+
+	PositionConverter positionConverter;
+
+	readGraph(graphVolume.graph());
+	Hdf5GraphReader::readNodeMap(graphVolume.graph(), graphVolume.positions(), "positions", positionConverter);
+
+	vigra::MultiArray<1, float> p(3);
+
+	// resolution
+	_hdfFile.read("resolution", p);
+	graphVolume.setResolution(p[0], p[1], p[2]);
+
+	// offset
+	_hdfFile.read("offset", p);
+	graphVolume.setOffset(p[0], p[1], p[2]);
 }

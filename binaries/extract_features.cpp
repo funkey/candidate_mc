@@ -12,6 +12,7 @@
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <features/FeatureExtractor.h>
+#include <features/SkeletonExtractor.h>
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -55,6 +56,13 @@ int main(int argc, char** argv) {
 
 		cragStore.saveNodeFeatures(crag, nodeFeatures);
 		cragStore.saveEdgeFeatures(crag, edgeFeatures);
+
+		Skeletons skeletons(crag);
+
+		SkeletonExtractor skeletonExtractor(crag);
+		skeletonExtractor.extract(skeletons);
+
+		cragStore.saveSkeletons(crag, skeletons);
 
 	} catch (boost::exception& e) {
 
