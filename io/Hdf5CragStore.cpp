@@ -149,16 +149,25 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 	_hdfFile.root();
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
-	_hdfFile.cd_mk("nodes");
 
+	int numNodes = 0;
+	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
+		numNodes++;
+
+	vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims() + 1, numNodes));
+
+	int nodeNum = 0;
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-		const std::vector<double>& f = features[n];
-
-		_hdfFile.write(
-				boost::lexical_cast<std::string>(crag.id(n)),
-				vigra::ArrayVectorView<double>(f.size(), const_cast<double*>(&f[0])));
+		allFeatures(0, nodeNum) = crag.id(n);
+		std::copy(
+				features[n].begin(),
+				features[n].end(),
+				allFeatures.bind<1>(nodeNum).begin() + 1);
+		nodeNum++;
 	}
+
+	_hdfFile.write("nodes", allFeatures);
 }
 
 void
@@ -167,18 +176,23 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 	_hdfFile.root();
 	_hdfFile.cd("crag");
 	_hdfFile.cd("features");
-	_hdfFile.cd("nodes");
 
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+	vigra::MultiArray<2, double> allFeatures;
 
-		vigra::ArrayVector<double> f;
+	_hdfFile.readAndResize("nodes", allFeatures);
 
-		_hdfFile.readAndResize(
-				boost::lexical_cast<std::string>(crag.id(n)),
-				f);
+	int dims     = allFeatures.shape(0) - 1;
+	int numNodes = allFeatures.shape(1);
 
-		features[n].resize(f.size());
-		std::copy(f.begin(), f.end(), features[n].begin());
+	for (int i = 0; i < numNodes; i++) {
+
+		Crag::Node n = crag.nodeFromId(allFeatures(0, i));
+
+		features[n].resize(dims);
+		std::copy(
+				allFeatures.bind<1>(i).begin() + 1,
+				allFeatures.bind<1>(i).end(),
+				features[n].begin());
 	}
 }
 
@@ -188,17 +202,26 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 	_hdfFile.root();
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
-	_hdfFile.cd_mk("edges");
 
+	int numEdges = 0;
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+		numEdges++;
+
+	vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims() + 2, numEdges));
+
+	int edgeNum = 0;
 	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
 
-		const std::vector<double>& f = features[e];
-
-		_hdfFile.write(
-				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
-				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
-				vigra::ArrayVectorView<double>(f.size(), const_cast<double*>(&f[0])));
+		allFeatures(0, edgeNum) = crag.id(crag.u(e));
+		allFeatures(1, edgeNum) = crag.id(crag.v(e));
+		std::copy(
+				features[e].begin(),
+				features[e].end(),
+				allFeatures.bind<1>(edgeNum).begin() + 2);
+		edgeNum++;
 	}
+
+	_hdfFile.write("edges", allFeatures);
 }
 
 void
@@ -207,19 +230,34 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 	_hdfFile.root();
 	_hdfFile.cd("crag");
 	_hdfFile.cd("features");
-	_hdfFile.cd("edges");
 
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+	vigra::MultiArray<2, double> allFeatures;
 
-		vigra::ArrayVector<double> f;
+	_hdfFile.readAndResize("edges", allFeatures);
 
-		_hdfFile.readAndResize(
-				boost::lexical_cast<std::string>(crag.id(crag.u(e))) + "-" +
-				boost::lexical_cast<std::string>(crag.id(crag.v(e))),
-				f);
+	int dims     = allFeatures.shape(0) - 2;
+	int numEdges = allFeatures.shape(1);
 
-		features[e].resize(f.size());
-		std::copy(f.begin(), f.end(), features[e].begin());
+	for (int i = 0; i < numEdges; i++) {
+
+		Crag::Node u = crag.nodeFromId(allFeatures(0, i));
+		Crag::Node v = crag.nodeFromId(allFeatures(1, i));
+
+		Crag::IncEdgeIt e(crag, u);
+		for (; e != lemon::INVALID; ++e)
+			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v)
+				break;
+
+		if (e == lemon::INVALID)
+			UTIL_THROW_EXCEPTION(
+					IOError,
+					"can not find edge for nodes " << crag.id(u) << " and " << crag.id(v));
+
+		features[e].resize(dims);
+		std::copy(
+				allFeatures.bind<1>(i).begin() + 2,
+				allFeatures.bind<1>(i).end(),
+				features[e].begin());
 	}
 }
 
