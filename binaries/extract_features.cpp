@@ -9,6 +9,7 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
+#include <util/timing.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <features/FeatureExtractor.h>
@@ -54,15 +55,21 @@ int main(int argc, char** argv) {
 		featureExtractor.setSampleSegmentations(sampleSegmentations);
 		featureExtractor.extract(nodeFeatures, edgeFeatures);
 
-		cragStore.saveNodeFeatures(crag, nodeFeatures);
-		cragStore.saveEdgeFeatures(crag, edgeFeatures);
+		{
+			UTIL_TIME_SCOPE("storing features");
+			cragStore.saveNodeFeatures(crag, nodeFeatures);
+			cragStore.saveEdgeFeatures(crag, edgeFeatures);
+		}
 
 		Skeletons skeletons(crag);
 
 		SkeletonExtractor skeletonExtractor(crag);
 		skeletonExtractor.extract(skeletons);
 
-		cragStore.saveSkeletons(crag, skeletons);
+		{
+			UTIL_TIME_SCOPE("storing skeletons");
+			cragStore.saveSkeletons(crag, skeletons);
+		}
 
 	} catch (boost::exception& e) {
 
