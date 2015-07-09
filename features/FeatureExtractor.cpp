@@ -475,6 +475,8 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (_segmentations.size() > 0) {
 
+		UTIL_TIME_SCOPE("extract edge segmentation features");
+
 		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
 			Crag::Node u = _crag.u(e);
