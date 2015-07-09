@@ -67,6 +67,14 @@ public:
 	}
 
 	/**
+	 * Remove an adjacency edge.
+	 */
+	inline void erase(Crag::Edge e) {
+
+		_rag.erase(e);
+	}
+
+	/**
 	 * Indicate that the candidates represented by the given two nodes are 
 	 * adjacent.
 	 */
