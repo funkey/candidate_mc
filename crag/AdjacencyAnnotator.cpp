@@ -1,8 +1,15 @@
 #include <util/Logger.h>
 #include <util/helpers.hpp>
+#include <util/ProgramOptions.h>
 #include "AdjacencyAnnotator.h"
 
 logger::LogChannel adjacencyannotatorlog("adjacencyannotatorlog", "[AdjacencyAnnotator] ");
+
+util::ProgramOption optionPruneChildEdges(
+		util::_long_name        = "pruneChildEdges",
+		util::_description_text = "For binary trees, remove adjacency edges between children, since the "
+		                          "merge represented by those is already performed by selecting the parent "
+		                          "node.");
 
 void
 AdjacencyAnnotator::propagateLeafAdjacencies(Crag& crag) {
@@ -23,6 +30,9 @@ AdjacencyAnnotator::propagateLeafAdjacencies(Crag& crag) {
 	_numAdded = 0;
 	for (Crag::Node n : roots)
 		recurseAdjacencies(crag, n);
+
+	if (optionPruneChildEdges)
+		pruneChildEdges(crag);
 
 	LOG_USER(adjacencyannotatorlog)
 			<< "added " << _numAdded << " super node adjacency edges"
@@ -80,4 +90,31 @@ AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
 	LOG_ALL(adjacencyannotatorlog) << "leaving node " << crag.id(n) << std::endl;
 
 	return subnodes;
+}
+
+void
+AdjacencyAnnotator::pruneChildEdges(Crag& crag) {
+
+	std::vector<Crag::Edge> siblingEdges;
+
+	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+		if (isSiblingEdge(crag, e))
+			siblingEdges.push_back(e);
+
+	for (Crag::Edge e : siblingEdges)
+		crag.erase(e);
+
+	LOG_USER(adjacencyannotatorlog) << "pruned " << siblingEdges.size() << " child adjacency edges" << std::endl;
+}
+
+bool
+AdjacencyAnnotator::isSiblingEdge(Crag& crag, Crag::Edge e) {
+
+	if (crag.isRootNode(crag.u(e)) || crag.isRootNode(crag.v(e)))
+		return false;
+
+	Crag::SubsetNode parentU = crag.getSubsetGraph().target(Crag::SubsetOutArcIt(crag, crag.toSubset(crag.u(e))));
+	Crag::SubsetNode parentV = crag.getSubsetGraph().target(Crag::SubsetOutArcIt(crag, crag.toSubset(crag.v(e))));
+
+	return (parentU == parentV);
 }

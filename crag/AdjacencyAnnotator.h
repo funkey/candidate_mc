@@ -29,6 +29,18 @@ private:
 	 */
 	std::set<Crag::Node> recurseAdjacencies(Crag& crag, Crag::Node n);
 
+	/**
+	 * For binary trees, remove adjacency edges between children, since the 
+	 * merge represented by those is already performed by selecting the parent 
+	 * node.
+	 */
+	void pruneChildEdges(Crag& crag);
+
+	/**
+	 * Is the given edge connecting children of the same node?
+	 */
+	bool isSiblingEdge(Crag& crag, Crag::Edge e);
+
 	unsigned int _numAdded;
 };
 
