@@ -102,44 +102,51 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 		UTIL_ASSERT(!crag.getBoundingBox(n).isZero());
 	}
 
-	_hdfFile.cd("/crag");
-	_hdfFile.cd("grid_graph");
-	vigra::ArrayVector<int> s;
-	_hdfFile.readAndResize("shape", s);
-	vigra::Shape3 shape;
-	shape[0] = s[0];
-	shape[1] = s[1];
-	shape[2] = s[2];
-	vigra::GridGraph<3> gridGraph(shape, vigra::DirectNeighborhood);
-	crag.setGridGraph(gridGraph);
+	try {
 
-	_hdfFile.cd("/crag");
-	_hdfFile.cd("affiliated_edges");
+		_hdfFile.cd("/crag");
+		_hdfFile.cd("grid_graph");
+		vigra::ArrayVector<int> s;
+		_hdfFile.readAndResize("shape", s);
+		vigra::Shape3 shape;
+		shape[0] = s[0];
+		shape[1] = s[1];
+		shape[2] = s[2];
+		vigra::GridGraph<3> gridGraph(shape, vigra::DirectNeighborhood);
+		crag.setGridGraph(gridGraph);
 
-	vigra::ArrayVector<int> aeIds;
-	_hdfFile.readAndResize(
-			"list",
-			aeIds);
+		_hdfFile.cd("/crag");
+		_hdfFile.cd("affiliated_edges");
 
-	for (int i = 0; i < aeIds.size();) {
+		vigra::ArrayVector<int> aeIds;
+		_hdfFile.readAndResize(
+				"list",
+				aeIds);
 
-		Crag::Node u = crag.nodeFromId(aeIds[i]);
-		Crag::Node v = crag.nodeFromId(aeIds[i+1]);
-		int n = aeIds[i+2];
-		i += 3;
+		for (int i = 0; i < aeIds.size();) {
 
-		std::vector<vigra::GridGraph<3>::Edge> affiliatedEdges;
-		for (int j = 0; j < n; j++)
-			affiliatedEdges.push_back(crag.getGridGraph().edgeFromId(aeIds[i+j]));
-		i += n;
+			Crag::Node u = crag.nodeFromId(aeIds[i]);
+			Crag::Node v = crag.nodeFromId(aeIds[i+1]);
+			int n = aeIds[i+2];
+			i += 3;
 
-		// find edge in CRAG and set affiliated edge list
-		for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
-			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+			std::vector<vigra::GridGraph<3>::Edge> affiliatedEdges;
+			for (int j = 0; j < n; j++)
+				affiliatedEdges.push_back(crag.getGridGraph().edgeFromId(aeIds[i+j]));
+			i += n;
 
-				crag.setAffiliatedEdges(e, affiliatedEdges);
-				break;
-			}
+			// find edge in CRAG and set affiliated edge list
+			for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
+				if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+
+					crag.setAffiliatedEdges(e, affiliatedEdges);
+					break;
+				}
+		}
+
+	} catch (std::exception& e) {
+
+		LOG_USER(hdf5storelog) << "no grid-graph description found" << std::endl;
 	}
 }
 
