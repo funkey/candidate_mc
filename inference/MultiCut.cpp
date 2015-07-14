@@ -2,12 +2,18 @@
 #include <lemon/dijkstra.h>
 #include <lemon/connectivity.h>
 #include <util/Logger.h>
+#include <util/ProgramOptions.h>
 #include "MultiCut.h"
 
 #include <vigra/multi_impex.hxx>
 #include <vigra/functorexpression.hxx>
 
 logger::LogChannel multicutlog("multicutlog", "[MultiCut] ");
+
+util::ProgramOption optionForceParentCandidate(
+		util::_long_name        = "forceParentCandidate",
+		util::_description_text = "Disallow merging of children into a shape that resembles their parent. "
+		                          "In this case, take the parent instead.");
 
 MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
@@ -276,6 +282,9 @@ MultiCut::setInitialConstraints() {
 			numIncEdges++;
 		}
 
+		if (numIncEdges == 0)
+			continue;
+
 		rejectionConstraint.setCoefficient(
 				nodeIdToVar(_crag.id(n)),
 				-numIncEdges);
@@ -290,6 +299,58 @@ MultiCut::setInitialConstraints() {
 	LOG_USER(multicutlog)
 			<< "added " << numRejectionConstraints
 			<< " rejection constraints" << std::endl;
+
+	if (!optionForceParentCandidate)
+		return;
+
+	int numForceParentConstraints = 0;
+
+	for (Crag::SubsetNodeIt n(_crag.getSubsetGraph()); n != lemon::INVALID; ++n) {
+
+		std::vector<Crag::Edge> childEdges;
+
+		// collect all child adjacency edges
+		for (Crag::SubsetInArcIt childEdge(_crag.getSubsetGraph(), n); childEdge != lemon::INVALID; ++childEdge) {
+
+			Crag::Node child = _crag.toRag(_crag.getSubsetGraph().source(childEdge));
+
+			for (Crag::IncEdgeIt childAdjacencyEdge(_crag, child); childAdjacencyEdge != lemon::INVALID; ++childAdjacencyEdge) {
+
+				Crag::Node neighbor = _crag.getAdjacencyGraph().oppositeNode(child, childAdjacencyEdge);
+				if (neighbor < child)
+					continue;
+
+				// are both nodes of the node children of n?
+				Crag::SubsetArc parentArc = Crag::SubsetOutArcIt(_crag.getSubsetGraph(), _crag.toSubset(neighbor));
+				Crag::SubsetNode parentNeighbor = _crag.getSubsetGraph().target(parentArc);
+
+				if (parentNeighbor == n)
+					childEdges.push_back(childAdjacencyEdge);
+			}
+		}
+
+		if (childEdges.size() == 0)
+			continue;
+
+		LinearConstraint forceParentConstraint;
+
+		// require that not all of them are turned on at the same time
+		for (Crag::Edge e : childEdges) {
+
+			int var = _edgeIdToVarMap[_crag.id(e)];
+			forceParentConstraint.setCoefficient(var, 1.0);
+		}
+
+		forceParentConstraint.setRelation(LessEqual);
+		forceParentConstraint.setValue(childEdges.size() - 1);
+
+		_constraints->add(forceParentConstraint);
+		numForceParentConstraints++;
+	}
+
+	LOG_USER(multicutlog)
+			<< "added " << numForceParentConstraints
+			<< " force parent constraints" << std::endl;
 }
 
 int
