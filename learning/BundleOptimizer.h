@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_LEARNING_BUNDLE_OPTIMIZER_HXX
 #define CANDIDATE_MC_LEARNING_BUNDLE_OPTIMIZER_HXX
 
+#include <io/vectors.h>
 #include <util/assert.h>
 #include <util/helpers.hpp>
 #include <util/Logger.h>
@@ -189,6 +190,8 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 		lastMinLower = minLower;
 
 		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << eps_t << std::endl;
+
+		storeVector(w, std::string("feature_weights_") + boost::lexical_cast<std::string>(t) + ".txt");
 
 		// converged?
 		if (eps_t <= _parameter.min_eps)
