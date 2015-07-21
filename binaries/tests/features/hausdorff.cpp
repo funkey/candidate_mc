@@ -89,5 +89,11 @@ void hausdorff() {
 	hausdorff(a1, b2, a_b, b_a);
 	BOOST_CHECK_CLOSE(a_b, 13.342, 0.01);
 	BOOST_CHECK_CLOSE(b_a, 4.243,  0.01);
+
+	// between root_a and root_b Hausdorff should be sqrt(2*2 + 8*8) = 8.25 for 
+	// A->B and 2 for B->A
+	hausdorff(root_a, root_b, a_b, b_a);
+	BOOST_CHECK_CLOSE(a_b, 8.246, 0.01);
+	BOOST_CHECK_CLOSE(b_a, 2.0,   0.01);
 }
 
