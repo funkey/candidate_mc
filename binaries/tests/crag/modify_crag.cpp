@@ -2,16 +2,11 @@
 #include <tests.h>
 #include <crag/Crag.h>
 
-namespace create_crag_case {
+namespace modify_crag_case {
 
-} using namespace create_crag_case;
+} using namespace modify_crag_case;
 
-void create_crag() {
-
-	// useful for later:
-	//
-	//boost::filesystem::path dataDir = dir_of(__FILE__);
-	//boost::filesystem::path graphfile = dataDir/"star.dat";
+void modify_crag() {
 
 	Crag crag;
 
@@ -30,20 +25,33 @@ void create_crag() {
 		}
 	}
 
+	// remove some nodes
+
+	for (int i = 5; i < 100; i += 10)
+		crag.erase(crag.nodeFromId(i));
+
 	// check levels of nodes
 	for (int i = 0; i < 100; i++) {
 
-		Crag::Node n = crag.nodeFromId(i);
-		BOOST_CHECK_EQUAL(crag.getLevel(n), i%10);
+		if (i%10 == 5)
+			continue;
 
-		if (i%10 == 0)
+		Crag::Node n = crag.nodeFromId(i);
+
+		if (i%10 < 5)
+			BOOST_CHECK_EQUAL(crag.getLevel(n), i%10);
+		else
+			BOOST_CHECK_EQUAL(crag.getLevel(n), i%10 - 6);
+
+		if (i%10 == 0 || i%10 == 6)
 			BOOST_CHECK(crag.isLeafNode(n));
 		else
 			BOOST_CHECK(!crag.isLeafNode(n));
 
-		if (i%10 == 9)
+		if (i%10 == 4 || i%10 == 9)
 			BOOST_CHECK(crag.isRootNode(n));
 		else
 			BOOST_CHECK(!crag.isRootNode(n));
 	}
 }
+
