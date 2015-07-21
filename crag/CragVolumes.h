@@ -34,6 +34,8 @@ public:
 		_crag(crag),
 		_volumes(crag) {}
 
+	virtual ~CragVolumes() {}
+
 	CragVolumes(CragVolumes&& other) :
 		_crag(other._crag),
 		_volumes(other._crag),

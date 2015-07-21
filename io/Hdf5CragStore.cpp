@@ -113,7 +113,7 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 				"list",
 				aeIds);
 
-		for (int i = 0; i < aeIds.size();) {
+		for (unsigned int i = 0; i < aeIds.size();) {
 
 			Crag::Node u = crag.nodeFromId(aeIds[i]);
 			Crag::Node v = crag.nodeFromId(aeIds[i+1]);

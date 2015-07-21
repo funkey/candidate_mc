@@ -85,9 +85,9 @@ int main(int argc, char** argv) {
 				const CragVolume& volume = *volumes[n];
 				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
 
-				for (int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
-				for (int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
-				for (int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+				for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+				for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
 
 					if (volume.data()(x, y, z))
 						(*supervoxels)(

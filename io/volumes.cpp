@@ -146,9 +146,9 @@ void readCrag(
 		util::point<int, 3> offset = volumes[n]->getOffset()/volumes[n]->getResolution() - segmentation.getOffset();
 
 		const util::box<int, 3>& bb = volumes[n]->getDiscreteBoundingBox();
-		for (unsigned int z = 0; z < bb.depth();  z++)
-		for (unsigned int y = 0; y < bb.height(); y++)
-		for (unsigned int x = 0; x < bb.width();  x++) {
+		for (int z = 0; z < bb.depth();  z++)
+		for (int y = 0; y < bb.height(); y++)
+		for (int x = 0; x < bb.width();  x++) {
 
 			int segId = segmentation(
 					offset.x() + x,
