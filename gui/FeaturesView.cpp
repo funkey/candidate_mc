@@ -2,7 +2,7 @@
 #include <util/helpers.hpp>
 
 void
-FeaturesView::onSignal(SetCandidate& signal) {
+FeaturesView::onSignal(SetCandidate& /*signal*/) {
 
 }
 
