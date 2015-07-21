@@ -4,14 +4,12 @@
 int
 Crag::getLevel(Crag::Node n) const {
 
-	if (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID)
+	if (isLeafNode(n))
 		return 0;
 
 	int level = 0;
-	for (SubsetInArcIt e(*this, toSubset(n)); e != lemon::INVALID; ++e) {
-
-		level = std::max(getLevel(toRag(getSubsetGraph().oppositeNode(toSubset(n), e))), level);
-	}
+	for (SubsetInArcIt e(getSubsetGraph(), toSubset(n)); e != lemon::INVALID; ++e)
+		level = std::max(getLevel(toRag(getSubsetGraph().source(e))), level);
 
 	return level + 1;
 }
