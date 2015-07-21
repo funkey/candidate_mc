@@ -3,3 +3,8 @@ define_module(extract_features         BINARY SOURCES extract_features.cpp      
 define_module(train                    BINARY SOURCES train.cpp                   LINKS learning crag io util)
 define_module(solve                    BINARY SOURCES solve.cpp                   LINKS crag inference io util)
 define_module(crag_viewer              BINARY SOURCES crag_viewer.cpp             LINKS crag gui io)
+
+if (BUILD_TESTS)
+  add_subdirectory(tests)
+  message("Building unit tests")
+endif()

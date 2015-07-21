@@ -23,6 +23,8 @@ endif()
 # project directories #
 #######################
 
+set(BUILD_TESTS TRUE CACHE BOOL "Build boost unit tests")
+
 include_directories(${PROJECT_BINARY_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 
