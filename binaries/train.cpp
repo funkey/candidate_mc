@@ -62,7 +62,9 @@ int main(int argc, char** argv) {
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
 		Crag crag;
+		CragVolumes volumes(crag);
 		cragStore.retrieveCrag(crag);
+		cragStore.retrieveVolumes(volumes);
 
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
@@ -121,8 +123,8 @@ int main(int argc, char** argv) {
 			volumeStore.retrieveGroundTruth(groundTruth);
 
 			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-			overlapLoss = new OverlapLoss(crag, groundTruth);
-			bestEffort = new BestEffort(crag, *overlapLoss);
+			overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
+			bestEffort = new BestEffort(crag, volumes, *overlapLoss);
 		}
 
 		Loss* loss = 0;
@@ -146,7 +148,7 @@ int main(int argc, char** argv) {
 				volumeStore.retrieveGroundTruth(groundTruth);
 
 				LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-				overlapLoss = new OverlapLoss(crag, groundTruth);
+				overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
 			}
 
 			loss = overlapLoss;
@@ -168,6 +170,7 @@ int main(int argc, char** argv) {
 
 		Oracle oracle(
 				crag,
+				volumes,
 				nodeFeatures,
 				edgeFeatures,
 				*loss,

@@ -3,6 +3,7 @@
 #include <lemon/connectivity.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
+#include <util/box.hpp>
 #include "MultiCut.h"
 
 #include <vigra/multi_impex.hxx>
@@ -94,15 +95,15 @@ MultiCut::solve(unsigned int numIterations) {
 }
 
 void
-MultiCut::storeSolution(const std::string& filename, bool boundary) {
+MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename, bool boundary) {
 
-	util::box<float, 3>   cragBB = _crag.getBoundingBox();
+	util::box<float, 3>   cragBB = volumes.getBoundingBox();
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
 		if (!_crag.isLeafNode(n))
 			continue;
-		resolution = _crag.getVolume(n).getResolution();
+		resolution = volumes[n]->getResolution();
 		break;
 	}
 
@@ -128,8 +129,8 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 		if (!_crag.isLeafNode(n))
 			continue;
 
-		const util::point<float, 3>&      volumeOffset     = _crag.getVolume(n).getOffset();
-		const util::box<unsigned int, 3>& volumeDiscreteBB = _crag.getVolume(n).getDiscreteBoundingBox();
+		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
+		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();
 
 		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
@@ -140,7 +141,7 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 
 		// fill id of connected component
 		vigra::combineTwoMultiArrays(
-				_crag.getVolume(n).data(),
+				volumes[n]->data(),
 				components.subarray(
 						vigra::Shape3(
 								begin.x(),
@@ -172,12 +173,12 @@ MultiCut::storeSolution(const std::string& filename, bool boundary) {
 		// gray boundary for all leaf nodes
 		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
 			if (Crag::SubsetInArcIt(_crag, _crag.toSubset(n)) == lemon::INVALID)
-				drawBoundary(n, components, 0.5);
+				drawBoundary(volumes, n, components, 0.5);
 
 		// black boundary for all selected nodes
 		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
 			if (_selected[n])
-				drawBoundary(n, components, 0);
+				drawBoundary(volumes, n, components, 0);
 	}
 
 	if (components.shape(2) > 1) {
@@ -596,14 +597,15 @@ MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
 
 void
 MultiCut::drawBoundary(
+		const CragVolumes&           volumes,
 		Crag::Node                   n,
 		vigra::MultiArray<3, float>& components,
 		float                        value) {
 
-	ExplicitVolume<bool> volume = _crag.getVolume(n);
+	const CragVolume& volume = *volumes[n];
 	const util::box<unsigned int, 3>& volumeDiscreteBB = volume.getDiscreteBoundingBox();
 	const util::point<float, 3>&      volumeOffset     = volume.getOffset();
-	util::point<unsigned int, 3>      begin            = (volumeOffset - _crag.getBoundingBox().min())/volume.getResolution();
+	util::point<unsigned int, 3>      begin            = (volumeOffset - volumes.getBoundingBox().min())/volume.getResolution();
 
 	bool hasZ = (volumeDiscreteBB.depth() > 1);
 

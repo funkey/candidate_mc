@@ -17,6 +17,7 @@ struct BestEffort {
 	 */
 	BestEffort(
 			const Crag&                 crag,
+			const CragVolumes&          volumes,
 			const Costs&                costs,
 			const MultiCut::Parameters& params = MultiCut::Parameters());
 

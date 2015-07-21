@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_FEATURES_HAUSDORFF_DISTANCE_H__
 
 #include <crag/Crag.h>
+#include <crag/CragVolumes.h>
 
 /**
  * Computes the HausdorffDistance of pairs of CRAG nodes. Ignores the 
@@ -12,9 +13,21 @@ class HausdorffDistance {
 public:
 
 	/**
-	 * Create a new HausdorffDistance functor for nodes of the given CRAGs.
+	 * Create a new functor that can compute the Hausdorff distance for every 
+	 * pair of nodes for which volumes a and b were given.
+	 *
+	 * @param a
+	 *              The first set of volumes.
+	 *
+	 * @param b
+	 *              The second set of volumes.
+	 *
+	 * @param maxDistance
+	 *              The maximal Hausdorff distance to be reported. If two 
+	 *              volumes exceed this value, this is the value that will be 
+	 *              reported.
 	 */
-	HausdorffDistance(const Crag& a, const Crag& b, int maxDistance);
+	HausdorffDistance(const CragVolumes& a, const CragVolumes& b, int maxDistance);
 
 	/**
 	 * Compute the distances for nodes i (of CRAG a) and node j (of CRAG b). 
@@ -30,11 +43,15 @@ private:
 
 	LeafNodeMap collectLeafNodes(const Crag& crag);
 
-	void leafDistance(Crag::Node i, Crag::Node j, double& i_j, double& j_i);
+	void leafDistance(
+			Crag::Node i,
+			Crag::Node j,
+			double& i_j,
+			double& j_i);
 
 	void leafDistance(
-			const ExplicitVolume<unsigned char>& volume_i,
-			const ExplicitVolume<unsigned char>& volume_j,
+			Crag::Node i,
+			Crag::Node j,
 			double& i_j);
 
 	vigra::MultiArray<2, double>& getDistanceMap(const ExplicitVolume<unsigned char>& volume);
@@ -44,8 +61,8 @@ private:
 	LeafNodeMap _leafNodesA;
 	LeafNodeMap _leafNodesB;
 
-	const Crag& _a;
-	const Crag& _b;
+	const CragVolumes& _a;
+	const CragVolumes& _b;
 
 	std::map<std::pair<Crag::Node, Crag::Node>, std::pair<double, double>> _cache;
 

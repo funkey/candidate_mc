@@ -1,6 +1,7 @@
 #include <features/HausdorffDistance.h>
-#include <util/ProgramOptions.h>
 #include <util/Logger.h>
+#include <util/ProgramOptions.h>
+#include <util/assert.h>
 #include <util/timing.h>
 #include "CragStackCombiner.h"
 
@@ -29,7 +30,13 @@ CragStackCombiner::CragStackCombiner() :
 	_requireBbOverlap(optionRequireBoundingBoxOverlap) {}
 
 void
-CragStackCombiner::combine(const std::vector<Crag>& crags, Crag& crag) {
+CragStackCombiner::combine(
+		const std::vector<Crag>&        sourcesCrags,
+		const std::vector<CragVolumes>& sourcesVolumes,
+		Crag&                           targetCrag,
+		CragVolumes&                    targetVolumes) {
+
+	UTIL_ASSERT_REL(sourcesCrags.size(), ==, sourcesVolumes.size());
 
 	LOG_USER(cragstackcombinerlog)
 			<< "combining CRAGs, "
@@ -40,28 +47,37 @@ CragStackCombiner::combine(const std::vector<Crag>& crags, Crag& crag) {
 	std::map<Crag::Node, Crag::Node> prevNodeMap;
 	std::map<Crag::Node, Crag::Node> nextNodeMap;
 
-	for (unsigned int z = 1; z < crags.size(); z++) {
+	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
 
 		if (z == 1)
-			prevNodeMap = copyNodes(crags[0], crag);
+			prevNodeMap = copyNodes(sourcesCrags[0], sourcesVolumes[0], targetCrag, targetVolumes);
 		else
 			prevNodeMap = nextNodeMap;
 
-		nextNodeMap = copyNodes(crags[z], crag);
+		nextNodeMap = copyNodes(sourcesCrags[z], sourcesVolumes[z], targetCrag, targetVolumes);
 
-		std::vector<std::pair<Crag::Node, Crag::Node>> links = findLinks(crags[z-1], crags[z]);
+		std::vector<std::pair<Crag::Node, Crag::Node>> links =
+				findLinks(
+						sourcesCrags[z-1],
+						sourcesVolumes[z-1],
+						sourcesCrags[z],
+						sourcesVolumes[z]);
 
 		for (const auto& pair : links)
-			crag.addAdjacencyEdge(
+			targetCrag.addAdjacencyEdge(
 					prevNodeMap[pair.first],
 					nextNodeMap[pair.second]);
 	}
 }
 
 std::map<Crag::Node, Crag::Node>
-CragStackCombiner::copyNodes(const Crag& source, Crag& target) {
+CragStackCombiner::copyNodes(
+		const Crag&        source,
+		const CragVolumes& sourceVolumes,
+		Crag&              target,
+		CragVolumes&       targetVolumes) {
 
 	std::map<Crag::Node, Crag::Node> nodeMap;
 
@@ -69,10 +85,8 @@ CragStackCombiner::copyNodes(const Crag& source, Crag& target) {
 
 		Crag::Node n = target.addNode();
 
-		ExplicitVolume<unsigned char> volume = source.getVolume(i);
-
-		if (!volume.getBoundingBox().isZero())
-			target.getVolume(n) = volume;
+		if (source.isLeafNode(i))
+			targetVolumes.setLeafNodeVolume(n, sourceVolumes[i]);
 
 		nodeMap[i] = n;
 	}
@@ -97,24 +111,28 @@ CragStackCombiner::copyNodes(const Crag& source, Crag& target) {
 }
 
 std::vector<std::pair<Crag::Node, Crag::Node>>
-CragStackCombiner::findLinks(const Crag& a, const Crag& b) {
+CragStackCombiner::findLinks(
+		const Crag&        cragA,
+		const CragVolumes& volsA,
+		const Crag&        cragB,
+		const CragVolumes& volsB) {
 
 	UTIL_TIME_METHOD;
 
-	HausdorffDistance hausdorff(a, b, 100);
+	HausdorffDistance hausdorff(volsA, volsB, 100);
 
 	std::vector<std::pair<Crag::Node, Crag::Node>> links;
 
-	for (Crag::NodeIt i(a); i != lemon::INVALID; ++i) {
+	for (Crag::NodeIt i(cragA); i != lemon::INVALID; ++i) {
 
-		LOG_DEBUG(cragstackcombinerlog) << "checking for links of node " << a.id(i) << std::endl;
+		LOG_DEBUG(cragstackcombinerlog) << "checking for links of node " << cragA.id(i) << std::endl;
 
-		for (Crag::NodeIt j(b); j != lemon::INVALID; ++j) {
+		for (Crag::NodeIt j(cragB); j != lemon::INVALID; ++j) {
 
 			if (_requireBbOverlap) {
 
-				util::box<float, 2> bb_i = a.getVolume(i).getBoundingBox().project<2>();
-				util::box<float, 2> bb_j = b.getVolume(j).getBoundingBox().project<2>();
+				util::box<float, 2> bb_i = volsA[i]->getBoundingBox().project<2>();
+				util::box<float, 2> bb_j = volsB[j]->getBoundingBox().project<2>();
 
 				if (!bb_i.intersects(bb_j))
 					continue;

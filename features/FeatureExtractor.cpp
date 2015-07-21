@@ -171,10 +171,10 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< _crag.id(n) << std::endl;
 
 		// the bounding box of the volume
-		const util::box<float, 3>&   nodeBoundingBox    = _crag.getBoundingBox(n);
-		util::point<unsigned int, 3> nodeSize           = (nodeBoundingBox.max() - nodeBoundingBox.min())/_crag.getVolume(n).getResolution();
+		const util::box<float, 3>&   nodeBoundingBox    = _volumes.getBoundingBox(n);
+		util::point<unsigned int, 3> nodeSize           = (nodeBoundingBox.max() - nodeBoundingBox.min())/_volumes[n]->getResolution();
 		util::point<float, 3>        nodeOffset         = nodeBoundingBox.min() - _raw.getBoundingBox().min();
-		util::point<unsigned int, 3> nodeDiscreteOffset = nodeOffset/_crag.getVolume(n).getResolution();
+		util::point<unsigned int, 3> nodeDiscreteOffset = nodeOffset/_volumes[n]->getResolution();
 
 		LOG_ALL(featureextractorlog)
 				<< "node volume bounding box is "
@@ -202,7 +202,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< std::endl;
 
 		// the "label" image
-		const vigra::MultiArray<3, unsigned char>& labelImage = _crag.getVolume(n).data();
+		const vigra::MultiArray<3, unsigned char>& labelImage = _volumes[n]->data();
 
 		LOG_ALL(featureextractorlog)
 				<< "label image has size "
@@ -217,7 +217,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 				<< std::endl;
 
 		// flat candidates, extract 2D features
-		if (_crag.getBoundingBox().depth()/_crag.getVolume(n).getResolution().z() == 1) {
+		if (_volumes.getBoundingBox().depth()/_volumes[n]->getResolution().z() == 1) {
 
 			RegionFeatures<2, float, unsigned char>::Parameters p;
 			p.computeRegionprops = optionShapeFeatures;
@@ -570,13 +570,13 @@ FeatureExtractor::visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures) {
 
 	LOG_USER(featureextractorlog) << "visualizing edge features... " << std::flush;
 
-	util::box<float, 3>   cragBB = _crag.getBoundingBox();
+	util::box<float, 3>   cragBB = _volumes.getBoundingBox();
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
 		if (!_crag.isLeafNode(n))
 			continue;
-		resolution = _crag.getVolume(n).getResolution();
+		resolution = _volumes[n]->getResolution();
 		break;
 	}
 

@@ -11,9 +11,11 @@ public:
 
 	FeatureExtractor(
 			Crag&                        crag,
+			CragVolumes&                 volumes,
 			const ExplicitVolume<float>& raw,
 			const ExplicitVolume<float>& boundaries) :
 		_crag(crag),
+		_volumes(volumes),
 		_raw(raw),
 		_boundaries(boundaries) {}
 
@@ -59,7 +61,8 @@ private:
 
 	void visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures);
 
-	Crag& _crag;
+	Crag&        _crag;
+	CragVolumes& _volumes;
 
 	const ExplicitVolume<float>& _raw;
 	const ExplicitVolume<float>& _boundaries;

@@ -32,13 +32,13 @@ SkeletonExtractor::extract(Skeletons& skeletons) {
 			ExplicitVolume<float> downsampled;
 
 			if (downsample)
-				downsampled = downsampleVolume(_crag.getVolume(n));
+				downsampled = downsampleVolume(*_volumes[n]);
 			else
-				downsampled = _crag.getVolume(n);
+				downsampled = *_volumes[n];
 
 			LOG_DEBUG(skeletonextractorlog)
-					<< "original volume has discrete bb " << _crag.getVolume(n).getDiscreteBoundingBox()
-					<< ", offset " << _crag.getVolume(n).getOffset() << ", and resolution " << _crag.getVolume(n).getResolution()
+					<< "original volume has discrete bb " << _volumes[n]->getDiscreteBoundingBox()
+					<< ", offset " << _volumes[n]->getOffset() << ", and resolution " << _volumes[n]->getResolution()
 					<< std::endl;
 
 			LOG_DEBUG(skeletonextractorlog)

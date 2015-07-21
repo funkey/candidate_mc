@@ -30,8 +30,10 @@ int main(int argc, char** argv) {
 
 		Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
 
-		Crag crag;
+		Crag        crag;
+		CragVolumes volumes(crag);
 		cragStore.retrieveCrag(crag);
+		cragStore.retrieveVolumes(volumes);
 
 		std::vector<std::vector<std::set<Crag::Node>>> sampleSegmentations;
 		std::vector<std::string> segmentationNames = cragStore.getSegmentationNames();
@@ -51,7 +53,7 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
-		FeatureExtractor featureExtractor(crag, raw, boundaries);
+		FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
 		featureExtractor.setSampleSegmentations(sampleSegmentations);
 		featureExtractor.extract(nodeFeatures, edgeFeatures);
 
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
 
 		Skeletons skeletons(crag);
 
-		SkeletonExtractor skeletonExtractor(crag);
+		SkeletonExtractor skeletonExtractor(crag, volumes);
 		skeletonExtractor.extract(skeletons);
 
 		{

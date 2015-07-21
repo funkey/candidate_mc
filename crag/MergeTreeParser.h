@@ -7,6 +7,7 @@
 #include <imageprocessing/PixelList.h>
 #include <imageprocessing/ImageLevelParser.h>
 #include "Crag.h"
+#include "CragVolumes.h"
 
 class MergeTreeParser {
 
@@ -21,8 +22,13 @@ public:
 	 * Get the candidate region adjacency graph from the given merge tree image. 
 	 * Note that this only extracts the subset relations, not the adjacency 
 	 * (since the latter might be application dependent).
+	 *
+	 * @param[out] crag
+	 *                   An empty CRAG to fill.
+	 * @param[out] volumes
+	 *                   A node map to store the leaf node volumes.
 	 */
-	void getCrag(Crag& crag);
+	void getCrag(Crag& crag, CragVolumes& volumes);
 
 private:
 
@@ -44,7 +50,8 @@ private:
 		MergeTreeVisitor(
 				const util::point<float, 3>& resolution,
 				const util::point<float, 3>& offset,
-				Crag& crag);
+				Crag&                        crag,
+				CragVolumes&                 volumes);
 
 		/**
 		 * Set the pixel list that contains the pixel locations of each 
@@ -86,7 +93,8 @@ private:
 		util::point<float, 3> _resolution;
 		util::point<float, 3> _offset;
 
-		Crag& _crag;
+		Crag&        _crag;
+		CragVolumes& _volumes;
 
 		unsigned int _minSize;
 		unsigned int _maxSize;

@@ -96,7 +96,8 @@ int main(int argc, char** argv) {
 		util::ProgramOptions::init(argc, argv);
 		logger::LogManager::init();
 
-		Crag       crag;
+		Crag        crag;
+		CragVolumes volumes(crag);
 
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
@@ -105,6 +106,7 @@ int main(int argc, char** argv) {
 
 			Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
 			cragStore.retrieveCrag(crag);
+			cragStore.retrieveVolumes(volumes);
 
 			cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 			cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
@@ -121,7 +123,7 @@ int main(int argc, char** argv) {
 					optionOffsetZ);
 
 			std::string mergeTreePath = optionMergeTree;
-			readCrag(mergeTreePath, crag, resolution, offset);
+			readCrag(mergeTreePath, crag, volumes, resolution, offset);
 
 			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
 			intensities.setResolution(resolution);
@@ -133,7 +135,7 @@ int main(int argc, char** argv) {
 			boundaries.setOffset(offset);
 			boundaries.normalize();
 
-			FeatureExtractor featureExtractor(crag, intensities, boundaries);
+			FeatureExtractor featureExtractor(crag, volumes, intensities, boundaries);
 			featureExtractor.extract(nodeFeatures, edgeFeatures);
 		}
 
@@ -167,8 +169,8 @@ int main(int argc, char** argv) {
 
 		multicut.setCosts(costs);
 		multicut.solve();
-		multicut.storeSolution("solution.tif");
-		multicut.storeSolution("solution_boundary.tif", true);
+		multicut.storeSolution(volumes, "solution.tif");
+		multicut.storeSolution(volumes, "solution_boundary.tif", true);
 
 	} catch (Exception& e) {
 

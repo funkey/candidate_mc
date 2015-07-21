@@ -11,7 +11,12 @@ util::ProgramOption optionMaxMergeScore(
 		util::_long_name        = "maxMergeScore",
 		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from file mergeScores.");
 
-void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+void readCrag(
+		std::string           filename,
+		Crag&                 crag,
+		CragVolumes&          volumes,
+		util::point<float, 3> resolution,
+		util::point<float, 3> offset) {
 
 	vigra::ImageImportInfo info(filename.c_str());
 	Image mergeTree(info.width(), info.height());
@@ -20,12 +25,19 @@ void readCrag(std::string filename, Crag& crag, util::point<float, 3> resolution
 	mergeTree.setOffset(offset);
 
 	MergeTreeParser parser(mergeTree);
-	parser.getCrag(crag);
+	parser.getCrag(crag, volumes);
 }
 
-void readCrag(std::string superpixels, std::string mergeHistory, std::string mergeScores, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+void readCrag(
+		std::string           superpixels,
+		std::string           mergeHistory,
+		std::string           mergeScores,
+		Crag&                 crag,
+		CragVolumes&          volumes,
+		util::point<float, 3> resolution,
+		util::point<float, 3> offset) {
 
-	std::map<int, Crag::Node> idToNode = readSupervoxels(crag, resolution, offset, superpixels);
+	std::map<int, Crag::Node> idToNode = readSupervoxels(crag, volumes, resolution, offset, superpixels);
 
 	int maxMerges = -1;
 	if (optionMaxMerges)
@@ -97,9 +109,15 @@ void readCrag(std::string superpixels, std::string mergeHistory, std::string mer
 	}
 }
 
-void readCrag(std::string superpixels, std::string candidateSegmentation, Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset) {
+void readCrag(
+		std::string           superpixels,
+		std::string           candidateSegmentation,
+		Crag&                 crag,
+		CragVolumes&          volumes,
+		util::point<float, 3> resolution,
+		util::point<float, 3> offset) {
 
-	std::map<int, Crag::Node> svIdToNode = readSupervoxels(crag, resolution, offset, superpixels);
+	std::map<int, Crag::Node> svIdToNode = readSupervoxels(crag, volumes, resolution, offset, superpixels);
 
 	LOG_USER(logger::out) << "reading segmentation" << std::endl;
 
@@ -125,9 +143,9 @@ void readCrag(std::string superpixels, std::string candidateSegmentation, Crag& 
 					//"candidate segmentation has different resolution (" << segmentation.getResolution() <<
 					//" than supervoxels " << crag.getVolume(n).getResolution());
 
-		util::point<int, 3> offset = crag.getVolume(n).getOffset()/crag.getVolume(n).getResolution() - segmentation.getOffset();
+		util::point<int, 3> offset = volumes[n]->getOffset()/volumes[n]->getResolution() - segmentation.getOffset();
 
-		const util::box<int, 3>& bb = crag.getVolume(n).getDiscreteBoundingBox();
+		const util::box<int, 3>& bb = volumes[n]->getDiscreteBoundingBox();
 		for (unsigned int z = 0; z < bb.depth();  z++)
 		for (unsigned int y = 0; y < bb.height(); y++)
 		for (unsigned int x = 0; x < bb.width();  x++) {
@@ -169,7 +187,12 @@ void readCrag(std::string superpixels, std::string candidateSegmentation, Crag& 
 	}
 }
 
-std::map<int, Crag::Node> readSupervoxels(Crag& crag, util::point<float, 3> resolution, util::point<float, 3> offset, std::string supervoxels) {
+std::map<int, Crag::Node> readSupervoxels(
+		Crag&                 crag,
+		CragVolumes&          volumes,
+		util::point<float, 3> resolution,
+		util::point<float, 3> offset,
+		std::string           supervoxels) {
 
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
 
@@ -197,9 +220,10 @@ std::map<int, Crag::Node> readSupervoxels(Crag& crag, util::point<float, 3> reso
 		const util::box<int, 3>& bb = p.second;
 
 		Crag::Node n = crag.addNode();
-		crag.getVolumeMap()[n] = ExplicitVolume<unsigned char>(bb.width(), bb.height(), bb.depth(), 0);
-		crag.getVolumeMap()[n].setResolution(resolution);
-		crag.getVolumeMap()[n].setOffset(offset + bb.min()*resolution);
+		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(bb.width(), bb.height(), bb.depth(), 0);
+		volume->setResolution(resolution);
+		volume->setOffset(offset + bb.min()*resolution);
+		volumes.setLeafNodeVolume(n, volume);
 		idToNode[id] = n;
 	}
 
@@ -210,7 +234,7 @@ std::map<int, Crag::Node> readSupervoxels(Crag& crag, util::point<float, 3> reso
 		int id = ids(x, y, z);
 		Crag::Node n = idToNode[id];
 
-		crag.getVolumeMap()[n](x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
+		(*volumes[n])(x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
 	}
 
 	return idToNode;

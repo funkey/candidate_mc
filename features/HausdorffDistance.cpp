@@ -6,15 +6,15 @@
 #include <util/timing.h>
 
 HausdorffDistance::HausdorffDistance(
-		const Crag& a,
-		const Crag& b,
+		const CragVolumes& a,
+		const CragVolumes& b,
 		int maxDistance) :
 	_a(a),
 	_b(b),
 	_maxDistance(maxDistance) {
 
-	_leafNodesA = collectLeafNodes(a);
-	_leafNodesB = collectLeafNodes(b);
+	_leafNodesA = collectLeafNodes(a.getCrag());
+	_leafNodesB = collectLeafNodes(b.getCrag());
 }
 
 void
@@ -58,23 +58,23 @@ HausdorffDistance::leafDistance(Crag::Node i, Crag::Node j, double& i_j, double&
 		return;
 	}
 
-	const ExplicitVolume<unsigned char>& volume_i = _a.getVolume(i);
-	const ExplicitVolume<unsigned char>& volume_j = _b.getVolume(j);
-
 	//std::cout << "checking leaf nodes " << _a.id(i) << "a and " << _b.id(j) << "b" << std::endl;
-	leafDistance(volume_i, volume_j, i_j);
+	leafDistance(i, j, i_j);
 
 	//std::cout << "checking leaf nodes " << _b.id(j) << "b and " << _a.id(i) << "a" << std::endl;
-	leafDistance(volume_j, volume_i, j_i);
+	leafDistance(j, i, j_i);
 
 	_cache[std::make_pair(i, j)] = std::make_pair(i_j, j_i);
 }
 
 void
 HausdorffDistance::leafDistance(
-		const ExplicitVolume<unsigned char>& volume_i,
-		const ExplicitVolume<unsigned char>& volume_j,
+		Crag::Node i,
+		Crag::Node j,
 		double& i_j) {
+
+	const CragVolume& volume_i = *_a[i];
+	const CragVolume& volume_j = *_a[j];
 
 	const util::box<int, 2>& bb_i = (volume_i.getBoundingBox()/volume_i.getResolution()).project<2>();
 	const util::box<int, 2>& bb_j = (volume_j.getBoundingBox()/volume_j.getResolution()).project<2>();

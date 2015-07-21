@@ -26,7 +26,12 @@ public:
 	PlanarAdjacencyAnnotator(Neighborhood neighborhood) :
 		_neighborhood(neighborhood) {}
 
-	void annotate(Crag& crag) override;
+	/**
+	 * Annotate the leaf nodes of the given CRAG with adjacency edges. An edge 
+	 * is introduced, if the corresponding volumes are adjacent according to the 
+	 * specified neighborhood (direct or indirect).
+	 */
+	void annotate(Crag& crag, const CragVolumes& volumes) override;
 
 private:
 

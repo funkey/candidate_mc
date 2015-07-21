@@ -1,6 +1,7 @@
-#include <util/timing.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
+#include <util/box.hpp>
+#include <util/timing.h>
 #include "PlanarAdjacencyAnnotator.h"
 #include <vigra/impex.hxx>
 #include <vigra/functorexpression.hxx>
@@ -31,14 +32,14 @@ namespace vigra {
 } // namespace vigra
 
 void
-PlanarAdjacencyAnnotator::annotate(Crag& crag) {
+PlanarAdjacencyAnnotator::annotate(Crag& crag, const CragVolumes& volumes) {
 
 	if (optionCragType.as<std::string>() == "empty")
 		return;
 
 	UTIL_TIME_METHOD;
 
-	util::box<float, 3> cragBB = crag.getBoundingBox();
+	util::box<float, 3> cragBB = volumes.getBoundingBox();
 
 	util::point<float, 3> resolution;
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
@@ -46,7 +47,7 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 		if (!crag.isLeafNode(n))
 			continue;
 
-		resolution = crag.getVolume(n).getResolution();
+		resolution = volumes[n]->getResolution();
 		break;
 	}
 
@@ -67,8 +68,8 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 		if (!crag.isLeafNode(n))
 			continue;
 
-		const util::point<float, 3>&      volumeOffset     = crag.getVolume(n).getOffset();
-		const util::box<unsigned int, 3>& volumeDiscreteBB = crag.getVolume(n).getDiscreteBoundingBox();
+		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
+		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();
 
 		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
@@ -78,7 +79,7 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag) {
 						volumeDiscreteBB.depth());
 
 		vigra::combineTwoMultiArrays(
-				crag.getVolume(n).data(),
+				volumes[n]->data(),
 				ids.subarray(
 						vigra::Shape3(
 								begin.x(),

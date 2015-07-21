@@ -4,6 +4,7 @@
 #include <pipeline/Value.h>
 #include <pipeline/Process.h>
 #include <crag/Crag.h>
+#include <crag/CragVolumes.h>
 #include <solver/LinearSolver.h>
 #include "Costs.h"
 
@@ -85,7 +86,7 @@ public:
 	/**
 	 * Store the solution as label image in the given image file.
 	 */
-	void storeSolution(const std::string& filename, bool drawBoundary = false);
+	void storeSolution(const CragVolumes& volumes, const std::string& filename, bool drawBoundary = false);
 
 private:
 
@@ -114,6 +115,7 @@ private:
 	void propagateLabel(Crag::SubsetNode n, int label);
 
 	void drawBoundary(
+			const CragVolumes&           volumes,
 			Crag::Node                   n,
 			vigra::MultiArray<3, float>& components,
 			float                        value);

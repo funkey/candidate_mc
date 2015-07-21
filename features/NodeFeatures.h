@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_FEATURES_NODE_FEATURES_H__
 
 #include <vector>
+#include <util/exceptions.h>
 #include "Crag.h"
 
 class NodeFeatures : public Crag::NodeMap<std::vector<double>> {

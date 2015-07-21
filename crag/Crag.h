@@ -1,7 +1,6 @@
 #ifndef CANDIDATE_MC_CRAG_CRAG_H__
 #define CANDIDATE_MC_CRAG_CRAG_H__
 
-#include <imageprocessing/ExplicitVolume.h>
 #include <lemon/list_graph.h>
 #define WITH_LEMON
 #include <vigra/multi_gridgraph.hxx>
@@ -10,11 +9,9 @@
  * Candidate region adjacency graph.
  *
  * This datastructure holds two graphs on the same set of nodes: An undirected 
- * region adjacency graph (rag) and a directed subset graph (subset). In 
- * addition to that, a volume property map is provided, which stores the voxels 
- * for each leaf candidate.
+ * region adjacency graph (rag) and a directed subset graph (subset).
  */
-class Crag : public Volume {
+class Crag {
 
 public:
 
@@ -38,7 +35,6 @@ public:
 	template <typename T> using EdgeMap = RagType::EdgeMap<T>;
 
 	Crag() :
-		_volumes(_rag),
 		_affiliatedEdges(_rag) {}
 
 	virtual ~Crag() {}
@@ -120,27 +116,6 @@ public:
 	      lemon::ListDigraph& getSubsetGraph()          { return _ssg; }
 
 	/**
-	 * Get the bounding box of a candidate.
-	 */
-	util::box<float, 3> getBoundingBox(Crag::Node n) const;
-
-	using Volume::getBoundingBox;
-
-	/**
-	 * Get the volume for a candidate. For non-leaf node candidates, the volume 
-	 * will be created on-the-fly.
-	 */
-	const ExplicitVolume<unsigned char>& getVolume(Crag::Node n) const;
-	      ExplicitVolume<unsigned char>& getVolume(Crag::Node n);
-
-	/**
-	 * Low-level access to the volumes stored for each node. Used to populate 
-	 * the leaf nodes with initial volumes.
-	 */
-	      NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() { return _volumes; }
-	const NodeMap<ExplicitVolume<unsigned char>>& getVolumeMap() const { return _volumes; }
-
-	/**
 	 * Get the level of a node, i.e., the size of the longest subset-tree path 
 	 * to a leaf node. Leaf nodes have a value of zero.
 	 */
@@ -197,32 +172,13 @@ public:
 		return _ssg.nodeFromId(_rag.id(n));
 	}
 
-protected:
-
-	util::box<float,3> computeBoundingBox() const override {
-
-		util::box<float, 3> bb;
-		for (NodeIt n(_rag); n != lemon::INVALID; ++n)
-			bb += _volumes[n].getBoundingBox();
-
-		return bb;
-	}
-
 private:
-
-	void recFill(
-			const util::box<float, 3>&     boundingBox,
-			ExplicitVolume<unsigned char>& volume,
-			Crag::Node                     n) const;
 
 	// adjacency graph
 	lemon::ListGraph _rag;
 
 	// subset graph
 	lemon::ListDigraph _ssg;
-
-	// volumes of leaf candidates
-	mutable NodeMap<ExplicitVolume<unsigned char>> _volumes;
 
 	vigra::GridGraph<3> _gridGraph;
 

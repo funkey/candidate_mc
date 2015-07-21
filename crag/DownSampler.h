@@ -1,7 +1,9 @@
 #ifndef CANDIDATE_MC_CRAG_DOWN_SAMPLER_H__
 #define CANDIDATE_MC_CRAG_DOWN_SAMPLER_H__
 
+#include <map>
 #include "Crag.h"
+#include "CragVolumes.h"
 
 class DownSampler {
 
@@ -16,15 +18,24 @@ public:
 		_minSize(minSize) {}
 
 	/**
-	 * Process the given CRAG.
+	 * Downsample the given CRAG.
+	 *
+	 * @param[in]  crag
+	 *                    The CRAG to downsample.
+	 * @param[in]  volumes
+	 *                    The volumes of the CRAG to downsample.
+	 * @param[out] downSampled
+	 *                    The downsampled CRAG.
+	 * @param[out] downSampledVolumes
+	 *                    The volumes of the downsampled CRAG.
 	 */
-	void process(const Crag& crag, Crag* downSampled);
+	void process(const Crag& crag, const CragVolumes& volumes, Crag& downSampled, CragVolumes& downSampledVolumes);
 
 private:
 
-	void downSampleCopy(const Crag& source, Crag::SubsetNode parent, Crag::SubsetNode n, bool singleChild, Crag& target);
+	void downSampleCopy(const Crag& source, const CragVolumes& volumes, Crag::SubsetNode parent, Crag::SubsetNode n, bool singleChild, Crag& target);
 
-	int size(const Crag& crag, Crag::SubsetNode n);
+	int size(const Crag& crag, const CragVolumes& volumes, Crag::SubsetNode n);
 
 	int _minSize;
 

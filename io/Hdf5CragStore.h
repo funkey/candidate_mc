@@ -39,6 +39,12 @@ public:
 	void saveCrag(const Crag& crag) override;
 
 	/**
+	 * Save CRAG volumes. This will only store the volumes of leaf nodes, others 
+	 * can be assembled from them.
+	 */
+	void saveVolumes(const CragVolumes& volumes) override;
+
+	/**
 	 * Store features for the candidates (i.e., the nodes) of a CRAG.
 	 */
 	void saveNodeFeatures(const Crag& crag, const NodeFeatures& features) override;
@@ -72,6 +78,13 @@ public:
 	 * store.
 	 */
 	void retrieveCrag(Crag& crag) override;
+
+	/**
+	 * Retrieve the volumes of CRAG candidates. For that, only the leaf node 
+	 * volumes of the given CragVolumes are set, other volumes will later be 
+	 * created on demand.
+	 */
+	void retrieveVolumes(CragVolumes& volumes) override;
 
 	/**
 	 * Retrieve features for the candidates (i.e., the nodes) of the CRAG 

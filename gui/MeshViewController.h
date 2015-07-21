@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__
 
 #include <crag/Crag.h>
+#include <crag/CragVolumes.h>
 #include <scopegraph/Agent.h>
 #include <sg_gui/VolumeView.h>
 #include <sg_gui/MeshView.h>
@@ -56,6 +57,7 @@ public:
 
 	MeshViewController(
 			const Crag&                            crag,
+			const CragVolumes&                     volumes,
 			std::shared_ptr<ExplicitVolume<float>> labels);
 
 	void loadMeshes(const std::vector<Crag::Node>& nodes);
@@ -83,6 +85,8 @@ private:
 	void removeMesh(Crag::Node n);
 
 	const Crag& _crag;
+
+	const CragVolumes& _volumes;
 
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 

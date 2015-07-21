@@ -3,9 +3,10 @@
 
 #include <vector>
 #include "Crag.h"
+#include "CragVolumes.h"
 
 /**
- * Combines a stack of crags (coming from a stack of images) into a single crag.
+ * Combines a stack of CRAGs(coming from a stack of images) into a single crag.
  */
 class CragStackCombiner {
 
@@ -13,13 +14,27 @@ public:
 
 	CragStackCombiner();
 
-	void combine(const std::vector<Crag>& crags, Crag& crag);
+	void combine(
+			const std::vector<Crag>&        sourcesCrags,
+			const std::vector<CragVolumes>& sourcesVolumes,
+			Crag&                           targetCrag,
+			CragVolumes&                    targetVolumes);
 
 private:
 
-	std::map<Crag::Node, Crag::Node> copyNodes(const Crag& source, Crag& target);
+	std::map<Crag::Node, Crag::Node> copyNodes(
+			const Crag&        source,
+			const CragVolumes& sourceVolumes,
+			Crag&              target,
+			CragVolumes&       targetVolumes);
 
 	std::vector<std::pair<Crag::Node, Crag::Node>> findLinks(const Crag& a, const Crag& b);
+
+	std::vector<std::pair<Crag::Node, Crag::Node>> findLinks(
+			const Crag&        cragA,
+			const CragVolumes& volsA,
+			const Crag&        cragB,
+			const CragVolumes& volsB);
 
 	double _maxDistance;
 

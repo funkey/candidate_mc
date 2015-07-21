@@ -2,6 +2,7 @@
 #define TREE_MC_IO_CRAG_STORE_H__
 
 #include <crag/Crag.h>
+#include <crag/CragVolumes.h>
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
 #include <features/Skeletons.h>
@@ -19,6 +20,12 @@ public:
 	 * Store a candidate region adjacency graph (CRAG).
 	 */
 	virtual void saveCrag(const Crag& crag) = 0;
+
+	/**
+	 * Save CRAG volumes. This will only store the volumes of leaf nodes, others 
+	 * can be assembled from them.
+	 */
+	virtual void saveVolumes(const CragVolumes& volumes) = 0;
 
 	/**
 	 * Store features for the candidates (i.e., the nodes) of a CRAG.
@@ -54,6 +61,13 @@ public:
 	 * store.
 	 */
 	virtual void retrieveCrag(Crag& crag) = 0;
+
+	/**
+	 * Retrieve the volumes of CRAG candidates. For that, only the leaf node 
+	 * volumes of the given CragVolumes are set, other volumes will later be 
+	 * created on demand.
+	 */
+	virtual void retrieveVolumes(CragVolumes& volumes) = 0;
 
 	/**
 	 * Retrieve features for the candidates (i.e., the nodes) of the CRAG 

@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_CRAG_ADJACENCY_ANNOTATOR_H__
 
 #include "Crag.h"
+#include "CragVolumes.h"
 
 /**
  * Base class for adjacency annotators.
@@ -10,7 +11,7 @@ class AdjacencyAnnotator {
 
 public:
 
-	virtual void annotate(Crag& crag) = 0;
+	virtual void annotate(Crag& crag, const CragVolumes& volumes) = 0;
 
 protected:
 

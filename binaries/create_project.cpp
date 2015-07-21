@@ -163,6 +163,7 @@ int main(int argc, char** argv) {
 				optionOffsetZ);
 
 		Crag* crag = new Crag();
+		CragVolumes* volumes = new CragVolumes(*crag);
 
 		if (optionMergeTree) {
 
@@ -177,23 +178,26 @@ int main(int argc, char** argv) {
 
 				// process one image after another
 				std::vector<Crag> crags(files.size());
+				std::vector<CragVolumes> cragsVolumes;
+				for (const Crag& c : crags)
+					cragsVolumes.push_back(CragVolumes(c));
 
 				int i = 0;
 				for (std::string file : files) {
 					
 					LOG_USER(logger::out) << "reading crag from " << file << std::endl;
 
-					readCrag(file, crags[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+					readCrag(file, crags[i], cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
 					i++;
 				}
 
 				// combine crags
 				CragStackCombiner combiner;
-				combiner.combine(crags, *crag);
+				combiner.combine(crags, cragsVolumes, *crag, *volumes);
 
 			} else {
 
-				readCrag(mergeTreePath, *crag, resolution, offset);
+				readCrag(mergeTreePath, *crag, *volumes, resolution, offset);
 			}
 
 		} else if (optionSupervoxels.as<bool>() && (optionMergeHistory.as<bool>() || optionCandidateSegmentation.as<bool>())) {
@@ -201,9 +205,9 @@ int main(int argc, char** argv) {
 			UTIL_TIME_SCOPE("read CRAG from merge history");
 
 			if (optionMergeHistory)
-				readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, resolution, offset);
+				readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, *volumes, resolution, offset);
 			else
-				readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, resolution, offset);
+				readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
 
 		} else {
 
@@ -240,19 +244,22 @@ int main(int argc, char** argv) {
 			UTIL_TIME_SCOPE("downsample CRAG");
 
 			Crag* downSampled = new Crag();
+			CragVolumes* downSampledVolumes = new CragVolumes(*downSampled);
 
 			DownSampler downSampler(optionMinCandidateSize.as<int>());
-			downSampler.process(*crag, downSampled);
+			downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
 
 			delete crag;
+			delete volumes;
 			crag = downSampled;
+			volumes = downSampledVolumes;
 		}
 
 		{
 			UTIL_TIME_SCOPE("find CRAG adjacencies");
 
 			PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
-			annotator.annotate(*crag);
+			annotator.annotate(*crag, *volumes);
 		}
 
 		int numNodes = 0;
@@ -298,6 +305,7 @@ int main(int argc, char** argv) {
 			boost::filesystem::remove(optionProjectFile.as<std::string>());
 			Hdf5CragStore store(optionProjectFile.as<std::string>());
 			store.saveCrag(*crag);
+			store.saveVolumes(*volumes);
 		}
 
 		{
@@ -341,6 +349,7 @@ int main(int argc, char** argv) {
 		}
 
 		delete crag;
+		delete volumes;
 
 	} catch (Exception& e) {
 

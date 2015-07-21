@@ -23,7 +23,7 @@ MergeTreeParser::MergeTreeParser(const Image& mergeTree) :
 	_mergeTree(mergeTree) {}
 
 void
-MergeTreeParser::getCrag(Crag& crag) {
+MergeTreeParser::getCrag(Crag& crag, CragVolumes& volumes) {
 
 	ImageParser::Parameters parameters;
 
@@ -35,7 +35,8 @@ MergeTreeParser::getCrag(Crag& crag) {
 	MergeTreeVisitor visitor(
 			_mergeTree.getResolution(),
 			_mergeTree.getBoundingBox().min(),
-			crag);
+			crag,
+			volumes);
 
 	parser.parse(visitor);
 }
@@ -43,10 +44,12 @@ MergeTreeParser::getCrag(Crag& crag) {
 MergeTreeParser::MergeTreeVisitor::MergeTreeVisitor(
 		const util::point<float, 3>& resolution,
 		const util::point<float, 3>& offset,
-		Crag& crag) :
+		Crag&                        crag,
+		CragVolumes&                 volumes) :
 	_resolution(resolution),
 	_offset(offset),
 	_crag(crag),
+	_volumes(volumes),
 	_minSize(optionMinRegionSize),
 	_maxSize(optionMaxRegionSize),
 	_extents(_crag),
@@ -105,20 +108,20 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 							util::point<unsigned int, 3>(
 									i->x() + 1, i->y() + 1, 1)));
 
-		ExplicitVolume<unsigned char> volume(
+		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(
 				boundingBox.width(),
 				boundingBox.height(),
 				boundingBox.depth(),
 				false);
 
 		for (PixelList::const_iterator i = begin; i != end; i++)
-			volume[i->project<3>() - boundingBox.min()] = true;
+			(*volume)[i->project<3>() - boundingBox.min()] = true;
 
 		util::point<float, 3> volumeOffset = _offset + boundingBox.min()*_resolution;
 
-		volume.setResolution(_resolution);
-		volume.setOffset(volumeOffset);
-		_crag.getVolumeMap()[node] = std::move(volume);
+		volume->setResolution(_resolution);
+		volume->setOffset(volumeOffset);
+		_volumes.setLeafNodeVolume(node, volume);
 	}
 
 	_isLeafeNode[node] = isLeafNode;

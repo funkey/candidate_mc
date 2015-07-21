@@ -14,6 +14,7 @@ logger::LogChannel overlaplosslog("overlaplosslog", "[OverlapLoss] ");
 
 OverlapLoss::OverlapLoss(
 		const Crag&                crag,
+		const CragVolumes&         volumes,
 		const ExplicitVolume<int>& groundTruth) :
 	Loss(crag),
 	_overlaps(crag) {
@@ -25,7 +26,7 @@ OverlapLoss::OverlapLoss(
 	// annotate all nodes with the max overlap area to any gt label
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
 		if (Crag::SubsetOutArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID)
-			recurseOverlapLoss(crag, n, groundTruth);
+			recurseOverlapLoss(crag, volumes, n, groundTruth);
 
 	LOG_DEBUG(overlaplosslog) << "setting foreground overlap loss" << std::endl;
 
@@ -90,6 +91,7 @@ OverlapLoss::OverlapLoss(
 void
 OverlapLoss::recurseOverlapLoss(
 		const Crag&                crag,
+		const CragVolumes&         volumes,
 		const Crag::Node&          n,
 		const ExplicitVolume<int>& groundTruth) {
 
@@ -97,7 +99,7 @@ OverlapLoss::recurseOverlapLoss(
 	if (leafNode) {
 
 		LOG_ALL(overlaplosslog) << "getting leaf overlap for node " << crag.id(n) << std::endl;
-		_overlaps[n] = leafOverlaps(crag.getVolume(n), groundTruth);
+		_overlaps[n] = leafOverlaps(*volumes[n], groundTruth);
 
 	} else {
 
@@ -106,7 +108,7 @@ OverlapLoss::recurseOverlapLoss(
 
 			Crag::Node child = crag.toRag(crag.getSubsetGraph().source(a));
 
-			recurseOverlapLoss(crag, child, groundTruth);
+			recurseOverlapLoss(crag, volumes, child, groundTruth);
 
 			for (auto p : _overlaps[child])
 				if (!_overlaps[n].count(p.first))

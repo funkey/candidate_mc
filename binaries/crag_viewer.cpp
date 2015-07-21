@@ -37,13 +37,15 @@ int main(int argc, char** argv) {
 		Hdf5CragStore   cragStore(optionProjectFile.as<std::string>());
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
-		// get crag
+		// get crag and volumes
 
-		Crag crag;
+		Crag        crag;
+		CragVolumes volumes(crag);
 
 		try {
 
 			cragStore.retrieveCrag(crag);
+			cragStore.retrieveVolumes(volumes);
 
 		} catch (std::exception& e) {
 
@@ -80,7 +82,7 @@ int main(int argc, char** argv) {
 				if (!crag.isLeafNode(n))
 					continue;
 
-				const ExplicitVolume<unsigned char>& volume = crag.getVolume(n);
+				const CragVolume& volume = *volumes[n];
 				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
 
 				for (int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
@@ -115,7 +117,7 @@ int main(int argc, char** argv) {
 		// visualize
 
 		auto cragView       = std::make_shared<CragView>();
-		auto meshController = std::make_shared<MeshViewController>(crag, supervoxels);
+		auto meshController = std::make_shared<MeshViewController>(crag, volumes, supervoxels);
 		auto featuresView   = std::make_shared<FeaturesView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);

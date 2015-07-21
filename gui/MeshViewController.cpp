@@ -11,9 +11,11 @@ util::ProgramOption optionCubeSize(
 		util::_default_value    = 10);
 
 MeshViewController::MeshViewController(
-		const Crag& crag,
+		const Crag&                            crag,
+		const CragVolumes&                     volumes,
 		std::shared_ptr<ExplicitVolume<float>> labels) :
 	_crag(crag),
+	_volumes(volumes),
 	_labels(labels),
 	_meshes(std::make_shared<sg_gui::Meshes>()),
 	_current(lemon::INVALID),
@@ -178,9 +180,9 @@ MeshViewController::addMesh(Crag::Node n) {
 		return;
 	}
 
-	const ExplicitVolume<unsigned char>& volume = _crag.getVolume(n);
+	const CragVolume& volume = *_volumes[n];
 
-	typedef ExplicitVolumeAdaptor<ExplicitVolume<unsigned char>> Adaptor;
+	typedef ExplicitVolumeAdaptor<CragVolume> Adaptor;
 	Adaptor adaptor(volume);
 
 	sg_gui::MarchingCubes<Adaptor> marchingCubes;

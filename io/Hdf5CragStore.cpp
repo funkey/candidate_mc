@@ -19,20 +19,6 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	writeDigraph(crag.getSubsetGraph());
 
 	_hdfFile.cd("/crag");
-	_hdfFile.cd_mk("volumes");
-	int numNodes = 0;
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		if (crag.isLeafNode(n)) {
-
-			if (numNodes%100 == 0)
-				LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
-
-			writeVolume(crag.getVolume(n), boost::lexical_cast<std::string>(crag.id(n)));
-			numNodes++;
-		}
-	LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::endl;
-
-	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("grid_graph");
 	vigra::ArrayVector<int> shape(3);
 	shape[0] = crag.getGridGraph().shape()[0];
@@ -75,6 +61,25 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 }
 
 void
+Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
+
+	_hdfFile.cd_mk("/crag");
+	_hdfFile.cd_mk("volumes");
+
+	int numNodes = 0;
+	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n)
+		if (volumes.getCrag().isLeafNode(n)) {
+
+			if (numNodes%100 == 0)
+				LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
+
+			writeVolume(*volumes[n], boost::lexical_cast<std::string>(volumes.getCrag().id(n)));
+			numNodes++;
+		}
+	LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::endl;
+}
+
+void
 Hdf5CragStore::retrieveCrag(Crag& crag) {
 
 	_hdfFile.root();
@@ -86,21 +91,6 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 	_hdfFile.cd("/crag");
 	_hdfFile.cd("subsets");
 	readDigraph(crag.getSubsetGraph());
-
-	_hdfFile.cd("/crag");
-	_hdfFile.cd("volumes");
-
-	std::vector<std::string> vols = _hdfFile.ls();
-
-	for (std::string vol : vols) {
-
-		int id = boost::lexical_cast<int>(vol);
-
-		Crag::Node n = crag.nodeFromId(id);
-		readVolume(crag.getVolumeMap()[n], vol);
-
-		UTIL_ASSERT(!crag.getBoundingBox(n).isZero());
-	}
 
 	try {
 
@@ -147,6 +137,28 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 	} catch (std::exception& e) {
 
 		LOG_USER(hdf5storelog) << "no grid-graph description found" << std::endl;
+	}
+}
+
+void
+Hdf5CragStore::retrieveVolumes(CragVolumes& volumes) {
+
+	_hdfFile.root();
+	_hdfFile.cd("/crag");
+	_hdfFile.cd("volumes");
+
+	std::vector<std::string> vols = _hdfFile.ls();
+
+	for (std::string vol : vols) {
+
+		int id = boost::lexical_cast<int>(vol);
+
+		Crag::Node n = volumes.getCrag().nodeFromId(id);
+		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>();
+		readVolume(*volume, vol);
+		volumes.setLeafNodeVolume(n, volume);
+
+		UTIL_ASSERT(!volume->getBoundingBox().isZero());
 	}
 }
 

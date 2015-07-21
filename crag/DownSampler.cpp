@@ -5,7 +5,7 @@
 logger::LogChannel downsamplerlog("downsamplerlog", "[DownSampler] ");
 
 void
-DownSampler::process(const Crag& crag, Crag* downSampled) {
+DownSampler::process(const Crag& crag, const CragVolumes& volumes, Crag& downSampled, CragVolumes& downSampledVolumes) {
 
 	LOG_USER(downsamplerlog) << "downsampling CRAG..." << std::endl;
 
@@ -27,10 +27,11 @@ DownSampler::process(const Crag& crag, Crag* downSampled) {
 
 			downSampleCopy(
 					crag,
+					volumes,
 					root, /* root nodes are always valid parents... */
 					root,
 					false, /* ...and not single children */
-					*downSampled);
+					downSampled);
 		}
 	}
 
@@ -42,12 +43,12 @@ DownSampler::process(const Crag& crag, Crag* downSampled) {
 
 		Crag::Node copy = _copyMap[n];
 
-		if (downSampled->isLeafNode(copy))
-			downSampled->getVolumeMap()[copy] = crag.getVolume(crag.toRag(n));
+		if (downSampled.isLeafNode(copy))
+			downSampledVolumes.setLeafNodeVolume(copy, volumes[crag.toRag(n)]);
 	}
 
 	int numNodes = 0;
-	for (Crag::NodeIt n(*downSampled); n != lemon::INVALID; ++n)
+	for (Crag::NodeIt n(downSampled); n != lemon::INVALID; ++n)
 		numNodes++;
 
 	LOG_USER(downsamplerlog)
@@ -57,7 +58,7 @@ DownSampler::process(const Crag& crag, Crag* downSampled) {
 }
 
 void
-DownSampler::downSampleCopy(const Crag& source, Crag::SubsetNode parent, Crag::SubsetNode n, bool singleChild, Crag& target) {
+DownSampler::downSampleCopy(const Crag& source, const CragVolumes& sourceVolumes, Crag::SubsetNode parent, Crag::SubsetNode n, bool singleChild, Crag& target) {
 
 	// parent is the last valid parent node, i.e., a node with more than one 
 	// valid children (size >= _minSize) or a root node
@@ -69,7 +70,7 @@ DownSampler::downSampleCopy(const Crag& source, Crag::SubsetNode parent, Crag::S
 	bool debug = (source.id(n) == 21848);
 
 	// if n is too small, there is nothing to copy
-	if (!source.isRootNode(source.toRag(n)) && size(source, n) < _minSize)
+	if (!source.isRootNode(source.toRag(n)) && size(source, sourceVolumes, n) < _minSize)
 		return;
 
 	if (debug) LOG_ALL(downsamplerlog) << "processing root node" << std::endl;
@@ -102,6 +103,7 @@ DownSampler::downSampleCopy(const Crag& source, Crag::SubsetNode parent, Crag::S
 	for (Crag::SubsetInArcIt childEdge(source, n); childEdge != lemon::INVALID; ++childEdge)
 		downSampleCopy(
 				source,
+				sourceVolumes,
 				parent,
 				source.getSubsetGraph().oppositeNode(n, childEdge),
 				(numChildren == 1),
@@ -114,7 +116,7 @@ DownSampler::downSampleCopy(const Crag& source, Crag::SubsetNode parent, Crag::S
 }
 
 int
-DownSampler::size(const Crag& crag, Crag::SubsetNode n) {
+DownSampler::size(const Crag& crag, const CragVolumes& volumes, Crag::SubsetNode n) {
 
 	UTIL_TIME_METHOD;
 
@@ -125,7 +127,7 @@ DownSampler::size(const Crag& crag, Crag::SubsetNode n) {
 
 	if (crag.isLeafNode(crag.toRag(n))) {
 
-		const ExplicitVolume<unsigned char>& volume = crag.getVolume(crag.toRag(n));
+		const CragVolume& volume = *volumes[crag.toRag(n)];
 
 		for (auto& p : volume.data())
 			if (p)
@@ -135,7 +137,7 @@ DownSampler::size(const Crag& crag, Crag::SubsetNode n) {
 	}
 
 	for (Crag::SubsetInArcIt childEdge(crag, n); childEdge != lemon::INVALID; ++childEdge)
-		nodeSize += size(crag, crag.getSubsetGraph().oppositeNode(n, childEdge));
+		nodeSize += size(crag, volumes, crag.getSubsetGraph().oppositeNode(n, childEdge));
 
 	_sizes[n] = nodeSize;
 

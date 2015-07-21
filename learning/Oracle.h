@@ -18,12 +18,14 @@ public:
 
 	Oracle(
 			const Crag&                  crag,
+			const CragVolumes&           volumes,
 			const NodeFeatures&          nodeFeatures,
 			const EdgeFeatures&          edgeFeatures,
 			const Loss&                  loss,
 			const BestEffort&            bestEffort,
 			MultiCut::Parameters         parameters = MultiCut::Parameters()) :
 		_crag(crag),
+		_volumes(volumes),
 		_nodeFeatures(nodeFeatures),
 		_edgeFeatures(edgeFeatures),
 		_loss(loss),
@@ -69,6 +71,7 @@ private:
 	}
 
 	const Crag&         _crag;
+	const CragVolumes&  _volumes;
 	const NodeFeatures& _nodeFeatures;
 	const EdgeFeatures& _edgeFeatures;
 	const Loss&         _loss;

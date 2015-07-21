@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_LEARNING_OVERLAP_LOSS_H__
 #define CANDIDATE_MC_LEARNING_OVERLAP_LOSS_H__
 
+#include <imageprocessing/ExplicitVolume.h>
 #include <learning/Loss.h>
 
 /**
@@ -12,12 +13,14 @@ public:
 
 	OverlapLoss(
 			const Crag&                crag,
+			const CragVolumes&         volumes,
 			const ExplicitVolume<int>& groundTruth);
 
 private:
 
 	void recurseOverlapLoss(
 			const Crag&                crag,
+			const CragVolumes&         volumes,
 			const Crag::Node&          n,
 			const ExplicitVolume<int>& groundTruth);
 
