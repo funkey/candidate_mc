@@ -34,7 +34,7 @@ public:
 	 * Results are returned in reference i_j (distance of node i to j) and j_i 
 	 * (vice versa).
 	 */
-	void distance(Crag::Node i, Crag::Node j, double& i_j, double& j_i);
+	void operator()(Crag::Node i, Crag::Node j, double& i_j, double& j_i);
 
 private:
 
@@ -49,12 +49,12 @@ private:
 			double& i_j,
 			double& j_i);
 
-	void leafDistance(
-			Crag::Node i,
-			Crag::Node j,
+	void volumesDistance(
+			std::shared_ptr<CragVolume> volume_i,
+			std::shared_ptr<CragVolume> volume_j,
 			double& i_j);
 
-	vigra::MultiArray<2, double>& getDistanceMap(const ExplicitVolume<unsigned char>& volume);
+	vigra::MultiArray<2, double>& getDistanceMap(std::shared_ptr<CragVolume> volume);
 
 	void recCollectLeafNodes(const Crag& crag, Crag::Node n, LeafNodeMap& map);
 
@@ -66,7 +66,7 @@ private:
 
 	std::map<std::pair<Crag::Node, Crag::Node>, std::pair<double, double>> _cache;
 
-	std::map<const ExplicitVolume<unsigned char>*, vigra::MultiArray<2, double>> _distanceMaps;
+	std::map<std::shared_ptr<CragVolume>, vigra::MultiArray<2, double>> _distanceMaps;
 
 	int _maxDistance;
 };

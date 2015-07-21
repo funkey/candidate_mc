@@ -139,7 +139,7 @@ CragStackCombiner::findLinks(
 			}
 
 			double i_j, j_i;
-			hausdorff.distance(i, j, i_j, j_i);
+			hausdorff(i, j, i_j, j_i);
 
 			double distance = std::min(i_j, j_i);
 
