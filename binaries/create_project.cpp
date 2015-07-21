@@ -13,6 +13,7 @@
 #include <crag/CragStackCombiner.h>
 #include <crag/DownSampler.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
+#include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/volumes.h>
@@ -165,6 +166,8 @@ int main(int argc, char** argv) {
 		Crag* crag = new Crag();
 		CragVolumes* volumes = new CragVolumes(*crag);
 
+		CragImport import;
+
 		if (optionMergeTree) {
 
 			UTIL_TIME_SCOPE("read CRAG from mergetree");
@@ -187,7 +190,7 @@ int main(int argc, char** argv) {
 					
 					LOG_USER(logger::out) << "reading crag from " << file << std::endl;
 
-					readCrag(file, crags[i], cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+					import.readCrag(file, crags[i], cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
 					i++;
 				}
 
@@ -197,7 +200,7 @@ int main(int argc, char** argv) {
 
 			} else {
 
-				readCrag(mergeTreePath, *crag, *volumes, resolution, offset);
+				import.readCrag(mergeTreePath, *crag, *volumes, resolution, offset);
 			}
 
 		} else if (optionSupervoxels.as<bool>() && (optionMergeHistory.as<bool>() || optionCandidateSegmentation.as<bool>())) {
@@ -205,9 +208,9 @@ int main(int argc, char** argv) {
 			UTIL_TIME_SCOPE("read CRAG from merge history");
 
 			if (optionMergeHistory)
-				readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, *volumes, resolution, offset);
+				import.readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, *volumes, resolution, offset);
 			else
-				readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
+				import.readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
 
 		} else {
 

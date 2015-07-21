@@ -11,9 +11,10 @@
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
 #include <util/helpers.hpp>
+#include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
-#include <io/volumes.h>
 #include <io/vectors.h>
+#include <io/volumes.h>
 #include <features/FeatureExtractor.h>
 #include <inference/MultiCut.h>
 
@@ -123,7 +124,9 @@ int main(int argc, char** argv) {
 					optionOffsetZ);
 
 			std::string mergeTreePath = optionMergeTree;
-			readCrag(mergeTreePath, crag, volumes, resolution, offset);
+
+			CragImport import;
+			import.readCrag(mergeTreePath, crag, volumes, resolution, offset);
 
 			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
 			intensities.setResolution(resolution);
