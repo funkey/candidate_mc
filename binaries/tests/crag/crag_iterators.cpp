@@ -3,6 +3,13 @@
 #include <crag/Crag.h>
 #include <util/timing.h>
 
+namespace crag_iterators_case {
+
+template <typename T>
+void dontWarnMeAboutUnusedVar(const T&) {}
+
+} using namespace crag_iterators_case;
+
 void crag_iterators() {
 
 	Crag crag;
@@ -49,8 +56,11 @@ void crag_iterators() {
 		//UTIL_TIME_SCOPE("crag node iterator");
 
 		//for (int j = 0; j < 1e8; j++)
-			for (Crag::CragNode n : crag.nodes())
+			for (Crag::CragNode n : crag.nodes()) {
+
+				dontWarnMeAboutUnusedVar(n);
 				numNodes++;
+			}
 	}
 
 	{
@@ -65,8 +75,11 @@ void crag_iterators() {
 
 	int numEdges = 0;
 
-	for (Crag::CragEdge e : crag.edges())
+	for (Crag::CragEdge e : crag.edges()) {
+
+		dontWarnMeAboutUnusedVar(e);
 		numEdges++;
+	}
 
 	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
 		numEdges--;
@@ -75,8 +88,11 @@ void crag_iterators() {
 
 	int numArcs = 0;
 
-	for (Crag::CragArc a : crag.arcs())
+	for (Crag::CragArc a : crag.arcs()) {
+
+		dontWarnMeAboutUnusedVar(a);
 		numArcs++;
+	}
 
 	for (Crag::SubsetArcIt a(crag); a != lemon::INVALID; ++a)
 		numArcs--;
@@ -86,22 +102,28 @@ void crag_iterators() {
 	for (Crag::CragNode n : crag.nodes()) {
 
 		int numAdjEdges = 0;
-		for (Crag::CragEdge e : n.adjedges())
+		for (Crag::CragEdge e : n.adjEdges()) {
+			dontWarnMeAboutUnusedVar(e);
 			numAdjEdges++;
+		}
 		for (Crag::IncEdgeIt e(crag, n); e != lemon::INVALID; ++e)
 			numAdjEdges--;
 		BOOST_CHECK_EQUAL(numAdjEdges, 0);
 
 		int numInArcs = 0;
-		for (Crag::CragArc a : n.inarcs())
+		for (Crag::CragArc a : n.inArcs()) {
+			dontWarnMeAboutUnusedVar(a);
 			numInArcs++;
+		}
 		for (Crag::SubsetInArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numInArcs--;
 		BOOST_CHECK_EQUAL(numInArcs, 0);
 
 		int numOutArcs = 0;
-		for (Crag::CragArc a : n.outarcs())
+		for (Crag::CragArc a : n.outArcs()) {
+			dontWarnMeAboutUnusedVar(a);
 			numOutArcs++;
+		}
 		for (Crag::SubsetOutArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numOutArcs--;
 		BOOST_CHECK_EQUAL(numOutArcs, 0);
