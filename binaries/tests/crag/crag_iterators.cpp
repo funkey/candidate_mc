@@ -14,35 +14,38 @@ void crag_iterators() {
 
 	Crag crag;
 
-	for (int i = 0; i < 100; i++)
+	int numNodes = 100;
+	for (int i = 0; i < numNodes; i++)
 		crag.addNode();
 
-	for (int i = 0; i < 100; i++)
-		for (int j = 0; j < 100; j++)
-			if (rand() > RAND_MAX/2)
+	int numEdges = 0;
+	for (int i = 0; i < numNodes; i++)
+		for (int j = 0; j < numNodes; j++)
+			if (rand() > RAND_MAX/2) {
+
 				crag.addAdjacencyEdge(
 						crag.nodeFromId(i),
 						crag.nodeFromId(j));
+				numEdges++;
+			}
 
-	for (int i = 0; i < 100; i += 5) {
+	int numArcs = 0;
+	for (int i = 0; i < numNodes; i += 5) {
 
-		for (int j = i; j < i + 4; j++)
+		for (int j = i; j < i + 4; j++) {
+
 			crag.addSubsetArc(
 					crag.nodeFromId(j),
 					crag.nodeFromId(j+1));
+			numArcs++;
+		}
 	}
 
-	int numNodes = 0;
+	BOOST_CHECK_EQUAL(crag.nodes().size(), numNodes);
+	BOOST_CHECK_EQUAL(crag.edges().size(), numEdges);
+	BOOST_CHECK_EQUAL(crag.arcs().size(),  numArcs);
 
-	//{
-		//UTIL_TIME_SCOPE("warm up");
-
-		//for (int j = 0; j < 100; j++)
-			//for (Crag::CragNode n : crag.nodes())
-				//numNodes++;
-	//}
-
-	//numNodes = 0;
+	numNodes = 0;
 
 	{
 		//UTIL_TIME_SCOPE("crag node old-school iterator");
@@ -73,7 +76,7 @@ void crag_iterators() {
 
 	BOOST_CHECK_EQUAL(numNodes, 0);
 
-	int numEdges = 0;
+	numEdges = 0;
 
 	for (Crag::CragEdge e : crag.edges()) {
 
@@ -86,7 +89,7 @@ void crag_iterators() {
 
 	BOOST_CHECK_EQUAL(numEdges, 0);
 
-	int numArcs = 0;
+	numArcs = 0;
 
 	for (Crag::CragArc a : crag.arcs()) {
 
@@ -102,30 +105,33 @@ void crag_iterators() {
 	for (Crag::CragNode n : crag.nodes()) {
 
 		int numAdjEdges = 0;
+		for (Crag::IncEdgeIt e(crag, n); e != lemon::INVALID; ++e)
+			numAdjEdges++;
+		BOOST_CHECK_EQUAL(n.adjEdges().size(), numAdjEdges);
 		for (Crag::CragEdge e : n.adjEdges()) {
 			dontWarnMeAboutUnusedVar(e);
-			numAdjEdges++;
-		}
-		for (Crag::IncEdgeIt e(crag, n); e != lemon::INVALID; ++e)
 			numAdjEdges--;
+		}
 		BOOST_CHECK_EQUAL(numAdjEdges, 0);
 
 		int numInArcs = 0;
+		for (Crag::SubsetInArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
+			numInArcs++;
+		BOOST_CHECK_EQUAL(numInArcs, n.inArcs().size());
 		for (Crag::CragArc a : n.inArcs()) {
 			dontWarnMeAboutUnusedVar(a);
-			numInArcs++;
-		}
-		for (Crag::SubsetInArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numInArcs--;
+		}
 		BOOST_CHECK_EQUAL(numInArcs, 0);
 
 		int numOutArcs = 0;
+		for (Crag::SubsetOutArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
+			numOutArcs++;
+		BOOST_CHECK_EQUAL(numOutArcs, n.outArcs().size());
 		for (Crag::CragArc a : n.outArcs()) {
 			dontWarnMeAboutUnusedVar(a);
-			numOutArcs++;
-		}
-		for (Crag::SubsetOutArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numOutArcs--;
+		}
 		BOOST_CHECK_EQUAL(numOutArcs, 0);
 
 		Crag::CragEdgeIterator cei = crag.edges().begin();
