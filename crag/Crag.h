@@ -70,6 +70,13 @@ public:
 
 	public:
 
+		CragNode() : _node(lemon::INVALID) {}
+
+		bool operator<(CragNode other) const {
+
+			return _node < other._node;
+		}
+
 		/**
 		 * Implicit conversion operator to a node of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this node can be used as 
