@@ -44,8 +44,8 @@ CragStackCombiner::combine(
 			<< "require bounding box overlap"
 			<< std::endl;
 
-	std::map<Crag::Node, Crag::Node> prevNodeMap;
-	std::map<Crag::Node, Crag::Node> nextNodeMap;
+	std::map<Crag::CragNode, Crag::CragNode> prevNodeMap;
+	std::map<Crag::CragNode, Crag::CragNode> nextNodeMap;
 
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
@@ -58,7 +58,7 @@ CragStackCombiner::combine(
 
 		nextNodeMap = copyNodes(sourcesCrags[z], sourcesVolumes[z], targetCrag, targetVolumes);
 
-		std::vector<std::pair<Crag::Node, Crag::Node>> links =
+		std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links =
 				findLinks(
 						sourcesCrags[z-1],
 						sourcesVolumes[z-1],
@@ -72,18 +72,18 @@ CragStackCombiner::combine(
 	}
 }
 
-std::map<Crag::Node, Crag::Node>
+std::map<Crag::CragNode, Crag::CragNode>
 CragStackCombiner::copyNodes(
 		const Crag&        source,
 		const CragVolumes& sourceVolumes,
 		Crag&              target,
 		CragVolumes&       targetVolumes) {
 
-	std::map<Crag::Node, Crag::Node> nodeMap;
+	std::map<Crag::CragNode, Crag::CragNode> nodeMap;
 
-	for (Crag::NodeIt i(source); i != lemon::INVALID; ++i) {
+	for (Crag::CragNode i : source.nodes()) {
 
-		Crag::Node n = target.addNode();
+		Crag::CragNode n = target.addNode();
 
 		if (source.isLeafNode(i))
 			targetVolumes.setLeafNodeVolume(n, sourceVolumes[i]);
@@ -91,18 +91,18 @@ CragStackCombiner::copyNodes(
 		nodeMap[i] = n;
 	}
 
-	for (Crag::EdgeIt e(source); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : source.edges()) {
 
-		Crag::Node u = nodeMap[source.u(e)];
-		Crag::Node v = nodeMap[source.v(e)];
+		Crag::CragNode u = nodeMap[e.u()];
+		Crag::CragNode v = nodeMap[e.v()];
 
 		target.addAdjacencyEdge(u, v);
 	}
 
-	for (Crag::SubsetArcIt a(source); a != lemon::INVALID; ++a) {
+	for (Crag::CragArc a : source.arcs()) {
 
-		Crag::Node s = nodeMap[source.toRag(source.getSubsetGraph().source(a))];
-		Crag::Node t = nodeMap[source.toRag(source.getSubsetGraph().target(a))];
+		Crag::CragNode s = nodeMap[a.source()];
+		Crag::CragNode t = nodeMap[a.target()];
 
 		target.addSubsetArc(s, t);
 	}
@@ -110,7 +110,7 @@ CragStackCombiner::copyNodes(
 	return nodeMap;
 }
 
-std::vector<std::pair<Crag::Node, Crag::Node>>
+std::vector<std::pair<Crag::CragNode, Crag::CragNode>>
 CragStackCombiner::findLinks(
 		const Crag&        cragA,
 		const CragVolumes& volsA,
@@ -121,13 +121,13 @@ CragStackCombiner::findLinks(
 
 	HausdorffDistance hausdorff(volsA, volsB, 100);
 
-	std::vector<std::pair<Crag::Node, Crag::Node>> links;
+	std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links;
 
-	for (Crag::NodeIt i(cragA); i != lemon::INVALID; ++i) {
+	for (Crag::CragNode i : cragA.nodes()) {
 
 		LOG_DEBUG(cragstackcombinerlog) << "checking for links of node " << cragA.id(i) << std::endl;
 
-		for (Crag::NodeIt j(cragB); j != lemon::INVALID; ++j) {
+		for (Crag::CragNode j: cragB.nodes()) {
 
 			if (_requireBbOverlap) {
 

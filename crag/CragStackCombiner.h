@@ -22,15 +22,15 @@ public:
 
 private:
 
-	std::map<Crag::Node, Crag::Node> copyNodes(
+	std::map<Crag::CragNode, Crag::CragNode> copyNodes(
 			const Crag&        source,
 			const CragVolumes& sourceVolumes,
 			Crag&              target,
 			CragVolumes&       targetVolumes);
 
-	std::vector<std::pair<Crag::Node, Crag::Node>> findLinks(const Crag& a, const Crag& b);
+	std::vector<std::pair<Crag::CragNode, Crag::CragNode>> findLinks(const Crag& a, const Crag& b);
 
-	std::vector<std::pair<Crag::Node, Crag::Node>> findLinks(
+	std::vector<std::pair<Crag::CragNode, Crag::CragNode>> findLinks(
 			const Crag&        cragA,
 			const CragVolumes& volsA,
 			const Crag&        cragB,
