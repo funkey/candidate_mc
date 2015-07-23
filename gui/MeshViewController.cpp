@@ -40,8 +40,6 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 			signal.position().z(),
 			x, y, z);
 
-	LOG_USER(meshviewcontrollerlog) << "volume with id " << (*_labels)(x, y, z) << " selected" << std::endl;
-
 	Crag::Node n = _crag.nodeFromId((*_labels)(x, y, z));
 
 	if (n == lemon::INVALID)
@@ -141,6 +139,8 @@ MeshViewController::prevNeighbor() {
 void
 MeshViewController::showSingleMesh(Crag::Node n) {
 
+	LOG_USER(meshviewcontrollerlog) << "showing node with id " << _crag.id(n) << std::endl;
+
 	_current = n;
 	_meshes->clear();
 	addMesh(n);
@@ -158,6 +158,8 @@ MeshViewController::showSingleMesh(Crag::Node n) {
 
 void
 MeshViewController::showNeighbor(Crag::Node n) {
+
+	LOG_USER(meshviewcontrollerlog) << "showing neighbor with id " << _crag.id(n) << std::endl;
 
 	addMesh(n);
 
