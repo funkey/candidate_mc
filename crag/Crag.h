@@ -54,6 +54,7 @@ public:
 
 	class CragNode {
 
+		friend class Crag;
 		friend class CragArc;
 		friend class CragEdge;
 		friend class CragNodeIterator;
@@ -62,70 +63,12 @@ public:
 		template <typename T>
 		friend class CragIncArcs;
 
-		const Crag& _crag;
 		RagType::Node _node;
 
-		CragNode(const Crag& g, RagType::Node n)
-			: _crag(g), _node(n) {}
+		CragNode(RagType::Node n)
+			: _node(n) {}
 
 	public:
-
-		/**
-		 * Get all outgoing subset arcs of this node, i.e., arcs to supernodes.
-		 */
-		CragIncArcs<OutArcTag> outArcs() const {
-
-			return CragIncArcs<OutArcTag>(*this);
-		}
-
-		/**
-		 * Get all incoming subset arcs of this node, i.e., arcs to subnodes.
-		 */
-		CragIncArcs<InArcTag> inArcs() const {
-
-			return CragIncArcs<InArcTag>(*this);
-		}
-
-		/**
-		 * Get all adjacency edges of this node.
-		 */
-		CragIncEdges adjEdges() const {
-
-			return CragIncEdges(*this);
-		}
-
-		/**
-		 * Get the id of this node.
-		 */
-		int id() const {
-
-			return _crag.getAdjacencyGraph().id(_node);
-		}
-
-		/**
-		 * Get the level of this node, i.e., the size of the longest subset-tree 
-		 * path to a leaf node. Leaf nodes have a value of zero.
-		 */
-		int level() const {
-
-			return _crag.getLevel(_node);
-		}
-
-		/**
-		 * Check if this node is a root, i.e., it does not have outgoing arcs.
-		 */
-		bool isRoot() const {
-
-			return _crag.isRootNode(_node);
-		}
-
-		/**
-		 * Check if this node is a leaf, i.e., it does not have incoming arcs.
-		 */
-		bool isLeaf() const {
-
-			return _crag.isLeafNode(_node);
-		}
 
 		/**
 		 * Implicit conversion operator to a node of the lemon region adjacency 
@@ -136,16 +79,6 @@ public:
 		operator RagType::Node () const {
 
 			return _node;
-		}
-
-		/**
-		 * Implicit conversion operator to a node of the lemon region adjacency 
-		 * graph. Provided for convenience, such that this node can be used as 
-		 * the key in a lemon node map and for the underlying lemon graph.
-		 */
-		operator SubsetNode () const {
-
-			return _crag.toSubset(_node);
 		}
 	};
 
@@ -161,12 +94,12 @@ public:
 
 		CragNode source() {
 
-			return CragNode(_crag, _crag.toRag(_crag.getSubsetGraph().source(_arc)));
+			return CragNode(_crag.toRag(_crag.getSubsetGraph().source(_arc)));
 		}
 
 		CragNode target() {
 
-			return CragNode(_crag, _crag.toRag(_crag.getSubsetGraph().target(_arc)));
+			return CragNode(_crag.toRag(_crag.getSubsetGraph().target(_arc)));
 		}
 	};
 
@@ -182,12 +115,12 @@ public:
 
 		CragNode u() {
 
-			return CragNode(_crag, _crag.getAdjacencyGraph().u(_edge));
+			return CragNode(_crag.getAdjacencyGraph().u(_edge));
 		}
 
 		CragNode v() {
 
-			return CragNode(_crag, _crag.getAdjacencyGraph().v(_edge));
+			return CragNode(_crag.getAdjacencyGraph().v(_edge));
 		}
 	};
 
@@ -201,10 +134,10 @@ public:
 	/**
 	 * Add a node to the CRAG.
 	 */
-	inline Node addNode() {
+	inline CragNode addNode() {
 
 		_ssg.addNode();
-		return _rag.addNode();
+		return CragNode(_rag.addNode());
 	}
 
 	/**
@@ -252,6 +185,30 @@ public:
 	CragEdges edges() const { return CragEdges(*this); }
 
 	CragArcs  arcs()  const { return CragArcs (*this); }
+
+	/**
+	 * Get all outgoing subset arcs of a node, i.e., arcs to supernodes.
+	 */
+	CragIncArcs<OutArcTag> outArcs(CragNode n) const {
+
+		return CragIncArcs<OutArcTag>(*this, n);
+	}
+
+	/**
+	 * Get all incoming subset arcs of a node, i.e., arcs to subnodes.
+	 */
+	CragIncArcs<InArcTag> inArcs(CragNode n) const {
+
+		return CragIncArcs<InArcTag>(*this, n);
+	}
+
+	/**
+	 * Get all adjacency edges of a node.
+	 */
+	CragIncEdges adjEdges(CragNode n) const {
+
+		return CragIncEdges(*this, n);
+	}
 
 	/**
 	 * Set the grid graph, to which the affiliated edges between leaf node 

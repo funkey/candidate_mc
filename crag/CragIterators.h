@@ -43,7 +43,7 @@ public:
 
 	CragNode operator*() {
 
-		return CragNode(_crag, _it);
+		return CragNode(RagType::Node(_it));
 	}
 };
 
@@ -336,22 +336,23 @@ public:
 template <typename T>
 class CragIncArcs {
 
-	friend class CragNode;
+	friend class Crag;
 
-	const CragNode& _n;
+	const Crag&         _crag;
+	const RagType::Node _n;
 
-	CragIncArcs(const CragNode& n) : _n(n) {}
+	CragIncArcs(const Crag& crag, RagType::Node n) : _crag(crag), _n(n) {}
 
 public:
 
 	CragIncArcIterator<T> begin() const {
 
-		return CragIncArcIterator<T>(_n._crag, typename T::IteratorType(_n._crag.getSubsetGraph(), _n._crag.toSubset(_n._node)));
+		return CragIncArcIterator<T>(_crag, typename T::IteratorType(_crag.getSubsetGraph(), _crag.toSubset(_n)));
 	}
 
 	CragIncArcIterator<T> end() const {
 
-		return CragIncArcIterator<T>(_n._crag, lemon::INVALID);
+		return CragIncArcIterator<T>(_crag, lemon::INVALID);
 	}
 
 	CragIncArcIterator<T> cbegin() const {
@@ -374,22 +375,23 @@ public:
 
 class CragIncEdges {
 
-	friend class CragNode;
+	friend class Crag;
 
-	const CragNode& _n;
+	const Crag&    _crag;
+	const CragNode _n;
 
-	CragIncEdges(const CragNode& n) : _n(n) {}
+	CragIncEdges(const Crag& crag, CragNode n) : _crag(crag), _n(n) {}
 
 public:
 
 	CragIncEdgeIterator begin() const {
 
-		return CragIncEdgeIterator(_n._crag, RagType::IncEdgeIt(_n._crag.getAdjacencyGraph(), _n._node));
+		return CragIncEdgeIterator(_crag, RagType::IncEdgeIt(_crag.getAdjacencyGraph(), _n._node));
 	}
 
 	CragIncEdgeIterator end() const {
 
-		return CragIncEdgeIterator(_n._crag, lemon::INVALID);
+		return CragIncEdgeIterator(_crag, lemon::INVALID);
 	}
 
 	CragIncEdgeIterator cbegin() const {

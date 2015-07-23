@@ -14,7 +14,7 @@ void crag_iterators() {
 
 	Crag crag;
 
-	int numNodes = 100;
+	int numNodes = 10;
 	for (int i = 0; i < numNodes; i++)
 		crag.addNode();
 
@@ -107,8 +107,8 @@ void crag_iterators() {
 		int numAdjEdges = 0;
 		for (Crag::IncEdgeIt e(crag, n); e != lemon::INVALID; ++e)
 			numAdjEdges++;
-		BOOST_CHECK_EQUAL(n.adjEdges().size(), numAdjEdges);
-		for (Crag::CragEdge e : n.adjEdges()) {
+		BOOST_CHECK_EQUAL(crag.adjEdges(n).size(), numAdjEdges);
+		for (Crag::CragEdge e : crag.adjEdges(n)) {
 			dontWarnMeAboutUnusedVar(e);
 			numAdjEdges--;
 		}
@@ -117,8 +117,8 @@ void crag_iterators() {
 		int numInArcs = 0;
 		for (Crag::SubsetInArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numInArcs++;
-		BOOST_CHECK_EQUAL(numInArcs, n.inArcs().size());
-		for (Crag::CragArc a : n.inArcs()) {
+		BOOST_CHECK_EQUAL(numInArcs, crag.inArcs(n).size());
+		for (Crag::CragArc a : crag.inArcs(n)) {
 			dontWarnMeAboutUnusedVar(a);
 			numInArcs--;
 		}
@@ -127,8 +127,8 @@ void crag_iterators() {
 		int numOutArcs = 0;
 		for (Crag::SubsetOutArcIt a(crag, crag.toSubset(n)); a != lemon::INVALID; ++a)
 			numOutArcs++;
-		BOOST_CHECK_EQUAL(numOutArcs, n.outArcs().size());
-		for (Crag::CragArc a : n.outArcs()) {
+		BOOST_CHECK_EQUAL(numOutArcs, crag.outArcs(n).size());
+		for (Crag::CragArc a : crag.outArcs(n)) {
 			dontWarnMeAboutUnusedVar(a);
 			numOutArcs--;
 		}
@@ -150,8 +150,8 @@ void crag_iterators() {
 
 		while (ai != lemon::INVALID) {
 
-			BOOST_CHECK((Crag::SubsetType::Node)((*cai).source()) == crag.getSubsetGraph().source(ai));
-			BOOST_CHECK((Crag::SubsetType::Node)((*cai).target()) == crag.getSubsetGraph().target(ai));
+			BOOST_CHECK(crag.toSubset((*cai).source()) == crag.getSubsetGraph().source(ai));
+			BOOST_CHECK(crag.toSubset((*cai).target()) == crag.getSubsetGraph().target(ai));
 			++cai;
 			++ai;
 		}
