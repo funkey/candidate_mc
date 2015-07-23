@@ -70,8 +70,14 @@ public:
 
 	public:
 
+		/**
+		 * Create an uninitialized node.
+		 */
 		CragNode() : _node(lemon::INVALID) {}
 
+		/**
+		 * Strict ordering on nodes.
+		 */
 		bool operator<(CragNode other) const {
 
 			return _node < other._node;
