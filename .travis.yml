@@ -1,7 +1,7 @@
 language: cpp
 
 compiler:
-  - clang
+  #- clang # sadly, the travis version of clang doesn not compile our code (not our fault...)
   - gcc
 
 before_install:
