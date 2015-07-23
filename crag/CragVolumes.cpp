@@ -50,9 +50,9 @@ CragVolumes::operator[](Crag::Node n) const {
 
 		// if there was no volume set or already computed, do it now
 
-		_volumes[n] = std::make_shared<CragVolume>();
-
 		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
+
+		_volumes[n] = std::make_shared<CragVolume>();
 		recFill(nodeBoundingBox, *_volumes[n], n);
 
 		UTIL_ASSERT_REL(nodeBoundingBox, ==, _volumes[n]->getBoundingBox());
