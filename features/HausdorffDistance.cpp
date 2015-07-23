@@ -1,6 +1,6 @@
 #include "HausdorffDistance.h"
 #include <vigra/functorexpression.hxx>
-#include <vigra/distancetransform.hxx>
+#include <vigra/multi_distance.hxx>
 #include <vigra/transformimage.hxx>
 #include <vigra/impex.hxx>
 #include <util/timing.h>
@@ -100,11 +100,12 @@ HausdorffDistance::volumesDistance(
 		LOG_ALL(hausdorffdistancelog) << "point " << p << " in i corresponds to point " << p_j << " in j" << std::endl;
 
 		// point relative to distance map
-		util::point<int, 2> p_d = p_j + util::point<int, 2>(_maxDistance, _maxDistance);
+		util::point<int, 2> p_d = p_j + util::point<int, 2>(_padX, _padY);
 
 		LOG_ALL(hausdorffdistancelog) << "point " << p << " in i corresponds to point " << p_d << " in distance map of j" << std::endl;
 
 		double distance;
+		// not in distance map?
 		if (p_d.x() >= distances_j.shape(0) || p_d.y() >= distances_j.shape(1) || p_d.x() < 0 || p_d.y() < 0) {
 
 			distance = _maxDistance;
@@ -113,7 +114,7 @@ HausdorffDistance::volumesDistance(
 
 		} else {
 
-			distance = distances_j(p_d.x(), p_d.y());
+			distance = std::min(_maxDistance, sqrt(distances_j(p_d.x(), p_d.y())));
 
 			LOG_ALL(hausdorffdistancelog) << "point " << p << " has distance " << distance << " to j" << std::endl;
 		}
@@ -134,7 +135,10 @@ HausdorffDistance::getDistanceMap(std::shared_ptr<CragVolume> volume) {
 	if (_distanceMaps.count(volume))
 		return _distanceMaps[volume];
 
-	vigra::Shape2 size(volume->width() + 2*_maxDistance, volume->height() + 2*_maxDistance);
+	_padX = (int)(ceil(_maxDistance/volume->getResolutionX()));
+	_padY = (int)(ceil(_maxDistance/volume->getResolutionY()));
+
+	vigra::Shape2 size(volume->width() + 2*_padX, volume->height() + 2*_padY);
 
 	vigra::MultiArray<2, double>& distanceMap = _distanceMaps[volume];
 	distanceMap.reshape(size);
@@ -144,19 +148,23 @@ HausdorffDistance::getDistanceMap(std::shared_ptr<CragVolume> volume) {
 			volume->data().bind<2>(0),
 			distanceMap.subarray(
 					vigra::Shape2(
-							_maxDistance,
-							_maxDistance),
+							_padX,
+							_padY),
 					vigra::Shape2(
-							_maxDistance + volume->width(),
-							_maxDistance + volume->height())));
+							_padX + volume->width(),
+							_padY + volume->height())));
+
+	double pitch[2];
+	pitch[0] = volume->getResolutionX();
+	pitch[1] = volume->getResolutionY();
+
 
 	// perform distance transform with Euclidean norm
-	vigra::distanceTransform(srcImageRange(distanceMap), destImage(distanceMap), 0.0, 2);
-
-	using namespace vigra::functor;
-
-	// cut values to maxDistance
-	vigra::transformImage(srcImageRange(distanceMap), destImage(distanceMap), min(Arg1(), Param(_maxDistance)));
+	vigra::separableMultiDistSquared(
+			distanceMap,
+			distanceMap,
+			true, /* get distance from object */
+			pitch);
 
 	return distanceMap;
 }

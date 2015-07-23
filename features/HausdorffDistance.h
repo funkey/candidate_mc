@@ -68,7 +68,10 @@ private:
 
 	std::map<std::shared_ptr<CragVolume>, vigra::MultiArray<2, double>> _distanceMaps;
 
-	int _maxDistance;
+	double _maxDistance;
+
+	int _padX;
+	int _padY;
 };
 
 #endif // CANDIDATE_MC_FEATURES_HAUSDORFF_DISTANCE_H__
