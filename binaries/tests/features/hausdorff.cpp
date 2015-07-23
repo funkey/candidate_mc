@@ -167,30 +167,61 @@ void hausdorff_anisotropic() {
 	volumesB.setLeafNodeVolume(b1, volumeB1);
 	volumesB.setLeafNodeVolume(b2, volumeB2);
 
-	HausdorffDistance hausdorff(volumesA, volumesB, 100);
+	{
+		HausdorffDistance hausdorff(volumesA, volumesB, 100);
 
-	double a_b, b_a;
-	hausdorff(a1, b1, a_b, b_a);
+		double a_b, b_a;
+		hausdorff(a1, b1, a_b, b_a);
 
-	BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
-	BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
+		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
+		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
 
-	// same for parents
-	hausdorff(p_a1, p_b1, a_b, b_a);
-	BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
-	BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
+		// same for parents
+		hausdorff(p_a1, p_b1, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
+		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
 
-	// b2 is offset by (5,6), which corresponds (5,3) pixels
-	//
-	// between a1 and b2, the distances should be sqrt(13*13 + 10*10) A->B and 
-	// sqrt(3*3 + 3*3) = 4.243 for B->A
-	hausdorff(a1, b2, a_b, b_a);
-	BOOST_CHECK_CLOSE(a_b, sqrt(13*13 + 2*2), 0.01);
-	BOOST_CHECK_CLOSE(b_a, sqrt(3*3 + 2*2),   0.01);
+		// b2 is offset by (5,6), which corresponds (5,3) pixels
+		//
+		// between a1 and b2, the distances should be sqrt(13*13 + 10*10) A->B and 
+		// sqrt(3*3 + 3*3) = 4.243 for B->A
+		hausdorff(a1, b2, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, sqrt(13*13 + 2*2), 0.01);
+		BOOST_CHECK_CLOSE(b_a, sqrt(3*3 + 2*2),   0.01);
 
-	// between root_a and root_b Hausdorff should be sqrt(2*2 + 16*16) for A->B 
-	// and 4 for B->A
-	hausdorff(root_a, root_b, a_b, b_a);
-	BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
-	BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
+		// between root_a and root_b Hausdorff should be sqrt(2*2 + 16*16) for A->B 
+		// and 4 for B->A
+		hausdorff(root_a, root_b, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
+		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
+	}
+
+	{
+		HausdorffDistance hausdorff(volumesA, volumesB, 10);
+
+		double a_b, b_a;
+		hausdorff(a1, b1, a_b, b_a);
+
+		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
+		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
+
+		// same for parents
+		hausdorff(p_a1, p_b1, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
+		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
+
+		// b2 is offset by (5,6), which corresponds (5,3) pixels
+		//
+		// between a1 and b2, the distances should be sqrt(13*13 + 10*10) A->B and 
+		// sqrt(3*3 + 3*3) = 4.243 for B->A
+		hausdorff(a1, b2, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(13*13 + 2*2)), 0.01);
+		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(3*3 + 2*2)),   0.01);
+
+		// between root_a and root_b Hausdorff should be sqrt(2*2 + 16*16) for A->B 
+		// and 4 for B->A
+		hausdorff(root_a, root_b, a_b, b_a);
+		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
+		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
+	}
 }
