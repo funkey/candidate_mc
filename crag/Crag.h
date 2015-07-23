@@ -34,11 +34,13 @@ public:
 	template <typename T> using NodeMap = RagType::NodeMap<T>;
 	template <typename T> using EdgeMap = RagType::EdgeMap<T>;
 
-	//////////////////////////////////////////////////////////
-
+	class CragArc;
+	class CragEdge;
+	class CragNodeIterator;
+	class CragIncEdgeIterator;
+	class CragIncEdges;
 	template <typename T>
 	class CragIncArcs;
-	class CragIncEdges;
 
 	struct InArcTag  {
 
@@ -52,39 +54,96 @@ public:
 
 	class CragNode {
 
+		friend class CragArc;
+		friend class CragEdge;
+		friend class CragNodeIterator;
+		friend class CragIncEdgeIterator;
+		friend class CragIncEdges;
 		template <typename T>
 		friend class CragIncArcs;
-		friend class CragIncEdges;
 
 		const Crag& _crag;
 		RagType::Node _node;
 
-	public:
-
 		CragNode(const Crag& g, RagType::Node n)
 			: _crag(g), _node(n) {}
 
-		CragIncArcs<OutArcTag> outarcs() {
+	public:
+
+		/**
+		 * Get all outgoing subset arcs of this node, i.e., arcs to supernodes.
+		 */
+		CragIncArcs<OutArcTag> outArcs() const {
 
 			return CragIncArcs<OutArcTag>(*this);
 		}
 
-		CragIncArcs<InArcTag> inarcs() {
+		/**
+		 * Get all incoming subset arcs of this node, i.e., arcs to subnodes.
+		 */
+		CragIncArcs<InArcTag> inArcs() const {
 
 			return CragIncArcs<InArcTag>(*this);
 		}
 
-		CragIncEdges adjedges() {
+		/**
+		 * Get all adjacency edges of this node.
+		 */
+		CragIncEdges adjEdges() const {
 
 			return CragIncEdges(*this);
 		}
 
-		operator RagType::Node () {
+		/**
+		 * Get the id of this node.
+		 */
+		int id() const {
+
+			return _crag.getAdjacencyGraph().id(_node);
+		}
+
+		/**
+		 * Get the level of this node, i.e., the size of the longest subset-tree 
+		 * path to a leaf node. Leaf nodes have a value of zero.
+		 */
+		int level() const {
+
+			return _crag.getLevel(_node);
+		}
+
+		/**
+		 * Check if this node is a root, i.e., it does not have outgoing arcs.
+		 */
+		bool isRoot() const {
+
+			return _crag.isRootNode(_node);
+		}
+
+		/**
+		 * Check if this node is a leaf, i.e., it does not have incoming arcs.
+		 */
+		bool isLeaf() const {
+
+			return _crag.isLeafNode(_node);
+		}
+
+		/**
+		 * Implicit conversion operator to a node of the lemon region adjacency 
+		 * graph. Provided for convenience, such that this node can be used as 
+		 * the key in a lemon node map and for the underlying lemon graph 
+		 * RagType.
+		 */
+		operator RagType::Node () const {
 
 			return _node;
 		}
 
-		operator SubsetNode () {
+		/**
+		 * Implicit conversion operator to a node of the lemon region adjacency 
+		 * graph. Provided for convenience, such that this node can be used as 
+		 * the key in a lemon node map and for the underlying lemon graph.
+		 */
+		operator SubsetNode () const {
 
 			return _crag.toSubset(_node);
 		}
@@ -132,339 +191,7 @@ public:
 		}
 	};
 
-	class CragNodeIterator {
-
-		const Crag& _crag;
-		RagType::NodeIt _it;
-
-	public:
-
-		CragNodeIterator(const Crag& g)
-			: _crag(g), _it(g.getAdjacencyGraph()) {}
-
-		CragNodeIterator(const CragNodeIterator& i)
-			: _crag(i._crag), _it(i._it) {}
-
-		CragNodeIterator(const Crag& g, const lemon::Invalid& i)
-			: _crag(g), _it(i) {}
-
-		CragNodeIterator& operator++() {
-
-			++_it;
-			return *this;
-		}
-
-		CragNodeIterator operator++(int) {
-
-			CragNodeIterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		bool operator==(const CragNodeIterator& rhs) {
-
-			return _it == rhs._it;
-		}
-
-		bool operator!=(const CragNodeIterator& rhs) {
-
-			return _it != rhs._it;
-		}
-
-		CragNode operator*() {
-
-			return CragNode(_crag, _it);
-		}
-	};
-
-	class CragEdgeIterator {
-
-		const Crag& _crag;
-		RagType::EdgeIt _it;
-
-	public:
-
-		CragEdgeIterator(const Crag& g)
-			: _crag(g), _it(g.getAdjacencyGraph()) {}
-
-		CragEdgeIterator(const CragEdgeIterator& i)
-			: _crag(i._crag), _it(i._it) {}
-
-		CragEdgeIterator(const Crag& g, const lemon::Invalid& i)
-			: _crag(g), _it(i) {}
-
-		CragEdgeIterator& operator++() {
-
-			++_it;
-			return *this;
-		}
-
-		CragEdgeIterator operator++(int) {
-
-			CragEdgeIterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		bool operator==(const CragEdgeIterator& rhs) {
-
-			return _it == rhs._it;
-		}
-
-		bool operator!=(const CragEdgeIterator& rhs) {
-
-			return _it != rhs._it;
-		}
-
-		CragEdge operator*() {
-
-			return CragEdge(_crag, _it);
-		}
-	};
-
-	class CragArcIterator : public std::iterator<std::input_iterator_tag, CragArc> {
-
-		const Crag& _crag;
-		typename SubsetType::ArcIt _it; 
-
-	public:
-
-		CragArcIterator(const Crag& g)
-			: _crag(g), _it(g.getSubsetGraph()) {}
-
-		CragArcIterator(const CragArcIterator& i)
-			: _crag(i._crag), _it(i._it) {}
-
-		CragArcIterator(const Crag& g, const lemon::Invalid& i)
-			: _crag(g), _it(i) {}
-
-		CragArcIterator& operator++() {
-
-			++_it;
-			return *this;
-		}
-
-		CragArcIterator operator++(int) {
-
-			CragArcIterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		bool operator==(const CragArcIterator& rhs) {
-
-			return _it == rhs._it;
-		}
-
-		bool operator!=(const CragArcIterator& rhs) {
-
-			return _it != rhs._it;
-		}
-
-		CragArc operator*() {
-
-			return CragArc(_crag, _it);
-		}
-	};
-
-	template <typename T>
-	class CragIncArcIterator : public std::iterator<std::input_iterator_tag, CragArc> {
-
-		const Crag& _crag;
-		typename T::IteratorType _it; 
-
-	public:
-
-		CragIncArcIterator(const Crag& g, typename T::IteratorType i)
-			: _crag(g), _it(i) {}
-
-		CragIncArcIterator(const CragIncArcIterator<T>& i)
-			: _crag(i._crag), _it(i._crag, i._it) {}
-
-		CragIncArcIterator<T>& operator++() {
-
-			++_it;
-			return *this;
-		}
-
-		CragIncArcIterator<T> operator++(int) {
-
-			CragIncArcIterator<T> tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		bool operator==(const CragIncArcIterator<T>& rhs) {
-
-			return _it == rhs._it;
-		}
-
-		bool operator!=(const CragIncArcIterator<T>& rhs) {
-
-			return _it != rhs._it;
-		}
-
-		CragArc operator*() {
-
-			return CragArc(_crag, _it);
-		}
-	};
-
-	class CragIncEdgeIterator : public std::iterator<std::input_iterator_tag, CragEdge> {
-
-		const Crag& _crag;
-		typename RagType::IncEdgeIt _it; 
-
-	public:
-
-		CragIncEdgeIterator(const Crag& g, RagType::IncEdgeIt i)
-			: _crag(g), _it(i) {}
-
-		CragIncEdgeIterator(const CragIncEdgeIterator& i)
-			: _crag(i._crag), _it(i._crag, i._it) {}
-
-		CragIncEdgeIterator& operator++() {
-
-			++_it;
-			return *this;
-		}
-
-		CragIncEdgeIterator operator++(int) {
-
-			CragIncEdgeIterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		bool operator==(const CragIncEdgeIterator& rhs) {
-
-			return _it == rhs._it;
-		}
-
-		bool operator!=(const CragIncEdgeIterator& rhs) {
-
-			return _it != rhs._it;
-		}
-
-		CragEdge operator*() {
-
-			return CragEdge(_crag, _it);
-		}
-	};
-
-	class CragNodes {
-
-		friend class Crag;
-
-		const Crag& _crag;
-
-		CragNodes(const Crag& g) : _crag(g) {}
-
-	public:
-
-		CragNodeIterator begin() {
-
-			return CragNodeIterator(_crag);
-		}
-
-		CragNodeIterator end() {
-
-			return CragNodeIterator(_crag, lemon::INVALID);
-		}
-	};
-
-	class CragEdges {
-
-		friend class Crag;
-
-		const Crag& _crag;
-
-		CragEdges(const Crag& g) : _crag(g) {}
-
-	public:
-
-		CragEdgeIterator begin() {
-
-			return CragEdgeIterator(_crag);
-		}
-
-		CragEdgeIterator end() {
-
-			return CragEdgeIterator(_crag, lemon::INVALID);
-		}
-	};
-
-	class CragArcs {
-
-		friend class Crag;
-
-		const Crag& _crag;
-
-		CragArcs(const Crag& g) : _crag(g) {}
-
-	public:
-
-		CragArcIterator begin() {
-
-			return CragArcIterator(_crag);
-		}
-
-		CragArcIterator end() {
-
-			return CragArcIterator(_crag, lemon::INVALID);
-		}
-	};
-
-	template <typename T>
-	class CragIncArcs {
-
-		friend class CragNode;
-
-		const CragNode& _n;
-
-		CragIncArcs(const CragNode& n) : _n(n) {}
-
-	public:
-
-		CragIncArcIterator<T> begin() {
-
-			return CragIncArcIterator<T>(_n._crag, typename T::IteratorType(_n._crag.getSubsetGraph(), _n._crag.toSubset(_n._node)));
-		}
-
-		CragIncArcIterator<T> end() {
-
-			return CragIncArcIterator<T>(_n._crag, lemon::INVALID);
-		}
-
-	//	CragIncArcIterator<T> begin() const;
-	//	CragIncArcIterator<T> cbegin() const;
-	//	CragIncArcIterator<T> end();
-	//	CragIncArcIterator<T> end() const;
-	//	CragIncArcIterator<T> cend() const;
-	};
-
-	class CragIncEdges {
-
-		friend class CragNode;
-
-		const CragNode& _n;
-
-		CragIncEdges(const CragNode& n) : _n(n) {}
-
-	public:
-
-		CragIncEdgeIterator begin() {
-
-			return CragIncEdgeIterator(_n._crag, RagType::IncEdgeIt(_n._crag.getAdjacencyGraph(), _n._node));
-		}
-
-		CragIncEdgeIterator end() {
-
-			return CragIncEdgeIterator(_n._crag, lemon::INVALID);
-		}
-	};
-
-	//////////////////////////////////////////////////////////
+	#include "CragIterators.h"
 
 	Crag() :
 		_affiliatedEdges(_rag) {}
@@ -520,11 +247,11 @@ public:
 		return _ssg.addArc(toSubset(u), toSubset(v));
 	}
 
-	CragNodes nodes() { return CragNodes(*this); }
+	CragNodes nodes() const { return CragNodes(*this); }
 
-	CragEdges edges() { return CragEdges(*this); }
+	CragEdges edges() const { return CragEdges(*this); }
 
-	CragArcs  arcs()  { return CragArcs (*this); }
+	CragArcs  arcs()  const { return CragArcs (*this); }
 
 	/**
 	 * Set the grid graph, to which the affiliated edges between leaf node 
@@ -608,6 +335,27 @@ public:
 	inline SubsetNode toSubset(Node n) const {
 
 		return _ssg.nodeFromId(_rag.id(n));
+	}
+
+	inline size_t numNodes() const {
+
+		size_t s = 0;
+		for (auto i = nodes().begin(); i != nodes().end(); i++, s++) {}
+		return s;
+	}
+
+	inline size_t numEdges() const {
+
+		size_t s = 0;
+		for (auto i = edges().begin(); i != edges().end(); i++, s++) {}
+		return s;
+	}
+
+	inline size_t numArcs() const {
+
+		size_t s = 0;
+		for (auto i = arcs().begin(); i != arcs().end(); i++, s++) {}
+		return s;
 	}
 
 private:
