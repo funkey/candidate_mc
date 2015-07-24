@@ -23,31 +23,73 @@ HausdorffDistance::HausdorffDistance(
 void
 HausdorffDistance::operator()(Crag::Node i, Crag::Node j, double& i_j, double& j_i) {
 
-	LOG_ALL(hausdorffdistancelog) << "getting distance between " << _a.getCrag().id(i) << " and " << _b.getCrag().id(j) << std::endl;
+	if (_a.getCrag().id(i) == 178 && _b.getCrag().id(j) == 542)
+		hausdorffdistancelog.setLogLevel(logger::Debug);
+
+	LOG_DEBUG(hausdorffdistancelog) << "getting distance between " << _a.getCrag().id(i) << " and " << _b.getCrag().id(j) << std::endl;
 
 	double maxDistance_i_j = 0;
 	double maxDistance_j_i = 0;
 
+	LOG_DEBUG(hausdorffdistancelog) << "leaf nodes of A are:" << std::endl;
+	for (Crag::Node n : _leafNodesA[i])
+		LOG_DEBUG(hausdorffdistancelog) << "\t" << _a.getCrag().id(n) << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "leaf nodes of B are:" << std::endl;
+	for (Crag::Node n : _leafNodesB[j])
+		LOG_DEBUG(hausdorffdistancelog) << "\t" << _b.getCrag().id(n) << std::endl;
+
+	LOG_DEBUG(hausdorffdistancelog) << "computing A->B" << std::endl;
+
+	// A -> B
 	for (Crag::Node iLeaf : _leafNodesA[i]) {
 
-		double minDistance_i_j = std::numeric_limits<double>::infinity();
-		double minDistance_j_i = std::numeric_limits<double>::infinity();
+		LOG_DEBUG(hausdorffdistancelog) << "processing A's leaf node " << _a.getCrag().id(iLeaf) << std::endl;
 
-		for (Crag::Node jLeaf : _leafNodesA[j]) {
+		double minDistance_i_j = std::numeric_limits<double>::infinity();
+
+		for (Crag::Node jLeaf : _leafNodesB[j]) {
+
+			LOG_DEBUG(hausdorffdistancelog) << "comparing agains B's leaf node " << _b.getCrag().id(jLeaf) << std::endl;
 
 			double distance_i_j, distance_j_i;
 			leafDistance(iLeaf, jLeaf, distance_i_j, distance_j_i);
 
+			LOG_DEBUG(hausdorffdistancelog) << "distance is " << distance_i_j << std::endl;
+
 			minDistance_i_j = std::min(minDistance_i_j, distance_i_j);
-			minDistance_j_i = std::min(minDistance_j_i, distance_j_i);
 		}
 
 		maxDistance_i_j = std::max(maxDistance_i_j, minDistance_i_j);
+	}
+
+	// B -> A
+	for (Crag::Node jLeaf : _leafNodesB[j]) {
+
+		LOG_DEBUG(hausdorffdistancelog) << "processing B's leaf node " << _b.getCrag().id(jLeaf) << std::endl;
+
+		double minDistance_j_i = std::numeric_limits<double>::infinity();
+
+		for (Crag::Node iLeaf : _leafNodesA[i]) {
+
+			LOG_DEBUG(hausdorffdistancelog) << "comparing agains A's leaf node " << _a.getCrag().id(iLeaf) << std::endl;
+
+			double distance_i_j, distance_j_i;
+			leafDistance(iLeaf, jLeaf, distance_i_j, distance_j_i);
+
+			LOG_DEBUG(hausdorffdistancelog) << "distance is " << distance_j_i << std::endl;
+
+			minDistance_j_i = std::min(minDistance_j_i, distance_j_i);
+		}
+
 		maxDistance_j_i = std::max(maxDistance_j_i, minDistance_j_i);
 	}
 
 	i_j = maxDistance_i_j;
 	j_i = maxDistance_j_i;
+
+	LOG_DEBUG(hausdorffdistancelog) << "final distances are " << i_j << " (A->B) and " << j_i << " (B->A)" << std::endl;
+
+	hausdorffdistancelog.setLogLevel(logger::User);
 }
 
 void
@@ -55,16 +97,18 @@ HausdorffDistance::leafDistance(Crag::Node i, Crag::Node j, double& i_j, double&
 
 	if (_cache.count(std::make_pair(i, j))) {
 
+		LOG_DEBUG(hausdorffdistancelog) << "reuse cached values" << std::endl;
+
 		i_j = _cache[std::make_pair(i, j)].first;
 		j_i = _cache[std::make_pair(i, j)].second;
 
 		return;
 	}
 
-	LOG_ALL(hausdorffdistancelog) << "checking leaf nodes " << _a.getCrag().id(i) << "a and " << _b.getCrag().id(j) << "b" << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "checking leaf nodes " << _a.getCrag().id(i) << "a and " << _b.getCrag().id(j) << "b" << std::endl;
 	volumesDistance(_a[i], _b[j], i_j);
 
-	LOG_ALL(hausdorffdistancelog) << "checking leaf nodes " << _b.getCrag().id(j) << "b and " << _a.getCrag().id(i) << "a" << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "checking leaf nodes " << _b.getCrag().id(j) << "b and " << _a.getCrag().id(i) << "a" << std::endl;
 	volumesDistance(_b[j], _a[i], j_i);
 
 	_cache[std::make_pair(i, j)] = std::make_pair(i_j, j_i);
@@ -79,8 +123,8 @@ HausdorffDistance::volumesDistance(
 	const util::box<int, 2>& bb_i = (volume_i->getBoundingBox()/volume_i->getResolution()).project<2>();
 	const util::box<int, 2>& bb_j = (volume_j->getBoundingBox()/volume_j->getResolution()).project<2>();
 
-	LOG_ALL(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i->getBoundingBox() << std::endl;
-	LOG_ALL(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j->getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i->getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j->getBoundingBox() << std::endl;
 
 	vigra::MultiArray<2, double>& distances_j = getDistanceMap(volume_j);
 
@@ -124,7 +168,7 @@ HausdorffDistance::volumesDistance(
 
 	i_j = maxDistance;
 
-	LOG_ALL(hausdorffdistancelog) << "distance: " << i_j << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "distance: " << i_j << std::endl;
 }
 
 vigra::MultiArray<2, double>&
