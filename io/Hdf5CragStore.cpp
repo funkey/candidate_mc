@@ -53,6 +53,9 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	}
 	LOG_USER(hdf5storelog) << logger::delline << numEdges << " affiliated egde lists prepared" << std::endl;
 
+	if (aeIds.size() == 0)
+		return;
+
 	LOG_USER(hdf5storelog) << "writing affiliated edge lists..." << std::flush;
 	_hdfFile.write(
 			"list",
@@ -107,6 +110,9 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 
 		_hdfFile.cd("/crag");
 		_hdfFile.cd("affiliated_edges");
+
+		if (!_hdfFile.existsDataset("list"))
+			return;
 
 		vigra::ArrayVector<int> aeIds;
 		_hdfFile.readAndResize(
