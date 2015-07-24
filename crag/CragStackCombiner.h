@@ -39,6 +39,9 @@ private:
 	double _maxDistance;
 
 	bool _requireBbOverlap;
+
+	std::map<Crag::CragNode, Crag::CragNode> _prevNodeMap;
+	std::map<Crag::CragNode, Crag::CragNode> _nextNodeMap;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_STACK_COMBINER_H__
