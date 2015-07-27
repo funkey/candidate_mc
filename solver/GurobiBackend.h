@@ -14,8 +14,6 @@
 #include "Sense.h"
 #include "Solution.h"
 
-using namespace std;
-
 /**
  * Gurobi interface to solve the following (integer) quadratic program:
  *
