@@ -297,9 +297,9 @@ public:
 	/**
 	 * Convenience function to create a node from an id.
 	 */
-	inline Node nodeFromId(int id) const {
+	inline CragNode nodeFromId(int id) const {
 
-		return _rag.nodeFromId(id);
+		return CragNode(_rag.nodeFromId(id));
 	}
 
 	/**
