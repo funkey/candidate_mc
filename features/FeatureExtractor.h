@@ -57,7 +57,13 @@ private:
 
 	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
-	std::pair<int, int> extractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::SubsetNode n);
+	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
+
+	void extractTopologicalNodeFeatures(NodeFeatures& nodeFeatures);
+
+	void extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures);
+
+	std::pair<int, int> recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::CragNode n);
 
 	void visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures);
 
