@@ -22,7 +22,8 @@ CplexBackend::CplexBackend(const Parameter& parameter) :
     x_(env_),
     c_(env_),
     obj_(env_),
-    sol_(env_)
+    sol_(env_),
+    firstRun_(true)
 {
     std::cout << "constructing cplex solver" << std::endl;
 }
@@ -72,7 +73,6 @@ CplexBackend::initialize(
 //        char t = (type == Binary ? 'B' : (type == Integer ? 'I' : 'C'));
 //        _variables[v].set(GRB_CharAttr_VType, t);
 //    }
-
     std::cout << "creating " << _numVariables << " ceofficients" << std::endl;
 }
 
@@ -84,7 +84,6 @@ CplexBackend::setObjective(const LinearObjective& objective) {
 
 void
 CplexBackend::setObjective(const QuadraticObjective& objective) {
-
     try {
 
         // set sense of objective
@@ -115,8 +114,11 @@ CplexBackend::setObjective(const QuadraticObjective& objective) {
             if (value != 0)
                 obj_.setQuadCoef(x_[variables.first], x_[variables.second], value);
         }
+        if(firstRun_){
+            model_.add(obj_);
+            firstRun_ = false;
+        }
 
-        model_.add(obj_);
 
     } catch (IloCplex::Exception e) {
 
@@ -171,6 +173,8 @@ CplexBackend::addConstraint(const LinearConstraint& constraint) {
 
 IloRange
 CplexBackend::createConstraint(const LinearConstraint& constraint) {
+
+
     // create the lhs expression
     IloExpr linearExpr(env_);
 
@@ -181,6 +185,8 @@ CplexBackend::createConstraint(const LinearConstraint& constraint) {
         linearExpr.setLinearCoef(x_[pair->first], pair->second);
     }
 
+
+
     switch(constraint.getRelation())
     {
         case LessEqual:
@@ -189,6 +195,10 @@ CplexBackend::createConstraint(const LinearConstraint& constraint) {
         case GreaterEqual:
             return IloRange(env_, constraint.getValue(), linearExpr);
             break;
+         case Equal:{
+            throw std::runtime_error("fuck");
+            std::terminate();
+        }
     }
 }
 
@@ -225,6 +235,8 @@ CplexBackend::solve(Solution& x,/* double& value, */ std::string& msg) {
         // get current value of the objective
         const double value = cplex_.getObjValue();
         x.setValue(value);
+        model_.remove(obj_);
+        //cplex_.clearModel();
 
     } catch (IloCplex::Exception& e) {
 

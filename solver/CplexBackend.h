@@ -137,6 +137,9 @@ private:
 
     typedef std::vector<IloExtractable> ConstraintVector;
     ConstraintVector _constraints;
+
+    // are we in the first run
+    bool firstRun_;
 };
 
 
