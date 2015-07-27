@@ -493,6 +493,30 @@ FeatureExtractor::extractEdgeFeatures(
 		}
 	}
 
+	////////////////////////
+	// Edge Features      //
+	// from Node Features //
+	////////////////////////
+	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+		Crag::Node u = _crag.u(e);
+		Crag::Node v = _crag.v(e);
+		// feature vectors from node u/v
+		const auto & featsU = nodeFeatures[u];
+		const auto & featsV = nodeFeatures[v];
+		// loop over all features
+		for(size_t nfi=0; nfi < featsU.size(); ++nfi){
+			// single feature from node u/v
+			const auto fu = featsU[nfi];
+			const auto fv = featsV[nfi];
+			// convert u/v features into 
+			// edge features
+			edgeFeatures.append(e, std::abs(fu-fv));
+			edgeFeatures.append(e, std::min(fu,fv));
+			edgeFeatures.append(e, std::max(fu,fv));
+			edgeFeatures.append(e, fu+fv);
+		}
+	}
+
 	///////////////////
 	// NORMALIZATION //
 	///////////////////
