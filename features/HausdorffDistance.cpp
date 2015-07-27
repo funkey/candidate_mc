@@ -1,6 +1,6 @@
 #include "HausdorffDistance.h"
 #include <vigra/functorexpression.hxx>
-#include <vigra/distancetransform.hxx>
+#include <vigra/multi_distance.hxx>
 #include <vigra/transformimage.hxx>
 #include <vigra/impex.hxx>
 #include <util/timing.h>
@@ -14,46 +14,14 @@ HausdorffDistance::HausdorffDistance(
 		int maxDistance) :
 	_a(a),
 	_b(b),
-	_maxDistance(maxDistance) {
-
-	_leafNodesA = collectLeafNodes(a.getCrag());
-	_leafNodesB = collectLeafNodes(b.getCrag());
-}
+	_maxDistance(maxDistance) {}
 
 void
 HausdorffDistance::operator()(Crag::Node i, Crag::Node j, double& i_j, double& j_i) {
 
-	LOG_ALL(hausdorffdistancelog) << "getting distance between " << _a.getCrag().id(i) << " and " << _b.getCrag().id(j) << std::endl;
-
-	double maxDistance_i_j = 0;
-	double maxDistance_j_i = 0;
-
-	for (Crag::Node iLeaf : _leafNodesA[i]) {
-
-		double minDistance_i_j = std::numeric_limits<double>::infinity();
-		double minDistance_j_i = std::numeric_limits<double>::infinity();
-
-		for (Crag::Node jLeaf : _leafNodesA[j]) {
-
-			double distance_i_j, distance_j_i;
-			leafDistance(iLeaf, jLeaf, distance_i_j, distance_j_i);
-
-			minDistance_i_j = std::min(minDistance_i_j, distance_i_j);
-			minDistance_j_i = std::min(minDistance_j_i, distance_j_i);
-		}
-
-		maxDistance_i_j = std::max(maxDistance_i_j, minDistance_i_j);
-		maxDistance_j_i = std::max(maxDistance_j_i, minDistance_j_i);
-	}
-
-	i_j = maxDistance_i_j;
-	j_i = maxDistance_j_i;
-}
-
-void
-HausdorffDistance::leafDistance(Crag::Node i, Crag::Node j, double& i_j, double& j_i) {
-
 	if (_cache.count(std::make_pair(i, j))) {
+
+		LOG_DEBUG(hausdorffdistancelog) << "reuse cached values" << std::endl;
 
 		i_j = _cache[std::make_pair(i, j)].first;
 		j_i = _cache[std::make_pair(i, j)].second;
@@ -61,10 +29,18 @@ HausdorffDistance::leafDistance(Crag::Node i, Crag::Node j, double& i_j, double&
 		return;
 	}
 
-	LOG_ALL(hausdorffdistancelog) << "checking leaf nodes " << _a.getCrag().id(i) << "a and " << _b.getCrag().id(j) << "b" << std::endl;
+	LOG_DEBUG(hausdorffdistancelog)
+			<< "checking nodes " << _a.getCrag().id(i)
+			<< "a and " << _b.getCrag().id(j) << "b"
+			<< std::endl;
+
 	volumesDistance(_a[i], _b[j], i_j);
 
-	LOG_ALL(hausdorffdistancelog) << "checking leaf nodes " << _b.getCrag().id(j) << "b and " << _a.getCrag().id(i) << "a" << std::endl;
+	LOG_DEBUG(hausdorffdistancelog)
+			<< "checking nodes " << _b.getCrag().id(j)
+			<< "b and " << _a.getCrag().id(i) << "a"
+			<< std::endl;
+
 	volumesDistance(_b[j], _a[i], j_i);
 
 	_cache[std::make_pair(i, j)] = std::make_pair(i_j, j_i);
@@ -76,11 +52,17 @@ HausdorffDistance::volumesDistance(
 		std::shared_ptr<CragVolume> volume_j,
 		double& i_j) {
 
+	if (lowerBound(*volume_i, *volume_j) >= _maxDistance) {
+
+		i_j = _maxDistance;
+		return;
+	}
+
 	const util::box<int, 2>& bb_i = (volume_i->getBoundingBox()/volume_i->getResolution()).project<2>();
 	const util::box<int, 2>& bb_j = (volume_j->getBoundingBox()/volume_j->getResolution()).project<2>();
 
-	LOG_ALL(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i->getBoundingBox() << std::endl;
-	LOG_ALL(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j->getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i->getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j->getBoundingBox() << std::endl;
 
 	vigra::MultiArray<2, double>& distances_j = getDistanceMap(volume_j);
 
@@ -100,11 +82,12 @@ HausdorffDistance::volumesDistance(
 		LOG_ALL(hausdorffdistancelog) << "point " << p << " in i corresponds to point " << p_j << " in j" << std::endl;
 
 		// point relative to distance map
-		util::point<int, 2> p_d = p_j + util::point<int, 2>(_maxDistance, _maxDistance);
+		util::point<int, 2> p_d = p_j + util::point<int, 2>(_padX, _padY);
 
 		LOG_ALL(hausdorffdistancelog) << "point " << p << " in i corresponds to point " << p_d << " in distance map of j" << std::endl;
 
 		double distance;
+		// not in distance map?
 		if (p_d.x() >= distances_j.shape(0) || p_d.y() >= distances_j.shape(1) || p_d.x() < 0 || p_d.y() < 0) {
 
 			distance = _maxDistance;
@@ -113,7 +96,7 @@ HausdorffDistance::volumesDistance(
 
 		} else {
 
-			distance = distances_j(p_d.x(), p_d.y());
+			distance = std::min(_maxDistance, sqrt(distances_j(p_d.x(), p_d.y())));
 
 			LOG_ALL(hausdorffdistancelog) << "point " << p << " has distance " << distance << " to j" << std::endl;
 		}
@@ -123,7 +106,25 @@ HausdorffDistance::volumesDistance(
 
 	i_j = maxDistance;
 
-	LOG_ALL(hausdorffdistancelog) << "distance: " << i_j << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "distance: " << i_j << std::endl;
+}
+
+double
+HausdorffDistance::lowerBound(const CragVolume& a, const CragVolume& b) {
+
+	// get max x separation
+	double maxSeparationX =
+			std::max(
+					b.getBoundingBox().min().x() - a.getBoundingBox().min().x(),
+					a.getBoundingBox().max().x() - b.getBoundingBox().max().x());
+
+	// get max y separation
+	double maxSeparationY =
+			std::max(
+					b.getBoundingBox().min().y() - a.getBoundingBox().min().y(),
+					a.getBoundingBox().max().y() - b.getBoundingBox().max().y());
+
+	return std::max(maxSeparationX, maxSeparationY);
 }
 
 vigra::MultiArray<2, double>&
@@ -134,7 +135,10 @@ HausdorffDistance::getDistanceMap(std::shared_ptr<CragVolume> volume) {
 	if (_distanceMaps.count(volume))
 		return _distanceMaps[volume];
 
-	vigra::Shape2 size(volume->width() + 2*_maxDistance, volume->height() + 2*_maxDistance);
+	_padX = (int)(ceil(_maxDistance/volume->getResolutionX()));
+	_padY = (int)(ceil(_maxDistance/volume->getResolutionY()));
+
+	vigra::Shape2 size(volume->width() + 2*_padX, volume->height() + 2*_padY);
 
 	vigra::MultiArray<2, double>& distanceMap = _distanceMaps[volume];
 	distanceMap.reshape(size);
@@ -144,49 +148,24 @@ HausdorffDistance::getDistanceMap(std::shared_ptr<CragVolume> volume) {
 			volume->data().bind<2>(0),
 			distanceMap.subarray(
 					vigra::Shape2(
-							_maxDistance,
-							_maxDistance),
+							_padX,
+							_padY),
 					vigra::Shape2(
-							_maxDistance + volume->width(),
-							_maxDistance + volume->height())));
+							_padX + volume->width(),
+							_padY + volume->height())));
+
+	double pitch[2];
+	pitch[0] = volume->getResolutionX();
+	pitch[1] = volume->getResolutionY();
+
 
 	// perform distance transform with Euclidean norm
-	vigra::distanceTransform(srcImageRange(distanceMap), destImage(distanceMap), 0.0, 2);
-
-	using namespace vigra::functor;
-
-	// cut values to maxDistance
-	vigra::transformImage(srcImageRange(distanceMap), destImage(distanceMap), min(Arg1(), Param(_maxDistance)));
+	vigra::separableMultiDistSquared(
+			distanceMap,
+			distanceMap,
+			true, /* get distance from object */
+			pitch);
 
 	return distanceMap;
 }
 
-HausdorffDistance::LeafNodeMap
-HausdorffDistance::collectLeafNodes(const Crag& crag) {
-
-	LeafNodeMap map;
-
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		if (Crag::SubsetOutArcIt(crag.getSubsetGraph(), crag.toSubset(n)) == lemon::INVALID)
-			recCollectLeafNodes(crag, n, map);
-
-	return map;
-}
-
-void
-HausdorffDistance::recCollectLeafNodes(const Crag& crag, Crag::Node n, LeafNodeMap& map) {
-
-	int numChildren = 0;
-	for (Crag::SubsetInArcIt c(crag.getSubsetGraph(), crag.toSubset(n)); c != lemon::INVALID; ++c) {
-
-		Crag::Node child = crag.toRag(crag.getSubsetGraph().oppositeNode(crag.toSubset(n), c));
-
-		recCollectLeafNodes(crag, child, map);
-		std::copy(map[child].begin(), map[child].end(), std::back_inserter(map[n]));
-
-		numChildren++;
-	}
-
-	if (numChildren == 0)
-		map[n].push_back(n);
-}

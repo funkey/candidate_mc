@@ -1,3 +1,5 @@
+#include <config.h>
+
 #ifdef HAVE_CPLEX
 
 #include <string>
@@ -221,8 +223,8 @@ CplexBackend::solve(Solution& x,/* double& value, */ std::string& msg) {
             x[i] = sol_[i];
 
         // get current value of the objective
-        //value = cplex_.getObjValue();
-        //x.setValue(value);
+        const double value = cplex_.getObjValue();
+        x.setValue(value);
 
     } catch (IloCplex::Exception& e) {
 

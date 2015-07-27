@@ -20,7 +20,7 @@ util::ProgramOption optionMaxZLinkHausdorffDistance(
 		util::_module           = "crag.combine",
 		util::_description_text = "The maximal Hausdorff distance between two "
 		                          "superpixels in subsequent z-section to be "
-		                          "considered adjacent. For that, the minimal "
+		                          "considered adjacent. For that, the maximal "
 		                          "value of the two directions are taken as "
 		                          "distance.",
 		util::_default_value    = 50);
@@ -44,21 +44,21 @@ CragStackCombiner::combine(
 			<< "require bounding box overlap"
 			<< std::endl;
 
-	std::map<Crag::Node, Crag::Node> prevNodeMap;
-	std::map<Crag::Node, Crag::Node> nextNodeMap;
+	_prevNodeMap.clear();
+	_nextNodeMap.clear();
 
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
 
 		if (z == 1)
-			prevNodeMap = copyNodes(sourcesCrags[0], sourcesVolumes[0], targetCrag, targetVolumes);
+			_prevNodeMap = copyNodes(sourcesCrags[0], sourcesVolumes[0], targetCrag, targetVolumes);
 		else
-			prevNodeMap = nextNodeMap;
+			_prevNodeMap = _nextNodeMap;
 
-		nextNodeMap = copyNodes(sourcesCrags[z], sourcesVolumes[z], targetCrag, targetVolumes);
+		_nextNodeMap = copyNodes(sourcesCrags[z], sourcesVolumes[z], targetCrag, targetVolumes);
 
-		std::vector<std::pair<Crag::Node, Crag::Node>> links =
+		std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links =
 				findLinks(
 						sourcesCrags[z-1],
 						sourcesVolumes[z-1],
@@ -67,23 +67,23 @@ CragStackCombiner::combine(
 
 		for (const auto& pair : links)
 			targetCrag.addAdjacencyEdge(
-					prevNodeMap[pair.first],
-					nextNodeMap[pair.second]);
+					_prevNodeMap[pair.first],
+					_nextNodeMap[pair.second]);
 	}
 }
 
-std::map<Crag::Node, Crag::Node>
+std::map<Crag::CragNode, Crag::CragNode>
 CragStackCombiner::copyNodes(
 		const Crag&        source,
 		const CragVolumes& sourceVolumes,
 		Crag&              target,
 		CragVolumes&       targetVolumes) {
 
-	std::map<Crag::Node, Crag::Node> nodeMap;
+	std::map<Crag::CragNode, Crag::CragNode> nodeMap;
 
-	for (Crag::NodeIt i(source); i != lemon::INVALID; ++i) {
+	for (Crag::CragNode i : source.nodes()) {
 
-		Crag::Node n = target.addNode();
+		Crag::CragNode n = target.addNode();
 
 		if (source.isLeafNode(i))
 			targetVolumes.setLeafNodeVolume(n, sourceVolumes[i]);
@@ -91,18 +91,18 @@ CragStackCombiner::copyNodes(
 		nodeMap[i] = n;
 	}
 
-	for (Crag::EdgeIt e(source); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : source.edges()) {
 
-		Crag::Node u = nodeMap[source.u(e)];
-		Crag::Node v = nodeMap[source.v(e)];
+		Crag::CragNode u = nodeMap[e.u()];
+		Crag::CragNode v = nodeMap[e.v()];
 
 		target.addAdjacencyEdge(u, v);
 	}
 
-	for (Crag::SubsetArcIt a(source); a != lemon::INVALID; ++a) {
+	for (Crag::CragArc a : source.arcs()) {
 
-		Crag::Node s = nodeMap[source.toRag(source.getSubsetGraph().source(a))];
-		Crag::Node t = nodeMap[source.toRag(source.getSubsetGraph().target(a))];
+		Crag::CragNode s = nodeMap[a.source()];
+		Crag::CragNode t = nodeMap[a.target()];
 
 		target.addSubsetArc(s, t);
 	}
@@ -110,7 +110,7 @@ CragStackCombiner::copyNodes(
 	return nodeMap;
 }
 
-std::vector<std::pair<Crag::Node, Crag::Node>>
+std::vector<std::pair<Crag::CragNode, Crag::CragNode>>
 CragStackCombiner::findLinks(
 		const Crag&        cragA,
 		const CragVolumes& volsA,
@@ -119,17 +119,27 @@ CragStackCombiner::findLinks(
 
 	UTIL_TIME_METHOD;
 
-	HausdorffDistance hausdorff(volsA, volsB, 100);
+	std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links;
 
-	std::vector<std::pair<Crag::Node, Crag::Node>> links;
+	if (cragA.nodes().size() == 0 || cragB.nodes().size() == 0)
+		return links;
 
-	for (Crag::NodeIt i(cragA); i != lemon::INVALID; ++i) {
+	// make sure the padding for the distance map is at least on pixel more than 
+	// then the cut-off at max distance
+	double maxResolution = std::max(
+			volsA[*cragA.nodes().begin()]->getResolutionX(),
+			volsA[*cragA.nodes().begin()]->getResolutionY());
+	HausdorffDistance hausdorff(volsA, volsB, _maxDistance + maxResolution);
+
+	for (Crag::CragNode i : cragA.nodes()) {
 
 		LOG_DEBUG(cragstackcombinerlog) << "checking for links of node " << cragA.id(i) << std::endl;
 
-		for (Crag::NodeIt j(cragB); j != lemon::INVALID; ++j) {
+		for (Crag::CragNode j : cragB.nodes()) {
 
 			if (_requireBbOverlap) {
+
+				UTIL_TIME_SCOPE("CragStackCombiner::findLinks bounding box computation");
 
 				util::box<float, 2> bb_i = volsA[i]->getBoundingBox().project<2>();
 				util::box<float, 2> bb_j = volsB[j]->getBoundingBox().project<2>();
@@ -138,10 +148,12 @@ CragStackCombiner::findLinks(
 					continue;
 			}
 
+			UTIL_TIME_SCOPE("CragStackCombiner::findLinks Hausdorff distance computation");
+
 			double i_j, j_i;
 			hausdorff(i, j, i_j, j_i);
 
-			double distance = std::min(i_j, j_i);
+			double distance = std::max(i_j, j_i);
 
 			if (distance <= _maxDistance)
 				links.push_back(std::make_pair(i, j));

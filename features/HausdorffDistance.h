@@ -38,28 +38,15 @@ public:
 
 private:
 
-	// map of each node to all contained leaf nodes
-	typedef std::map<Crag::Node, std::vector<Crag::Node>> LeafNodeMap;
-
-	LeafNodeMap collectLeafNodes(const Crag& crag);
-
-	void leafDistance(
-			Crag::Node i,
-			Crag::Node j,
-			double& i_j,
-			double& j_i);
-
 	void volumesDistance(
 			std::shared_ptr<CragVolume> volume_i,
 			std::shared_ptr<CragVolume> volume_j,
 			double& i_j);
 
+	// lower bound HausdorffDistance between a and b based on bounding boxes
+	double lowerBound(const CragVolume& a, const CragVolume& b);
+
 	vigra::MultiArray<2, double>& getDistanceMap(std::shared_ptr<CragVolume> volume);
-
-	void recCollectLeafNodes(const Crag& crag, Crag::Node n, LeafNodeMap& map);
-
-	LeafNodeMap _leafNodesA;
-	LeafNodeMap _leafNodesB;
 
 	const CragVolumes& _a;
 	const CragVolumes& _b;
@@ -68,7 +55,10 @@ private:
 
 	std::map<std::shared_ptr<CragVolume>, vigra::MultiArray<2, double>> _distanceMaps;
 
-	int _maxDistance;
+	double _maxDistance;
+
+	int _padX;
+	int _padY;
 };
 
 #endif // CANDIDATE_MC_FEATURES_HAUSDORFF_DISTANCE_H__

@@ -138,9 +138,9 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 	while (true) {
 
-		t++;
-
 		LOG_USER(bundleoptimizerlog) << std::endl << "----------------- iteration " << t << std::endl;
+
+		t++;
 
         Weights w_tm1 = w;
 

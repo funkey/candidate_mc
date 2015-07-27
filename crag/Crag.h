@@ -71,6 +71,19 @@ public:
 	public:
 
 		/**
+		 * Create an uninitialized node.
+		 */
+		CragNode() : _node(lemon::INVALID) {}
+
+		/**
+		 * Strict ordering on nodes.
+		 */
+		bool operator<(CragNode other) const {
+
+			return _node < other._node;
+		}
+
+		/**
 		 * Implicit conversion operator to a node of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this node can be used as 
 		 * the key in a lemon node map and for the underlying lemon graph 

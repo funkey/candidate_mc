@@ -9,5 +9,6 @@ FeaturesView::onSignal(SetCandidate& /*signal*/) {
 void
 FeaturesView::onSignal(SetEdge& signal) {
 
-	std::cout << _edgeFeatures[signal.getEdge()] << std::endl;
+	if (_edgeFeatures[signal.getEdge()].size() > 0)
+		std::cout << "features of current edge: " << _edgeFeatures[signal.getEdge()] << std::endl;
 }
