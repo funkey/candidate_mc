@@ -17,6 +17,8 @@ logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor
 // GENERAL OPTIONS //
 /////////////////////
 
+// FEATURE GROUPS
+
 util::ProgramOption optionNodeShapeFeatures(
 	util::_module           = "features.nodes",
 	util::_long_name        = "shapeFeatures",
@@ -33,13 +35,30 @@ util::ProgramOption optionNodeTopologicalFeatures(
 );
 
 util::ProgramOption optionNodeStatisticsFeatures(
-	util::_module           = "features",
+	util::_module           = "features.nodes",
 	util::_long_name        = "statisticsFeatures",
 	util::_description_text = "Compute statistics features for each candidate (like mean and stddev of intensity, "
 	                          "and many more). By default, this computes the statistics over all voxels of the "
 	                          "candidate on the raw image. Enabled by default.",
 	util::_default_value    = true
 );
+
+util::ProgramOption optionEdgeDerivedFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "derivedFeatures",
+	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
+	                          "(difference, sum, min, max). Enabled by default.",
+	util::_default_value    = true
+);
+
+util::ProgramOption optionEdgeSegmentationFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "segmentationFeatures",
+	util::_description_text = "Compute a feature for each adjacency edge that reflects how many times the incident candidates ended "
+	                          "up in the same segment. For that, a list of segmentations has to be provided. Disabled by default."
+);
+
+// FEATURE NORMALIZATION AND POST-PROCESSING
 
 util::ProgramOption optionAddPairwiseFeatureProducts(
 	util::_module           = "features",
@@ -257,49 +276,11 @@ FeatureExtractor::extractEdgeFeatures(
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
 
-	if (_segmentations.size() > 0) {
+	if (optionEdgeDerivedFeatures)
+		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
 
-		UTIL_TIME_SCOPE("extract edge segmentation features");
-
-		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
-
-			Crag::Node u = _crag.u(e);
-			Crag::Node v = _crag.v(e);
-
-			// count how many times u and v were connected in all segmentations
-			int connected = 0;
-			for (auto& segmentation : _segmentations)
-				for (auto& segment : segmentation)
-					if (segment.count(u) && segment.count(v))
-						connected++;
-
-			edgeFeatures.append(e, connected);
-		}
-	}
-
-	////////////////////////
-	// Edge Features      //
-	// from Node Features //
-	////////////////////////
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
-		Crag::Node u = _crag.u(e);
-		Crag::Node v = _crag.v(e);
-		// feature vectors from node u/v
-		const auto & featsU = nodeFeatures[u];
-		const auto & featsV = nodeFeatures[v];
-		// loop over all features
-		for(size_t nfi=0; nfi < featsU.size(); ++nfi){
-			// single feature from node u/v
-			const auto fu = featsU[nfi];
-			const auto fv = featsV[nfi];
-			// convert u/v features into 
-			// edge features
-			edgeFeatures.append(e, std::abs(fu-fv));
-			edgeFeatures.append(e, std::min(fu,fv));
-			edgeFeatures.append(e, std::max(fu,fv));
-			edgeFeatures.append(e, fu+fv);
-		}
-	}
+	if (optionEdgeSegmentationFeatures)
+		extractEdgeSegmentationFeatures(edgeFeatures);
 
 	///////////////////
 	// NORMALIZATION //
@@ -679,6 +660,58 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 						LOG_DEBUG(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
 				}
 			}
+		}
+	}
+}
+
+void
+FeatureExtractor::extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures) {
+
+	if (_segmentations.size() > 0) {
+
+		UTIL_TIME_SCOPE("extract edge segmentation features");
+
+		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+
+			Crag::Node u = _crag.u(e);
+			Crag::Node v = _crag.v(e);
+
+			// count how many times u and v were connected in all segmentations
+			int connected = 0;
+			for (auto& segmentation : _segmentations)
+				for (auto& segment : segmentation)
+					if (segment.count(u) && segment.count(v))
+						connected++;
+
+			edgeFeatures.append(e, connected);
+		}
+	}
+}
+
+void
+FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
+
+	////////////////////////
+	// Edge Features      //
+	// from Node Features //
+	////////////////////////
+	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+		Crag::Node u = _crag.u(e);
+		Crag::Node v = _crag.v(e);
+		// feature vectors from node u/v
+		const auto & featsU = nodeFeatures[u];
+		const auto & featsV = nodeFeatures[v];
+		// loop over all features
+		for(size_t nfi=0; nfi < featsU.size(); ++nfi){
+			// single feature from node u/v
+			const auto fu = featsU[nfi];
+			const auto fv = featsV[nfi];
+			// convert u/v features into 
+			// edge features
+			edgeFeatures.append(e, std::abs(fu-fv));
+			edgeFeatures.append(e, std::min(fu,fv));
+			edgeFeatures.append(e, std::max(fu,fv));
+			edgeFeatures.append(e, fu+fv);
 		}
 	}
 }

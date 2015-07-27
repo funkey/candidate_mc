@@ -59,6 +59,10 @@ private:
 
 	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
 
+	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
+
+	void extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures);
+
 	void extractTopologicalNodeFeatures(NodeFeatures& nodeFeatures);
 
 	void extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures);
