@@ -135,6 +135,17 @@ public:
 
 			return CragNode(_crag.getAdjacencyGraph().v(_edge));
 		}
+
+		/**
+		 * Implicit conversion operator to an edge of the lemon region adjacency 
+		 * graph. Provided for convenience, such that this edge can be used as 
+		 * the key in a lemon edge map and for the underlying lemon graph 
+		 * RagType.
+		 */
+		operator RagType::Edge () const {
+
+			return _edge;
+		}
 	};
 
 	#include "CragIterators.h"
