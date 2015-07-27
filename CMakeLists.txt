@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+ cmake_minimum_required(VERSION 3.0)
 include(${CMAKE_SOURCE_DIR}/cmake/include/define_module.cmake)
 
 #######################
