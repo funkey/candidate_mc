@@ -77,6 +77,32 @@ MeshViewController::onSignal(sg_gui::MouseDown& signal) {
 }
 
 void
+MeshViewController::onSignal(sg_gui::KeyDown& signal) {
+
+	if (signal.key == sg_gui::keys::I) {
+
+		LOG_USER(meshviewcontrollerlog) << "enter candidate id: " << std::endl;
+
+		char input[256];
+		std::cin.getline(input, 256);
+
+		try {
+
+			unsigned int id = boost::lexical_cast<unsigned int>(input);
+
+			Crag::CragNode n = _crag.nodeFromId(id);
+			showSingleMesh(n);
+			_path.clear();
+
+		} catch (std::exception& e) {
+
+			LOG_ERROR(meshviewcontrollerlog) << "invalid input" << std::endl;
+			return;
+		}
+	}
+}
+
+void
 MeshViewController::nextVolume() {
 
 	if (_current == lemon::INVALID)

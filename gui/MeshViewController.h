@@ -7,6 +7,7 @@
 #include <sg_gui/VolumeView.h>
 #include <sg_gui/MeshView.h>
 #include <sg_gui/Meshes.h>
+#include <sg_gui/KeySignals.h>
 #include "Signals.h"
 
 template <typename EV>
@@ -44,7 +45,8 @@ class MeshViewController :
 				MeshViewController,
 				sg::Accepts<
 						sg_gui::VolumePointSelected,
-						sg_gui::MouseDown
+						sg_gui::MouseDown,
+						sg_gui::KeyDown
 				>,
 				sg::Provides<
 						sg_gui::SetMeshes,
@@ -65,6 +67,8 @@ public:
 	void onSignal(sg_gui::VolumePointSelected& signal);
 
 	void onSignal(sg_gui::MouseDown& signal);
+
+	void onSignal(sg_gui::KeyDown& signal);
 
 private:
 
