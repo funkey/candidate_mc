@@ -6,6 +6,7 @@
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <solver/LinearSolver.h>
+#include <vigra/tinyvector.hxx>
 #include "Costs.h"
 
 class MultiCut {
@@ -89,7 +90,7 @@ public:
 	void storeSolution(const CragVolumes& volumes, const std::string& filename, bool drawBoundary = false);
 
 private:
-
+    typedef vigra::TinyVector<unsigned int, 3> TinyVector3UInt;
 	// a property map returning 1 for every entry
 	struct One {
 

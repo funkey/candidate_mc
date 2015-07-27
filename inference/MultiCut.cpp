@@ -132,6 +132,7 @@ MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename,
 		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
 		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();
 
+
 		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
 				util::point<unsigned int, 3>(
@@ -141,31 +142,14 @@ MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename,
 
 		// fill id of connected component
 		vigra::combineTwoMultiArrays(
-				volumes[n]->data(),
-				components.subarray(
-						vigra::Shape3(
-								begin.x(),
-								begin.y(),
-								begin.z()),
-						vigra::Shape3(
-								end.x(),
-								end.y(),
-								end.z())),
-				components.subarray(
-						vigra::Shape3(
-								begin.x(),
-								begin.y(),
-								begin.z()),
-						vigra::Shape3(
-								end.x(),
-								end.y(),
-								end.z())),
-				vigra::functor::ifThenElse(
-						vigra::functor::Arg1() == vigra::functor::Param(1),
-						vigra::functor::Param(_labels[n] + 1),
-						vigra::functor::Arg2()
-				));
-
+			volumes[n]->data(),
+			components.subarray(TinyVector3UInt(&begin[0]),TinyVector3UInt(&end[0])),
+			components.subarray(TinyVector3UInt(&begin[0]),TinyVector3UInt(&end[0])),
+			vigra::functor::ifThenElse(
+					vigra::functor::Arg1() == vigra::functor::Param(1),
+					vigra::functor::Param(_labels[n] + 1),
+					vigra::functor::Arg2()
+		));
 	}
 
 	if (boundary) {
