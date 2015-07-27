@@ -1,4 +1,3 @@
-#ifdef WITH_CPLEX
 #ifdef HAVE_CPLEX
 
 #include <string>
