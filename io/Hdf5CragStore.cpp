@@ -224,6 +224,9 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 void
 Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) {
 
+	if (features.dims() == 0)
+		return;
+
 	_hdfFile.root();
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
@@ -255,6 +258,9 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 	_hdfFile.root();
 	_hdfFile.cd("crag");
 	_hdfFile.cd("features");
+
+	if (!_hdfFile.existsDataset("edges"))
+		return;
 
 	vigra::MultiArray<2, double> allFeatures;
 
