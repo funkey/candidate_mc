@@ -195,10 +195,10 @@ CplexBackend::createConstraint(const LinearConstraint& constraint) {
         case GreaterEqual:
             return IloRange(env_, constraint.getValue(), linearExpr);
             break;
-         case Equal:{
-            throw std::runtime_error("fuck");
-            std::terminate();
-        }
+        default:
+        //case Equal:
+            return IloRange(env_,  constraint.getValue(), linearExpr, constraint.getValue());
+            break;
     }
 }
 
