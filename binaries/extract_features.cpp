@@ -14,12 +14,26 @@
 #include <io/Hdf5VolumeStore.h>
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
+#include <learning/OverlapLoss.h>
+#include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
 		util::_description_text = "The treemc project file.",
 		util::_default_value    = "project.hdf");
+
+util::ProgramOption optionAppendBestEffortFeature(
+		util::_long_name        = "appendBestEffortFeature",
+		util::_description_text = "Compute the best-effort from ground-truth and append a binary feature "
+		                          "to each node and edge indicating if this node or edge is part of the "
+		                          "best-effort solution. Used for testing the learning method.");
+
+util::ProgramOption optionNoFeatures(
+		util::_long_name        = "noFeatures",
+		util::_description_text = "Perform a dry run and don't extract any features (except for "
+		                          "best-effort features, if set). Used for testing the learning "
+		                          "method.");
 
 int main(int argc, char** argv) {
 
@@ -53,9 +67,33 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
-		FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
-		featureExtractor.setSampleSegmentations(sampleSegmentations);
-		featureExtractor.extract(nodeFeatures, edgeFeatures);
+		if (!optionNoFeatures) {
+
+			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
+			featureExtractor.setSampleSegmentations(sampleSegmentations);
+			featureExtractor.extract(nodeFeatures, edgeFeatures);
+		}
+
+		if (optionAppendBestEffortFeature) {
+
+			ExplicitVolume<int> groundTruth;
+			volumeStore.retrieveGroundTruth(groundTruth);
+
+			OverlapLoss overlapLoss(crag, volumes, groundTruth);
+			BestEffort bestEffort(crag, volumes, overlapLoss);
+
+			for (Crag::CragNode n : crag.nodes())
+				if (bestEffort.node[n])
+					nodeFeatures.append(n, 1);
+				else
+					nodeFeatures.append(n, 0);
+
+			for (Crag::CragEdge e : crag.edges())
+				if (bestEffort.edge[e])
+					edgeFeatures.append(e, 1);
+				else
+					edgeFeatures.append(e, 0);
+		}
 
 		{
 			UTIL_TIME_SCOPE("storing features");
