@@ -231,7 +231,7 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 
 	} catch (GRBException e) {
 
-		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << endl;
+		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << std::endl;
 	}
 }
 
@@ -266,7 +266,7 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 
 	} catch (GRBException e) {
 
-		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << endl;
+		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << std::endl;
 
 		msg = e.getMessage();
 
@@ -321,7 +321,7 @@ GurobiBackend::dumpProblem(std::string filename) {
 
 	} catch (GRBException e) {
 
-		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << endl;
+		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << std::endl;
 	}
 }
 
