@@ -191,7 +191,7 @@ CplexBackend::createConstraint(const LinearConstraint& constraint) {
 }
 
 bool
-CplexBackend::solve(Solution& x, double& value, std::string& msg) {
+CplexBackend::solve(Solution& x,/* double& value, */ std::string& msg) {
 
     try {
         cplex_ = IloCplex(model_);
@@ -221,9 +221,8 @@ CplexBackend::solve(Solution& x, double& value, std::string& msg) {
             x[i] = sol_[i];
 
         // get current value of the objective
-        value = cplex_.getObjValue();
-
-        x.setValue(value);
+        //value = cplex_.getObjValue();
+        //x.setValue(value);
 
     } catch (IloCplex::Exception& e) {
 

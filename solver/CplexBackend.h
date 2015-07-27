@@ -83,7 +83,7 @@ public:
 
     void addConstraint(const LinearConstraint& constraint);
 
-    bool solve(Solution& solution, double& value, std::string& message);
+    bool solve(Solution& solution,/* double& value, */ std::string& message);
 
 private:
 
