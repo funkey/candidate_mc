@@ -179,7 +179,7 @@ GurobiBackend::setObjective(const QuadraticObjective& objective) {
 
 	} catch (GRBException e) {
 
-		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << endl;
+		LOG_ERROR(gurobilog) << "error: " << e.getMessage() << std::endl;
 	}
 }
 
