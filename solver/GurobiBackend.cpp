@@ -70,7 +70,7 @@ GurobiBackend::initialize(
 	setMIPGap(optionGurobiMIPGap);
 
 	if (optionGurobiMIPFocus.as<unsigned int>() <= 3)
-		setMIPGap(optionGurobiMIPGap);
+		setMIPFocus(optionGurobiMIPFocus.as<unsigned int>());
 	else
 		LOG_ERROR(gurobilog) << "Invalid value for MPI focus!" << std::endl;
 
@@ -237,7 +237,6 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
-
 	try {
 
 		if (optionGurobiDumpIlp)

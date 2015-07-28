@@ -87,11 +87,18 @@ void
 CplexBackend::setObjective(const QuadraticObjective& objective) {
     try {
 
+
+       if(!firstRun_){
+        model_.remove(obj_);
+       }
+
+  
         // set sense of objective
         if (objective.getSense() == Minimize)
             obj_ = IloMinimize(env_);
         else
             obj_ = IloMaximize(env_);
+        
 
         // set the constant value of the objective
         obj_.setConstant(objective.getConstant());
@@ -115,7 +122,7 @@ CplexBackend::setObjective(const QuadraticObjective& objective) {
             if (value != 0)
                 obj_.setQuadCoef(x_[variables.first], x_[variables.second], value);
         }
-        if(firstRun_){
+        if(true || firstRun_){
             model_.add(obj_);
             firstRun_ = false;
         }
