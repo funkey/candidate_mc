@@ -15,8 +15,14 @@ public:
 
 	/**
 	 * Create a new MergeTreeParser for a merge tree image.
+	 *
+	 * @param mergeTree
+	 *              The merge tree image.
+	 * @param maxMerges
+	 *              Don't extract candidates that have a level higher than 
+	 *              maxMerges. Set it to -1 to disable.
 	 */
-	MergeTreeParser(const Image& mergeTree);
+	MergeTreeParser(const Image& mergeTree, int maxMerges = -1);
 
 	/**
 	 * Get the candidate region adjacency graph from the given merge tree image. 
@@ -51,7 +57,8 @@ private:
 				const util::point<float, 3>& resolution,
 				const util::point<float, 3>& offset,
 				Crag&                        crag,
-				CragVolumes&                 volumes);
+				CragVolumes&                 volumes,
+				int                          maxMerges);
 
 		/**
 		 * Set the pixel list that contains the pixel locations of each 
@@ -106,16 +113,17 @@ private:
 		PixelList::const_iterator _prevEnd;
 
 		// stack of open root nodes while constructing the tree
-		std::stack<Crag::Node> _roots;
+		std::stack<Crag::CragNode> _roots;
 
 		// extents of all regions
 		Crag::NodeMap<std::pair<PixelList::const_iterator, PixelList::const_iterator>> _extents;
 
-		// flag for leaf nodes
-		Crag::NodeMap<bool> _isLeafeNode;
+		int _maxMerges;
 	};
 
 	const Image& _mergeTree;
+
+	int _maxMerges;
 };
 
 #endif // CANDIDATE_MC_CRAG_MERGE_TREE_PARSER_H__

@@ -19,8 +19,9 @@ util::ProgramOption optionSpacedEdgeImage(
 		                          "with boundary values stored between the pixels. This is used to "
 		                          "create regions without boundary pixels between them.");
 
-MergeTreeParser::MergeTreeParser(const Image& mergeTree) :
-	_mergeTree(mergeTree) {}
+MergeTreeParser::MergeTreeParser(const Image& mergeTree, int maxMerges) :
+	_mergeTree(mergeTree),
+	_maxMerges(maxMerges){}
 
 void
 MergeTreeParser::getCrag(Crag& crag, CragVolumes& volumes) {
@@ -36,7 +37,8 @@ MergeTreeParser::getCrag(Crag& crag, CragVolumes& volumes) {
 			_mergeTree.getResolution(),
 			_mergeTree.getBoundingBox().min(),
 			crag,
-			volumes);
+			volumes,
+			_maxMerges);
 
 	parser.parse(visitor);
 }
@@ -45,7 +47,8 @@ MergeTreeParser::MergeTreeVisitor::MergeTreeVisitor(
 		const util::point<float, 3>& resolution,
 		const util::point<float, 3>& offset,
 		Crag&                        crag,
-		CragVolumes&                 volumes) :
+		CragVolumes&                 volumes,
+		int                          maxMerges) :
 	_resolution(resolution),
 	_offset(offset),
 	_crag(crag),
@@ -53,7 +56,7 @@ MergeTreeParser::MergeTreeVisitor::MergeTreeVisitor(
 	_minSize(optionMinRegionSize),
 	_maxSize(optionMaxRegionSize),
 	_extents(_crag),
-	_isLeafeNode(_crag) {}
+	_maxMerges(maxMerges) {}
 
 void
 MergeTreeParser::MergeTreeVisitor::finalizeComponent(
@@ -77,22 +80,35 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 	if (!validSize)
 		return;
 
+	// get all prospective children of this component
+
+	std::vector<Crag::CragNode> children;
+	int level = 0;
+	while (!_roots.empty() && contained(_extents[_roots.top()], std::make_pair(begin, end))) {
+
+		children.push_back(_roots.top());
+		level = std::max(level, _crag.getLevel(_roots.top()) + 1);
+		_roots.pop();
+	}
+
+	if (_maxMerges >= 0 && level > _maxMerges) {
+
+		for (auto c = children.rbegin(); c != children.rend(); c++)
+			_roots.push(*c);
+		return;
+	}
+
 	LOG_ALL(mergetreeparserlog) << "add it to crag" << std::endl;
 
 	// create a node
-	Crag::Node node = _crag.addNode();
+	Crag::CragNode node = _crag.addNode();
 	_extents[node] = std::make_pair(begin, end);
 
-	bool isLeafNode = true;
+	// connect it to children
+	for (Crag::CragNode child : children)
+		_crag.addSubsetArc(child, node);
 
-	// make all open root nodes that are subsets children of this component
-	while (!_roots.empty() && contained(_extents[_roots.top()], std::make_pair(begin, end))) {
-
-		_crag.addSubsetArc(_roots.top(), node);
-		_roots.pop();
-		isLeafNode = false;
-	}
-
+	bool isLeafNode = (level == 0);
 	LOG_ALL(mergetreeparserlog) << "is" << (isLeafNode ? "" : " not") << " a leaf node" << std::endl;
 
 	// extract volumes for leaf nodes
@@ -123,8 +139,6 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 		volume->setOffset(volumeOffset);
 		_volumes.setLeafNodeVolume(node, volume);
 	}
-
-	_isLeafeNode[node] = isLeafNode;
 
 	// put the new node on the stack
 	_roots.push(node);

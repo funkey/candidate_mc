@@ -22,13 +22,17 @@ CragImport::readCrag(
 		util::point<float, 3> resolution,
 		util::point<float, 3> offset) {
 
+	int maxMerges = -1;
+	if (optionMaxMerges)
+		maxMerges = optionMaxMerges;
+
 	vigra::ImageImportInfo info(filename.c_str());
 	Image mergeTree(info.width(), info.height());
 	importImage(info, vigra::destImage(mergeTree));
 	mergeTree.setResolution(resolution);
 	mergeTree.setOffset(offset);
 
-	MergeTreeParser parser(mergeTree);
+	MergeTreeParser parser(mergeTree, maxMerges);
 	parser.getCrag(crag, volumes);
 }
 
