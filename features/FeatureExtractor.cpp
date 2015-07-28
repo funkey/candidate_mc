@@ -63,8 +63,8 @@ util::ProgramOption optionEdgeDerivedFeatures(
 util::ProgramOption optionEdgeAccumulatedeFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "accumulatedFeatures",
-	util::_description_text = "Compute accumulated statistics for each each (so far on raw data and probability map) "
-							  "(mean, 1-moment, 2-moment). Enabled by default.",
+	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
+	                          "(mean, 1-moment, 2-moment). Enabled by default.",
 	util::_default_value    = true
 );
 
