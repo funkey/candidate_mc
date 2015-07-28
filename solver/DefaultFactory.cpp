@@ -30,7 +30,7 @@ DefaultFactory::createLinearSolverBackend() const {
 
 	Preference preference = Any;
 
-	if (optionUseGurobi && optionUseCplex)
+	if (optionUseGurobi.as<bool>() && optionUseCplex.as<bool>())
 		UTIL_THROW_EXCEPTION(
 				LinearSolverBackendException,
 				"only one solver can be chosen");
