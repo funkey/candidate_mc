@@ -13,9 +13,9 @@ class DefaultFactory :
 
 public:
 
-	LinearSolverBackend* createLinearSolverBackend() const;
+	LinearSolverBackend* createLinearSolverBackend(Preference preference = Any) const;
 
-	QuadraticSolverBackend* createQuadraticSolverBackend() const;
+	QuadraticSolverBackend* createQuadraticSolverBackend(Preference preference = Any) const;
 };
 
 #endif // INFERENCE_DEFAULT_FACTORY_H__

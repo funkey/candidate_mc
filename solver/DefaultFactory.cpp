@@ -24,21 +24,22 @@ util::ProgramOption optionUseCplex(
 );
 
 LinearSolverBackend*
-DefaultFactory::createLinearSolverBackend() const {
-
-	enum Preference { Any, Cplex, Gurobi };
-
-	Preference preference = Any;
+DefaultFactory::createLinearSolverBackend(Preference preference) const {
 
 	if (optionUseGurobi.as<bool>() && optionUseCplex.as<bool>())
 		UTIL_THROW_EXCEPTION(
 				LinearSolverBackendException,
 				"only one solver can be chosen");
 
-	if (optionUseGurobi)
-		preference = Gurobi;
-	if (optionUseCplex)
-		preference = Cplex;
+	// use program options, if we were not forced to use a particular solver 
+	// already
+	if (preference == Any) {
+
+		if (optionUseGurobi)
+			preference = Gurobi;
+		if (optionUseCplex)
+			preference = Cplex;
+	}
 
 // by default, create a gurobi backend
 #ifdef HAVE_GUROBI
@@ -73,19 +74,47 @@ DefaultFactory::createLinearSolverBackend() const {
 }
 
 QuadraticSolverBackend*
-DefaultFactory::createQuadraticSolverBackend() const {
+DefaultFactory::createQuadraticSolverBackend(Preference preference) const {
+
+	if (optionUseGurobi.as<bool>() && optionUseCplex.as<bool>())
+		UTIL_THROW_EXCEPTION(
+				LinearSolverBackendException,
+				"only one solver can be chosen");
+
+	// use program options, if we were not forced to use a particular solver 
+	// already
+	if (preference == Any) {
+
+		if (optionUseGurobi)
+			preference = Gurobi;
+		if (optionUseCplex)
+			preference = Cplex;
+	}
 
 // by default, create a gurobi backend
 #ifdef HAVE_GUROBI
 
-	return new GurobiBackend();
+	if (preference == Any || preference == Gurobi) {
+
+		try {
+
+			return new GurobiBackend();
+
+		} catch (GRBException& e) {
+
+			UTIL_THROW_EXCEPTION(
+					LinearSolverBackendException,
+					"gurobi error: " << e.getMessage());
+		}
+	}
 
 #endif
 
 // if this is not available, create a CPLEX backend
 #ifdef HAVE_CPLEX
 
-	return new CplexBackend();
+	if (preference == Any || preference == Cplex)
+		return new CplexBackend();
 
 #endif
 
