@@ -80,6 +80,12 @@ private:
 	const ExplicitVolume<float>& _boundaries;
 
 	std::vector<std::vector<std::set<Crag::Node>>> _segmentations;
+
+	// number of "real" node features, before add squares and bias
+	int _numOriginalNodeFeatures;
+
+	// number of "real" edge features, before add squares and bias
+	int _numOriginalEdgeFeatures;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

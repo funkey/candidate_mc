@@ -6,6 +6,7 @@
 #include <util/ProgramOptions.h>
 #include <util/helpers.hpp>
 #include <util/timing.h>
+#include <util/assert.h>
 #include "FeatureExtractor.h"
 #include <vigra/multi_impex.hxx>
 #include <vigra/flatmorphology.hxx>
@@ -211,6 +212,8 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 			<< std::endl << "extracted " << nodeFeatures.dims()
 			<< " features per node" << std::endl;
 
+	_numOriginalNodeFeatures = nodeFeatures.dims();
+
 	///////////////////
 	// NORMALIZATION //
 	///////////////////
@@ -300,6 +303,12 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (optionEdgeSegmentationFeatures)
 		extractEdgeSegmentationFeatures(edgeFeatures);
+
+	LOG_USER(featureextractorlog)
+			<< std::endl << "extracted " << edgeFeatures.dims()
+			<< " features per edge" << std::endl;
+
+	_numOriginalEdgeFeatures = edgeFeatures.dims();
 
 	///////////////////
 	// NORMALIZATION //
@@ -720,8 +729,13 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 		// feature vectors from node u/v
 		const auto & featsU = nodeFeatures[u];
 		const auto & featsV = nodeFeatures[v];
+
+		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
+		UTIL_ASSERT_REL(featsU.size(), >=, _numOriginalNodeFeatures);
+		UTIL_ASSERT_REL(featsV.size(), >=, _numOriginalNodeFeatures);
+
 		// loop over all features
-		for(size_t nfi=0; nfi < featsU.size(); ++nfi){
+		for(size_t nfi=0; nfi < _numOriginalNodeFeatures; ++nfi){
 			// single feature from node u/v
 			const auto fu = featsU[nfi];
 			const auto fv = featsV[nfi];
