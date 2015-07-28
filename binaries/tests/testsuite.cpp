@@ -8,6 +8,7 @@ BEGIN_TEST_MODULE(candidate_mc)
 
 	ADD_TEST_SUITE(crag);
 	ADD_TEST_SUITE(features);
+	ADD_TEST_SUITE(solver);
 
 END_TEST_MODULE()
 
