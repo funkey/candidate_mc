@@ -16,7 +16,7 @@ public:
 	 *
 	 * @param size The number of coefficients in the objective.
 	 */
-	QuadraticObjective(unsigned int size = 0);
+	explicit QuadraticObjective(unsigned int size = 0);
 
 	/**
 	 * Set the constant value of the expression.
