@@ -11,6 +11,14 @@
 #include <vigra/flatmorphology.hxx>
 #include <vigra/multi_morphology.hxx>
 
+
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/moment.hpp>
+
+
+
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
 
 /////////////////////
@@ -30,7 +38,7 @@ util::ProgramOption optionNodeTopologicalFeatures(
 	util::_module           = "features.nodes",
 	util::_long_name        = "topologicalFeatures",
 	util::_description_text = "Compute topological features for each candidate (like level in the subset graph). "
-	                          "Enabled by default.",
+							  "Enabled by default.",
 	util::_default_value    = true
 );
 
@@ -38,8 +46,8 @@ util::ProgramOption optionNodeStatisticsFeatures(
 	util::_module           = "features.nodes",
 	util::_long_name        = "statisticsFeatures",
 	util::_description_text = "Compute statistics features for each candidate (like mean and stddev of intensity, "
-	                          "and many more). By default, this computes the statistics over all voxels of the "
-	                          "candidate on the raw image. Enabled by default.",
+							  "and many more). By default, this computes the statistics over all voxels of the "
+							  "candidate on the raw image. Enabled by default.",
 	util::_default_value    = true
 );
 
@@ -47,7 +55,15 @@ util::ProgramOption optionEdgeDerivedFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "derivedFeatures",
 	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
-	                          "(difference, sum, min, max). Enabled by default.",
+							  "(difference, sum, min, max). Enabled by default.",
+	util::_default_value    = true
+);
+
+util::ProgramOption optionEdgeAccumulatedeFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "accumulatedFeatures",
+	util::_description_text = "Compute accumulated statistics for each each (so far on raw data and probability map) "
+							  "(mean, 1-moment, 2-moment). Enabled by default.",
 	util::_default_value    = true
 );
 
@@ -55,7 +71,7 @@ util::ProgramOption optionEdgeSegmentationFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "segmentationFeatures",
 	util::_description_text = "Compute a feature for each adjacency edge that reflects how many times the incident candidates ended "
-	                          "up in the same segment. For that, a list of segmentations has to be provided. Disabled by default."
+							  "up in the same segment. For that, a list of segmentations has to be provided. Disabled by default."
 );
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
@@ -82,7 +98,7 @@ util::ProgramOption optionMinMaxFromFiles(
 	util::_module           = "features",
 	util::_long_name        = "minMaxFromFiles",
 	util::_description_text = "For the feature normalization, instead of using the min and max of the extracted features, "
-	                          "use the min and max provided in the files (see {min,max}{Node,Edge}Features)."
+							  "use the min and max provided in the files (see {min,max}{Node,Edge}Features)."
 );
 
 util::ProgramOption optionMinNodeFeatures(
@@ -127,7 +143,7 @@ util::ProgramOption optionBoundariesBoundaryFeatures(
 	util::_module           = "features.statistics",
 	util::_long_name        = "boundariesBoundaryFeatures",
 	util::_description_text = "Compute the statistics features also over all boundary voxels of each candidate on "
-	                          "the boundary probability image."
+							  "the boundary probability image."
 );
 
 util::ProgramOption optionNoCoordinatesStatistics(
@@ -151,7 +167,7 @@ util::ProgramOption optionFeaturePointinessVectorLength(
 	util::_module           = "features.shape.pointiness",
 	util::_long_name        = "angleVectorLength",
 	util::_description_text = "The amount to walk on the contour from a sample point in either direction, to estimate the angle. Values are between "
-	                          "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
+							  "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
 	util::_default_value    = 0.1
 );
 
@@ -275,6 +291,9 @@ FeatureExtractor::extractEdgeFeatures(
 		EdgeFeatures&       edgeFeatures) {
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
+
+	if(optionEdgeAccumulatedeFeatures)
+		extractAccumulatedEdgeFeatures(edgeFeatures);
 
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
@@ -716,6 +735,50 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 	}
 }
 
+void
+FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
+
+	const auto & gridGraph = _crag.getGridGraph();
+
+	// iterate over all edges
+	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e){
+
+		// accumulate statistics
+		
+		// Define an accumulator set for calculating the mean and the
+		// 2nd moment .
+		using namespace boost::accumulators;
+		typedef  stats<
+			tag::mean, 
+			tag::moment<1>,
+			tag::moment<2> 
+		> Stats;
+		accumulator_set<double, Stats> accBoundary;
+		accumulator_set<double, Stats> accRaw;
+
+		// push data into the accumulator
+		for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(e)) {
+			const auto ggU = gridGraph.u(ae);
+			const auto ggV = gridGraph.v(ae);
+
+			accBoundary(_boundaries[ggU]);
+			accBoundary(_boundaries[ggV]);
+
+			accRaw(_raw[ggU]);
+			accRaw(_raw[ggV]);
+		}
+
+		// extract the features from the accumulator
+		edgeFeatures.append(e, mean(accBoundary));
+		edgeFeatures.append(e, moment<1>(accBoundary));
+		edgeFeatures.append(e, moment<2>(accBoundary));
+
+		edgeFeatures.append(e, mean(accRaw));
+		edgeFeatures.append(e, moment<1>(accRaw));
+		edgeFeatures.append(e, moment<2>(accRaw));
+	}
+}
+	
 void
 FeatureExtractor::visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures) {
 
