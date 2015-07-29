@@ -207,22 +207,7 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 				if (j % 1000 == 0)
 					LOG_ALL(gurobilog) << "" << j << " constraints set so far" << std::endl;
 
-			// create the lhs expression
-			GRBLinExpr lhsExpr;
-
-			// set the coefficients
-			typedef std::pair<unsigned int, double> pair_type;
-			foreach (const pair_type& pair, constraint.getCoefficients())
-				lhsExpr += pair.second*_variables[pair.first];
-
-			// add to the model
-			_constraints.push_back(
-					_model.addConstr(
-						lhsExpr,
-						(constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
-								(constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
-										GRB_EQUAL)),
-						constraint.getValue()));
+			addConstraint(constraint);
 
 			j++;
 		}
@@ -235,6 +220,27 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 	}
 }
 
+void
+GurobiBackend::addConstraint(const LinearConstraint& constraint) {
+
+	// create the lhs expression
+	GRBLinExpr lhsExpr;
+
+	// set the coefficients
+	typedef std::pair<unsigned int, double> pair_type;
+	foreach (const pair_type& pair, constraint.getCoefficients())
+		lhsExpr += pair.second*_variables[pair.first];
+
+	// add to the model
+	_constraints.push_back(
+			_model.addConstr(
+				lhsExpr,
+				(constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
+						(constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
+								GRB_EQUAL)),
+				constraint.getValue()));
+}
+
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
 	try {
@@ -244,6 +250,7 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 
 		LOG_ALL(gurobilog) << "solving model " << _model.getObjective() << std::endl;
 
+		_model.update();
 		_model.optimize();
 
 		int status = _model.get(GRB_IntAttr_Status);
