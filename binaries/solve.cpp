@@ -11,10 +11,12 @@
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
 #include <util/helpers.hpp>
+#include <util/timing.h>
 #include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/vectors.h>
 #include <io/volumes.h>
+#include <crag/PlanarAdjacencyAnnotator.h>
 #include <features/FeatureExtractor.h>
 #include <inference/MultiCut.h>
 
@@ -128,6 +130,13 @@ int main(int argc, char** argv) {
 			CragImport import;
 			import.readCrag(mergeTreePath, crag, volumes, resolution, offset);
 
+			{
+				UTIL_TIME_SCOPE("find CRAG adjacencies");
+
+				PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
+				annotator.annotate(crag, volumes);
+			}
+
 			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
 			intensities.setResolution(resolution);
 			intensities.setOffset(offset);
@@ -141,6 +150,43 @@ int main(int argc, char** argv) {
 			FeatureExtractor featureExtractor(crag, volumes, intensities, boundaries);
 			featureExtractor.extract(nodeFeatures, edgeFeatures);
 		}
+
+		int numNodes = 0;
+		int numRootNodes = 0;
+		double sumSubsetDepth = 0;
+		int maxSubsetDepth = 0;
+		int minSubsetDepth = 1e6;
+
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+			if (crag.isRootNode(n)) {
+
+				int depth = crag.getLevel(n);
+
+				sumSubsetDepth += depth;
+				minSubsetDepth = std::min(minSubsetDepth, depth);
+				maxSubsetDepth = std::max(maxSubsetDepth, depth);
+				numRootNodes++;
+			}
+
+			numNodes++;
+		}
+
+		int numAdjEdges = 0;
+		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+			numAdjEdges++;
+		int numSubEdges = 0;
+		for (Crag::SubsetArcIt e(crag); e != lemon::INVALID; ++e)
+			numSubEdges++;
+
+		LOG_USER(logger::out) << "created CRAG" << std::endl;
+		LOG_USER(logger::out) << "\t# nodes          : " << numNodes << std::endl;
+		LOG_USER(logger::out) << "\t# root nodes     : " << numRootNodes << std::endl;
+		LOG_USER(logger::out) << "\t# adjacencies    : " << numAdjEdges << std::endl;
+		LOG_USER(logger::out) << "\t# subset edges   : " << numSubEdges << std::endl;
+		LOG_USER(logger::out) << "\tmax subset depth : " << maxSubsetDepth << std::endl;
+		LOG_USER(logger::out) << "\tmin subset depth : " << minSubsetDepth << std::endl;
+		LOG_USER(logger::out) << "\tmean subset depth: " << sumSubsetDepth/numRootNodes << std::endl;
 
 		std::vector<double> weights = retrieveVector<double>(optionFeatureWeights);
 
@@ -171,7 +217,10 @@ int main(int argc, char** argv) {
 		MultiCut multicut(crag);
 
 		multicut.setCosts(costs);
-		multicut.solve();
+		{
+			UTIL_TIME_SCOPE("solve candidate multi-cut");
+			multicut.solve();
+		}
 		multicut.storeSolution(volumes, "solution.tif");
 		multicut.storeSolution(volumes, "solution_boundary.tif", true);
 
