@@ -238,7 +238,8 @@ template <typename Weights>
 void
 BundleOptimizer::findMinLowerBound(Weights& w, double& value) {
 
-	_solver->setConstraints(_bundleCollector.getConstraints());
+	for (const LinearConstraint& constraint : _bundleCollector.getNewConstraints())
+		_solver->addConstraint(constraint);
 
 	Solution x;
 	std::string msg;
