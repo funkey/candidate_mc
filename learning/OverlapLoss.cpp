@@ -86,7 +86,7 @@ OverlapLoss::OverlapLoss(
 				<< ", "     << crag.id(crag.v(e)) << ")"
 				<< std::endl;
 
-		edge[e] = foregroundEdgeOverlapScore(_overlaps[u], _overlaps[v]);
+		edge[e] = foregroundEdgeOverlapScore(_overlaps[u], _overlaps[v]) + backgroundEdgeOverlapScore(_overlaps[u], _overlaps[v]);
 
 		LOG_ALL(overlaplosslog)
 				<< "edge (" << crag.id(crag.u(e))
@@ -278,3 +278,26 @@ OverlapLoss::backgroundNodeOverlapScore(
 	// overlap^2
 	return pow(overlap, 2);
 }
+
+double
+OverlapLoss::backgroundEdgeOverlapScore(
+		const std::map<int, int>& overlapsU,
+		const std::map<int, int>& overlapsV) {
+
+	if (!overlapsU.count(0) || !overlapsV.count(0))
+		return 0;
+
+	// overlap with background
+	double overlapU = overlapsU.at(0);
+	double overlapV = overlapsV.at(0);
+
+	LOG_ALL(overlaplosslog)
+			<< "adjacent nodes overlap with " << overlapU
+			<< " and " << overlapV
+			<< " background voxels" << std::endl;
+	LOG_ALL(overlaplosslog)
+			<< "+= " << 2*overlapU*overlapV << std::endl;
+
+	return 2*overlapU*overlapV;
+}
+

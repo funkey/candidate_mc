@@ -38,6 +38,10 @@ private:
 	double backgroundNodeOverlapScore(
 			const std::map<int, int>& overlaps);
 
+	double backgroundEdgeOverlapScore(
+			const std::map<int, int>& overlapsU,
+			const std::map<int, int>& overlapsV);
+
 	Crag::NodeMap<std::map<int, int>> _overlaps;
 };
 
