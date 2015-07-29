@@ -83,6 +83,11 @@ public:
 			return _node < other._node;
 		}
 
+		bool operator==(CragNode other) const {
+
+			return _node == other._node;
+		}
+
 		/**
 		 * Implicit conversion operator to a node of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this node can be used as 
@@ -190,9 +195,9 @@ public:
 	 * Indicate that the candidates represented by the given two nodes are 
 	 * adjacent.
 	 */
-	inline Edge addAdjacencyEdge(Node u, Node v) {
+	inline CragEdge addAdjacencyEdge(Node u, Node v) {
 
-		return _rag.addEdge(u, v);
+		return CragEdge(*this, _rag.addEdge(u, v));
 	}
 
 	/**
@@ -305,6 +310,14 @@ public:
 	inline CragNode nodeFromId(int id) const {
 
 		return CragNode(_rag.nodeFromId(id));
+	}
+
+	/**
+	 * Get the opposite node of an adjacency edge.
+	 */
+	inline CragNode oppositeNode(CragNode n, CragEdge e) const {
+
+		return _rag.oppositeNode(n, e);
 	}
 
 	/**

@@ -1,1 +1,1 @@
-define_module(testsuite BINARY LINKS crag inference io imageprocessing util boost-test)
+define_module(testsuite BINARY LINKS crag inference learning io imageprocessing util boost-test)
