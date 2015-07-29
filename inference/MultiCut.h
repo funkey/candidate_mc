@@ -18,7 +18,7 @@ public:
 		Parameters() :
 			forceExplanation(false),
 			numIterations(100),
-			maxConstraintsPerIteration(5),
+			maxConstraintsPerIteration(0),
 			minimize(true) {}
 
 		/**
