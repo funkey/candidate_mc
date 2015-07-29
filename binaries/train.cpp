@@ -51,6 +51,11 @@ util::ProgramOption optionRegularizerWeight(
 		util::_description_text = "The factor of the quadratic regularizer on w.",
 		util::_default_value    = 1.0);
 
+util::ProgramOption optionInitialWeightValues(
+		util::_long_name        = "initialWeightValues",
+		util::_description_text = "Uniform values of the weight vectors to start learning with.",
+		util::_default_value    = 0);
+
 int main(int argc, char** argv) {
 
 	try {
@@ -176,7 +181,7 @@ int main(int argc, char** argv) {
 				*loss,
 				*bestEffort);
 
-		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), 0);
+		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), optionInitialWeightValues.as<double>());
 		optimizer.optimize(oracle, weights);
 
 		storeVector(weights, optionFeatureWeights);
