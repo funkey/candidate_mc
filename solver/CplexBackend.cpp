@@ -107,7 +107,10 @@ CplexBackend::setObjective(const QuadraticObjective& objective) {
 
         for(size_t i = 0; i < _numVariables; i++)
         {
-            obj_.setLinearCoef(x_[i], objective.getCoefficients()[i]);
+			if (objective.getCoefficients()[i] == std::numeric_limits<double>::infinity())
+				obj_.setLinearCoef(x_[i], CPX_INFBOUND);
+			else
+				obj_.setLinearCoef(x_[i], objective.getCoefficients()[i]);
         }
 
         // set the quadratic coefficients for all pairs of variables
