@@ -16,6 +16,13 @@ util::ProgramOption optionForceParentCandidate(
 		util::_description_text = "Disallow merging of children into a shape that resembles their parent. "
 		                          "In this case, take the parent instead.");
 
+
+util::ProgramOption optionLazyTreePathConstraints(
+        util::_long_name        = "lazyTreePathConstraints",
+        util::_description_text = "Only add violated tree path constraints",
+        util::_default_value    = false);
+
+
 MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
 	_merged(crag),
@@ -371,8 +378,13 @@ MultiCut::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathI
 
 		treePathConstraint.setValue(1.0);
 
-		_constraints->add(treePathConstraint);
-		numConstraintsAdded++;
+        if(optionLazyTreePathConstraints.as<bool>()){
+            _allTreePathConstraints.push_back(treePathConstraint);
+        }
+        else{
+            _constraints->add(treePathConstraint);
+            numConstraintsAdded++;
+        }
 	}
 
 	pathIds.pop_back();
@@ -402,7 +414,7 @@ MultiCut::findCut() {
 
 bool
 MultiCut::findViolatedConstraints() {
-
+    int treePathConstraintAdded =0;
 	int constraintsAdded = 0;
 
 	// Given the large number of adjacency edges, and that only a small subset 
@@ -420,6 +432,15 @@ MultiCut::findViolatedConstraints() {
 
 	// find connected components in cut graph
 	lemon::connectedComponents(cutGraph, _labels);
+
+    if(optionLazyTreePathConstraints.as<bool>()){
+        for(auto & c : _allTreePathConstraints){
+            if(c.isViolated(*_solution)){
+                _constraints->add(c);
+                ++treePathConstraintAdded;
+            }
+        }
+    }
 
 	// label rejected nodes with -1
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
@@ -553,6 +574,12 @@ MultiCut::findViolatedConstraints() {
 			<< "added " << constraintsAdded
 			<< " cycle constraints" << std::endl;
 
+    if(optionLazyTreePathConstraints.as<bool>()){
+    LOG_USER(multicutlog)
+            << "added " << treePathConstraintAdded
+            << " tree path  constraints" << std::endl;
+    }
+
 	// propagate node labels to subsets
 	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
 
@@ -564,7 +591,7 @@ MultiCut::findViolatedConstraints() {
 			propagateLabel(n, -1);
 	}
 
-	return (constraintsAdded > 0);
+	return (constraintsAdded + treePathConstraintAdded > 0);
 }
 
 void

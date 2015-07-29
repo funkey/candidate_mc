@@ -25,6 +25,28 @@ LinearConstraint::setRelation(Relation relation) {
 	_relation = relation;
 }
 
+bool LinearConstraint::isViolated(const Solution & solution){
+
+    double s = 0;
+
+    for(const auto & kv : _coefs){
+        const auto var = kv.first;
+        const auto coef = kv.second;
+        const auto sol = solution[var];
+        s+= coef*sol;
+    }
+    if(_relation == LessEqual){
+        return s > _value;
+    }
+    else if(_relation == GreaterEqual){
+        return s < _value;
+    }
+    else{
+        return s != _value;
+    }
+}
+
+
 void
 LinearConstraint::setValue(double value) {
 

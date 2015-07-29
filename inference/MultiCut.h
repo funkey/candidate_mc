@@ -141,6 +141,9 @@ private:
 	pipeline::Value<Solution>               _solution;
 
 	Parameters _parameters;
+
+
+    std::vector<LinearConstraint> _allTreePathConstraints;
 };
 
 #endif // CANDIDATE_MC_SOLVER_MULTI_CUT_H__
