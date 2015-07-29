@@ -278,6 +278,11 @@ public:
 	bool isRootNode(Crag::Node n) const { return (SubsetOutArcIt(*this, toSubset(n)) == lemon::INVALID); }
 
 	/**
+	 * Return true for edges that connect two leaf nodes.
+	 */
+	bool isLeafEdge(Crag::CragEdge e) const { return (isLeafNode(e.u()) && isLeafNode(e.v())); }
+
+	/**
 	 * Implicit conversion operators for iteratos, node-, edge-, and arc-map 
 	 * creation.
 	 */
