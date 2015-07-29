@@ -56,6 +56,15 @@ util::ProgramOption optionInitialWeightValues(
 		util::_description_text = "Uniform values of the weight vectors to start learning with.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionInitialWeights(
+		util::_long_name        = "initialWeights",
+		util::_description_text = "A file containing an initial set of weights.");
+
+util::ProgramOption optionPretrain(
+		util::_long_name        = "pretrain",
+		util::_description_text = "Train on a much simpler version of the original problem to get an "
+		                          "SVM-like training of the feature weights.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -167,10 +176,14 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
+		MultiCut::Parameters multiCutParameters;
+		if (optionPretrain)
+			multiCutParameters.noConstraints = true;
+
 		if (optionNormalizeLoss) {
 
 			LOG_USER(logger::out) << "normalizing loss..." << std::endl;
-			loss->normalize(crag, MultiCut::Parameters());
+			loss->normalize(crag, multiCutParameters);
 		}
 
 		Oracle oracle(
@@ -179,9 +192,26 @@ int main(int argc, char** argv) {
 				nodeFeatures,
 				edgeFeatures,
 				*loss,
-				*bestEffort);
+				*bestEffort,
+				multiCutParameters);
 
-		std::vector<double> weights(nodeFeatures.dims() + edgeFeatures.dims(), optionInitialWeightValues.as<double>());
+		std::vector<double> weights;
+
+		if (!optionInitialWeights) {
+
+			weights.resize(nodeFeatures.dims() + edgeFeatures.dims(), optionInitialWeightValues.as<double>());
+
+		} else {
+
+			weights = retrieveVector<double>(optionInitialWeights.as<std::string>());
+
+			if (weights.size() != nodeFeatures.dims() + edgeFeatures.dims())
+				UTIL_THROW_EXCEPTION(
+						UsageError,
+						"provided feature weights file has wrong number of entries " <<
+						"(" << weights.size() << ", should be " << nodeFeatures.dims() + edgeFeatures.dims());
+		}
+
 		optimizer.optimize(oracle, weights);
 
 		storeVector(weights, optionFeatureWeights);
