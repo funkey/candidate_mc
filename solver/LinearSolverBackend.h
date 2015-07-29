@@ -57,6 +57,13 @@ public:
 	virtual void setConstraints(const LinearConstraints& constraints) = 0;
 
 	/**
+	 * Add a single constraint.
+	 *
+	 * @param constraint A linear constraints.
+	 */
+	virtual void addConstraint(const LinearConstraint& constraint) = 0;
+
+	/**
 	 * Solve the problem.
 	 *
 	 * @param solution A solution object to write the solution to.

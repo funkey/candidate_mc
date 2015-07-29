@@ -19,6 +19,7 @@ public:
 			forceExplanation(false),
 			numIterations(100),
 			maxConstraintsPerIteration(0),
+			noConstraints(false),
 			minimize(true) {}
 
 		/**
@@ -37,6 +38,13 @@ public:
 		 * The maximal number of cycle constraints to add per iteration.
 		 */
 		int maxConstraintsPerIteration;
+
+		/**
+		 * Disable all constraints (conflict constraints on candidates, 
+		 * rejection constraints, path constraints). This basically solves a 
+		 * "thresholding" relaxation of the original problem.
+		 */
+		bool noConstraints;
 
 		bool minimize;
 	};
