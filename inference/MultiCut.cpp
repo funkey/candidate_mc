@@ -32,7 +32,8 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 
 	prepareSolver();
 	setVariables();
-	setInitialConstraints();
+	if (!_parameters.noConstraints)
+		setInitialConstraints();
 }
 
 void
@@ -388,6 +389,18 @@ MultiCut::findCut() {
 
 	LOG_USER(multicutlog) << "searching for optimal cut..." << std::endl;
 
+	// get selected candidates
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+
+		_selected[n] = ((*_solution)[nodeIdToVar(_crag.id(n))] > 0.5);
+
+		LOG_ALL(multicutlog)
+				<< _crag.id(n) << ": "
+				<< _selected[n]
+				<< std::endl;
+	}
+
+	// get merged edges
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
 		_merged[e] = ((*_solution)[edgeIdToVar(_crag.id(e))] > 0.5);
@@ -402,6 +415,9 @@ MultiCut::findCut() {
 
 bool
 MultiCut::findViolatedConstraints() {
+
+	if (_parameters.noConstraints)
+		return false;
 
 	int constraintsAdded = 0;
 
@@ -422,23 +438,9 @@ MultiCut::findViolatedConstraints() {
 	lemon::connectedComponents(cutGraph, _labels);
 
 	// label rejected nodes with -1
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
-
-		if ((*_solution)[nodeIdToVar(_crag.id(n))] < 0.5) {
-
-			_selected[n]  = false;
+	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		if (!_selected[n])
 			_labels[n] = -1;
-
-		} else {
-
-			_selected[n] = true;
-		}
-
-		LOG_ALL(multicutlog)
-				<< _crag.id(n) << ": "
-				<< _selected[n]
-				<< std::endl;
-	}
 
 	// for each not selected edge with nodes in the same connected component, 
 	// find the shortest path along connected nodes connecting them
