@@ -10,21 +10,25 @@
 
 logger::LogChannel bundleoptimizerlog("bundleoptimizerlog", "[BundleOptimizer] ");
 
-enum OptimizerResult {
-
-	// the minimal optimization gap was reached
-	ReachedMinGap,
-
-	// the requested number of steps was exceeded
-	ReachedSteps,
-
-	// something went wrong
-	Error
-};
-
+/**
+ * Optimizer to optimize an Oracle's objective plus a quadratic regularizer 
+ * ½λ|w|².
+ */
 class BundleOptimizer {
 
 public:
+
+	enum OptimizerResult {
+
+		// the minimal optimization gap was reached
+		ReachedMinGap,
+
+		// the requested number of steps was exceeded
+		ReachedSteps,
+
+		// something went wrong
+		Error
+	};
 
 	enum EpsStrategy {
 
@@ -112,7 +116,7 @@ BundleOptimizer::~BundleOptimizer() {
 }
 
 template <typename Oracle, typename Weights>
-OptimizerResult
+BundleOptimizer::OptimizerResult
 BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 	setupQp(w);

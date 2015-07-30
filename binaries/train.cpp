@@ -13,6 +13,7 @@
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/vectors.h>
+#include <learning/GradientOptimizer.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
 #include <learning/OverlapLoss.h>
@@ -65,6 +66,15 @@ util::ProgramOption optionPretrain(
 		util::_description_text = "Train on a much simpler version of the original problem to get an "
 		                          "SVM-like training of the feature weights.");
 
+util::ProgramOption optionGradientOptimizer(
+		util::_long_name        = "gradientOptimizer",
+		util::_description_text = "Use a simple gradient descent to minimize the training objective.");
+
+util::ProgramOption optionInitialStepWidth(
+		util::_long_name        = "initialStepWidth",
+		util::_description_text = "Initial step width for the gradient optimizer.",
+		util::_default_value    = 1.0);
+
 int main(int argc, char** argv) {
 
 	try {
@@ -86,11 +96,6 @@ int main(int argc, char** argv) {
 		LOG_USER(logger::out) << "reading features" << std::endl;
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
-
-		BundleOptimizer::Parameters parameters;
-		parameters.lambda      = optionRegularizerWeight;
-		parameters.epsStrategy = BundleOptimizer::EpsFromGap;
-		BundleOptimizer optimizer(parameters);
 
 		BestEffort*  bestEffort  = 0;
 		OverlapLoss* overlapLoss = 0;
@@ -212,7 +217,22 @@ int main(int argc, char** argv) {
 						"(" << weights.size() << ", should be " << nodeFeatures.dims() + edgeFeatures.dims());
 		}
 
-		optimizer.optimize(oracle, weights);
+		if (optionGradientOptimizer) {
+
+			GradientOptimizer::Parameters parameters;
+			parameters.lambda           = optionRegularizerWeight.as<double>();
+			parameters.initialStepWidth = optionInitialStepWidth.as<double>();
+			GradientOptimizer optimizer(parameters);
+			optimizer.optimize(oracle, weights);
+
+		} else {
+
+			BundleOptimizer::Parameters parameters;
+			parameters.lambda      = optionRegularizerWeight;
+			parameters.epsStrategy = BundleOptimizer::EpsFromGap;
+			BundleOptimizer optimizer(parameters);
+			optimizer.optimize(oracle, weights);
+		}
 
 		storeVector(weights, optionFeatureWeights);
 
