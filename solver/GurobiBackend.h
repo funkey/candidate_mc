@@ -98,6 +98,7 @@ private:
 
 	// the objective
 	GRBQuadExpr _objective;
+	double      _constant;
 
 	std::vector<GRBConstr> _constraints;
 

@@ -147,7 +147,8 @@ GurobiBackend::setObjective(const QuadraticObjective& objective) {
 			_model.set(GRB_IntAttr_ModelSense, -1);
 
 		// set the constant value of the objective
-		_objective = objective.getConstant();
+		_objective = 0;
+		_constant = objective.getConstant();
 
 		LOG_DEBUG(gurobilog) << "setting linear coefficients" << std::endl;
 
@@ -268,7 +269,7 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 			x[i] = _variables[i].get(GRB_DoubleAttr_X);
 
 		// get current value of the objective
-		x.setValue(_model.get(GRB_DoubleAttr_ObjVal));
+		x.setValue(_model.get(GRB_DoubleAttr_ObjVal) + _constant);
 
 	} catch (GRBException e) {
 
