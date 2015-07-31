@@ -1,1 +1,1 @@
-define_module(solver OBJECT LINKS pipeline gurobi cplex)
+define_module(solver OBJECT LINKS pipeline gurobi cplex scip)

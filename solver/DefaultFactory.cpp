@@ -11,6 +11,10 @@
 #include "CplexBackend.h"
 #endif
 
+#ifdef HAVE_SCIP
+#include "ScipBackend.h"
+#endif
+
 util::ProgramOption optionUseGurobi(
 		util::_long_name        = "useGurobi",
 		util::_description_text = "Use the gurobi solver for ILPs and QPs. If not set, the first "
@@ -20,6 +24,12 @@ util::ProgramOption optionUseGurobi(
 util::ProgramOption optionUseCplex(
 		util::_long_name        = "useCplex",
 		util::_description_text = "Use the CPLEX solver for ILPs and QPs. If not set, the first "
+		                          "available solver will be used."
+);
+
+util::ProgramOption optionUseScip(
+		util::_long_name        = "useScip",
+		util::_description_text = "Use the SCIP solver for ILPs and QPs. If not set, the first "
 		                          "available solver will be used."
 );
 
@@ -39,6 +49,8 @@ DefaultFactory::createLinearSolverBackend(Preference preference) const {
 			preference = Gurobi;
 		if (optionUseCplex)
 			preference = Cplex;
+		if (optionUseScip)
+			preference = Scip;
 	}
 
 // by default, create a gurobi backend
@@ -65,6 +77,14 @@ DefaultFactory::createLinearSolverBackend(Preference preference) const {
 
 	if (preference == Any || preference == Cplex)
 		return new CplexBackend();
+
+#endif
+
+// if this is not available, create a SCIP backend
+#ifdef HAVE_SCIP
+
+	if (preference == Any || preference == Scip)
+		return new ScipBackend();
 
 #endif
 
