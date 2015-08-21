@@ -14,7 +14,7 @@ public:
 	 * @param mergetree
 	 *              Path to a merge tree image. A merge tree image has twice the 
 	 *              resolution as the original image to delineate edges between 
-	 *              pixels. Successive thresholding of the merge tree images 
+	 *              voxels. Successive thresholding of the merge tree images 
 	 *              reveals all candidates on each level of the merge tree.
 	 * @param crag
 	 *              The CRAG to fill.
@@ -35,16 +35,16 @@ public:
 			util::point<float, 3> offset);
 
 	/**
-	 * Import a CRAG from a superpixel image or volume and a merge history.
+	 * Import a CRAG from a supervoxel image or volume and a merge history.
 	 *
-	 * @param superpixel
-	 *              Path to a superpixel image or directory of images for 
-	 *              volumes. In the superpixel volume, each pixel is labelled 
-	 *              with a unique superpixel id.
+	 * @param supervoxel
+	 *              Path to a supervoxel image or directory of images for 
+	 *              volumes. In the supervoxel volume, each voxel is labelled 
+	 *              with a unique supervoxel id.
 	 * @param mergeHistory
 	 *              Path to a text file containing a merge history as rows of 
 	 *              the form "a b c", stating that candidate a got merged with b 
-	 *              into new candidate c. Superpixels from the superpixel volume 
+	 *              into new candidate c. Supervoxels from the supervoxel volume 
 	 *              are the initial candidates.
 	 * @param mergeScores
 	 *              Path to a text file containing a score for each merge in the 
@@ -60,7 +60,7 @@ public:
 	 *              The offset of the volume, to be stored in the volumes.
 	 */
 	void readCrag(
-			std::string           superpixels,
+			std::string           supervoxels,
 			std::string           mergeHistory,
 			std::string           mergeScores,
 			Crag&                 crag,
@@ -69,17 +69,17 @@ public:
 			util::point<float, 3> offset);
 
 	/**
-	 * Import a CRAG of depth 1 from a superpixel image or volume and a 
+	 * Import a CRAG of depth 1 from a supervoxel image or volume and a 
 	 * segmentation image or volume.
 	 *
-	 * @param superpixel
-	 *              Path to a superpixel image or directory of images for 
-	 *              volumes. In the superpixel volume, each pixel is labelled 
-	 *              with a unique superpixel id.
+	 * @param supervoxel
+	 *              Path to a supervoxel image or directory of images for 
+	 *              volumes. In the supervoxel volume, each voxel is labelled 
+	 *              with a unique supervoxel id.
 	 * @param candidateSegmentation
 	 *              A labelled volume representing a segmentation. The final 
-	 *              CRAG will have one candidate per superpixel, and larger 
-	 *              candidates per segment. Superpixels will be assigned to the 
+	 *              CRAG will have one candidate per supervoxel, and larger 
+	 *              candidates per segment. Supervoxels will be assigned to the 
 	 *              segment with which they have largest overlap.
 	 * @param crag
 	 *              The CRAG to fill.
@@ -91,21 +91,34 @@ public:
 	 *              The offset of the volume, to be stored in the volumes.
 	 */
 	void readCrag(
-			std::string           superpixels,
+			std::string           supervoxels,
 			std::string           candidateSegmentation,
 			Crag&                 crag,
 			CragVolumes&          volumes,
 			util::point<float, 3> resolution,
 			util::point<float, 3> offset);
 
-private:
-
+	/**
+	 * Read a flat CRAG from a volume of supervoxels.
+	 *
+	 * @param supervoxels
+	 *              A supervoxel volumes. In the supervoxel volume, each voxel 
+	 *              is labelled with a unique supervoxel id.
+	 * @param crag
+	 *              The CRAG to fill.
+	 * @param volumes
+	 *              A node map for the leaf node volmes.
+	 * @param resolution
+	 *              The resolution of the volume, to be stored in the volumes.
+	 * @param offset
+	 *              The offset of the volume, to be stored in the volumes.
+	 */
 	std::map<int, Crag::Node> readSupervoxels(
-			Crag&                 crag,
-			CragVolumes&          volumes,
-			util::point<float, 3> resolution,
-			util::point<float, 3> offset,
-			std::string           supervoxels);
+			const ExplicitVolume<int>& supervoxels,
+			Crag&                      crag,
+			CragVolumes&               volumes,
+			util::point<float, 3>      resolution,
+			util::point<float, 3>      offset);
 };
 
 #endif // CANDIDATE_MC_IO_CRAG_IMPORT_H__

@@ -16,8 +16,9 @@
 #include <learning/GradientOptimizer.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/Oracle.h>
-#include <learning/OverlapLoss.h>
 #include <learning/HammingLoss.h>
+#include <learning/HausdorffLoss.h>
+#include <learning/OverlapLoss.h>
 #include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
@@ -32,6 +33,12 @@ util::ProgramOption optionFeatureWeights(
 		util::_description_text = "A file to store the learnt feature weights.",
 		util::_default_value    = "feature_weights.txt");
 
+util::ProgramOption optionBestEffortLoss(
+		util::_long_name        = "bestEffortLoss",
+		util::_description_text = "The loss to use for finding the best-effort solution: overlap (RAND index approximation "
+		                          "to ground-truth, default) or hausdorff (minimal Hausdorff distance to any ground-truth region).",
+		util::_default_value    = "overlap");
+
 util::ProgramOption optionBestEffortFromProjectFile(
 		util::_long_name        = "bestEffortFromProjectFile",
 		util::_description_text = "Read the best effort solution from the project file.");
@@ -39,8 +46,9 @@ util::ProgramOption optionBestEffortFromProjectFile(
 util::ProgramOption optionLoss(
 		util::_long_name        = "loss",
 		util::_description_text = "The loss to use for training: hamming (Hamming distance "
-		                          "to best effort, default) or overlap (RAND index approximation "
-		                          "to ground-truth).",
+		                          "to best effort, default), overlap (RAND index approximation "
+		                          "to ground-truth), or hausdorff (minimal Hausdorff distance to "
+		                          "any ground-truth region).",
 		util::_default_value    = "hamming");
 
 util::ProgramOption optionNormalizeLoss(
@@ -75,6 +83,12 @@ util::ProgramOption optionInitialStepWidth(
 		util::_description_text = "Initial step width for the gradient optimizer.",
 		util::_default_value    = 1.0);
 
+util::ProgramOption optionMaxHausdorffDistance(
+		util::_module           = "loss.hausdorff",
+		util::_long_name        = "maxDistance",
+		util::_description_text = "The maximal Hausdorff distance that will be used for the Hausdorff loss.",
+		util::_default_value    = 1000); // matching tobasl experiments
+
 int main(int argc, char** argv) {
 
 	try {
@@ -97,8 +111,9 @@ int main(int argc, char** argv) {
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
-		BestEffort*  bestEffort  = 0;
-		OverlapLoss* overlapLoss = 0;
+		BestEffort*    bestEffort    = 0;
+		OverlapLoss*   overlapLoss   = 0;
+		HausdorffLoss* hausdorffLoss = 0;
 
 		if (optionBestEffortFromProjectFile) {
 
@@ -142,8 +157,23 @@ int main(int argc, char** argv) {
 			volumeStore.retrieveGroundTruth(groundTruth);
 
 			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-			overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
-			bestEffort = new BestEffort(crag, volumes, *overlapLoss);
+
+			if (optionBestEffortLoss.as<std::string>() == "overlap") {
+
+				overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
+				bestEffort = new BestEffort(crag, volumes, *overlapLoss);
+
+			} else if (optionBestEffortLoss.as<std::string>() == "hausdorff") {
+
+				hausdorffLoss = new HausdorffLoss(crag, volumes, groundTruth, optionMaxHausdorffDistance);
+				bestEffort = new BestEffort(crag, volumes, *hausdorffLoss);
+
+			} else {
+
+				UTIL_THROW_EXCEPTION(
+						UsageError,
+						"unknown best-effort loss " + optionBestEffortLoss.as<std::string>());
+			}
 		}
 
 		Loss* loss = 0;
@@ -171,6 +201,22 @@ int main(int argc, char** argv) {
 			}
 
 			loss = overlapLoss;
+
+		} else if (optionLoss.as<std::string>() == "hausdorff") {
+
+			LOG_USER(logger::out) << "using hausdorff loss" << std::endl;
+
+			if (!hausdorffLoss) {
+
+				LOG_USER(logger::out) << "reading ground-truth" << std::endl;
+				ExplicitVolume<int> groundTruth;
+				volumeStore.retrieveGroundTruth(groundTruth);
+
+				LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
+				hausdorffLoss = new HausdorffLoss(crag, volumes, groundTruth, optionMaxHausdorffDistance);
+			}
+
+			loss = hausdorffLoss;
 
 		} else {
 
@@ -241,6 +287,9 @@ int main(int argc, char** argv) {
 
 		if (overlapLoss)
 			delete overlapLoss;
+
+		if (hausdorffLoss)
+			delete hausdorffLoss;
 
 		if (bestEffort)
 			delete bestEffort;

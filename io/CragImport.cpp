@@ -38,7 +38,7 @@ CragImport::readCrag(
 
 void
 CragImport::readCrag(
-		std::string           superpixels,
+		std::string           supervoxels,
 		std::string           mergeHistory,
 		std::string           mergeScores,
 		Crag&                 crag,
@@ -46,7 +46,8 @@ CragImport::readCrag(
 		util::point<float, 3> resolution,
 		util::point<float, 3> offset) {
 
-	std::map<int, Crag::Node> idToNode = readSupervoxels(crag, volumes, resolution, offset, superpixels);
+	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	std::map<int, Crag::Node> idToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
 
 	int maxMerges = -1;
 	if (optionMaxMerges)
@@ -120,14 +121,15 @@ CragImport::readCrag(
 
 void
 CragImport::readCrag(
-		std::string           superpixels,
+		std::string           supervoxels,
 		std::string           candidateSegmentation,
 		Crag&                 crag,
 		CragVolumes&          volumes,
 		util::point<float, 3> resolution,
 		util::point<float, 3> offset) {
 
-	std::map<int, Crag::Node> svIdToNode = readSupervoxels(crag, volumes, resolution, offset, superpixels);
+	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	std::map<int, Crag::Node> svIdToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
 
 	LOG_USER(logger::out) << "reading segmentation" << std::endl;
 
@@ -199,13 +201,11 @@ CragImport::readCrag(
 
 std::map<int, Crag::Node>
 CragImport::readSupervoxels(
-		Crag&                 crag,
-		CragVolumes&          volumes,
-		util::point<float, 3> resolution,
-		util::point<float, 3> offset,
-		std::string           supervoxels) {
-
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+		const ExplicitVolume<int>& ids,
+		Crag&                      crag,
+		CragVolumes&               volumes,
+		util::point<float, 3>      resolution,
+		util::point<float, 3>      offset) {
 
 	int _, maxId;
 	ids.data().minmax(&_, &maxId);
