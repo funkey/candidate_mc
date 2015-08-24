@@ -11,7 +11,7 @@ Getting Submodules
 Dependencies
 ------------
 
-  * CMake, Git, GCC
+  * CMake, Git, Mercurial, GCC
   * libboost-all-dev (make sure libboost-timer-dev is included)
   * liblapack-dev
   * libfftw3-dev
