@@ -67,30 +67,19 @@ DownSampler::downSampleCopy(const Crag& source, const CragVolumes& sourceVolumes
 	//
 	// singleChild is true, if n is a single child
 
-	bool debug = (source.id(n) == 21848);
-
 	// if n is too small, there is nothing to copy
 	if (!source.isRootNode(source.toRag(n)) && size(source, sourceVolumes, n) < _minSize)
 		return;
 
-	if (debug) LOG_ALL(downsamplerlog) << "processing root node" << std::endl;
-
 	// n is valid and not a single child -- copy it to the target graph
 	if (!singleChild) {
-
-		if (debug) LOG_ALL(downsamplerlog) << "is not a single child" << std::endl;
 
 		Crag::Node copy = target.addNode();
 		_copyMap[n] = copy;
 
-		if (debug) LOG_ALL(downsamplerlog) << "is node " << target.id(copy) << " in copy" << std::endl;
-
 		// for the first call, root == parent == n
-		if (n != parent) {
-
-			if (debug) LOG_ALL(downsamplerlog) << "adding subset arc to " << target.id(_copyMap[parent]) << std::endl;
+		if (n != parent)
 			target.addSubsetArc(copy, _copyMap[parent]);
-		}
 
 		// n is now the previous valid parent
 		parent = n;
@@ -108,11 +97,6 @@ DownSampler::downSampleCopy(const Crag& source, const CragVolumes& sourceVolumes
 				source.getSubsetGraph().oppositeNode(n, childEdge),
 				(numChildren == 1),
 				target);
-
-	for (Crag::SubsetInArcIt childEdge(target, target.toSubset(_copyMap[n])); childEdge != lemon::INVALID; ++childEdge)
-		if (debug) LOG_ALL(downsamplerlog) << "has a child" << std::endl;
-	for (Crag::SubsetOutArcIt parEdge(target, target.toSubset(_copyMap[n])); parEdge != lemon::INVALID; ++parEdge)
-		if (debug) LOG_ALL(downsamplerlog) << "has a parent...?" << std::endl;
 }
 
 int
