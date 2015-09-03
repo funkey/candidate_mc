@@ -38,7 +38,7 @@ public:
 
 private:
 
-	typedef ImageLevelParser<short> ImageParser;
+	typedef ImageLevelParser<unsigned short> ImageParser;
 
 	class MergeTreeVisitor : public ImageParser::Visitor {
 
