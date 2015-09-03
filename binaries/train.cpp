@@ -19,6 +19,7 @@
 #include <learning/HammingLoss.h>
 #include <learning/HausdorffLoss.h>
 #include <learning/OverlapLoss.h>
+#include <learning/TopologicalLoss.h>
 #include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
@@ -47,8 +48,9 @@ util::ProgramOption optionLoss(
 		util::_long_name        = "loss",
 		util::_description_text = "The loss to use for training: hamming (Hamming distance "
 		                          "to best effort, default), overlap (RAND index approximation "
-		                          "to ground-truth), or hausdorff (minimal Hausdorff distance to "
-		                          "any ground-truth region).",
+		                          "to ground-truth), hausdorff (minimal Hausdorff distance to "
+		                          "any ground-truth region), or topological (penalizes splits, merges, "
+		                          "false positives and false negatives).",
 		util::_default_value    = "hamming");
 
 util::ProgramOption optionNormalizeLoss(
@@ -217,6 +219,13 @@ int main(int argc, char** argv) {
 			}
 
 			loss = hausdorffLoss;
+
+		} else if (optionLoss.as<std::string>() == "topological") {
+
+			LOG_USER(logger::out) << "using topological loss" << std::endl;
+
+			loss = new TopologicalLoss(crag, *bestEffort);
+			destructLoss = true;
 
 		} else {
 
