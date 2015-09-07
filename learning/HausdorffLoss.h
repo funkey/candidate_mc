@@ -14,9 +14,10 @@ class HausdorffLoss : public Loss {
 public:
 
 	HausdorffLoss(
-			const Crag&                crag,
-			const CragVolumes&         volumes,
-			const ExplicitVolume<int>& groundTruth,
+			const Crag&        crag,
+			const CragVolumes& volumes,
+			const Crag&        gtCrag,
+			const CragVolumes& gtVolumes,
 			double maxHausdorffDistance);
 };
 

@@ -8,61 +8,45 @@
 
 logger::LogChannel hausdorffdistancelog("hausdorffdistancelog", "[HausdorffDistance] ");
 
-HausdorffDistance::HausdorffDistance(
-		const CragVolumes& a,
-		const CragVolumes& b,
-		int maxDistance) :
-	_a(a),
-	_b(b),
+HausdorffDistance::HausdorffDistance(int maxDistance) :
 	_maxDistance(maxDistance) {}
 
 void
-HausdorffDistance::operator()(Crag::Node i, Crag::Node j, double& i_j, double& j_i) {
+HausdorffDistance::operator()(const CragVolume& i, const CragVolume& j, double& i_j, double& j_i) {
 
-	if (_cache.count(std::make_pair(i, j))) {
+	if (_cache.count(std::make_pair(&i, &j))) {
 
 		LOG_DEBUG(hausdorffdistancelog) << "reuse cached values" << std::endl;
 
-		i_j = _cache[std::make_pair(i, j)].first;
-		j_i = _cache[std::make_pair(i, j)].second;
+		i_j = _cache[std::make_pair(&i, &j)].first;
+		j_i = _cache[std::make_pair(&i, &j)].second;
 
 		return;
 	}
 
-	LOG_DEBUG(hausdorffdistancelog)
-			<< "checking nodes " << _a.getCrag().id(i)
-			<< "a and " << _b.getCrag().id(j) << "b"
-			<< std::endl;
+	volumesDistance(i, j, i_j);
+	volumesDistance(j, i, j_i);
 
-	volumesDistance(_a[i], _b[j], i_j);
-
-	LOG_DEBUG(hausdorffdistancelog)
-			<< "checking nodes " << _b.getCrag().id(j)
-			<< "b and " << _a.getCrag().id(i) << "a"
-			<< std::endl;
-
-	volumesDistance(_b[j], _a[i], j_i);
-
-	_cache[std::make_pair(i, j)] = std::make_pair(i_j, j_i);
+	_cache[std::make_pair(&i, &j)] = std::make_pair(i_j, j_i);
 }
 
 void
 HausdorffDistance::volumesDistance(
-		std::shared_ptr<CragVolume> volume_i,
-		std::shared_ptr<CragVolume> volume_j,
+		const CragVolume& volume_i,
+		const CragVolume& volume_j,
 		double& i_j) {
 
-	if (lowerBound(*volume_i, *volume_j) >= _maxDistance) {
+	if (lowerBound(volume_i, volume_j) >= _maxDistance) {
 
 		i_j = _maxDistance;
 		return;
 	}
 
-	const util::box<int, 2>& bb_i = (volume_i->getBoundingBox()/volume_i->getResolution()).project<2>();
-	const util::box<int, 2>& bb_j = (volume_j->getBoundingBox()/volume_j->getResolution()).project<2>();
+	const util::box<int, 2>& bb_i = (volume_i.getBoundingBox()/volume_i.getResolution()).project<2>();
+	const util::box<int, 2>& bb_j = (volume_j.getBoundingBox()/volume_j.getResolution()).project<2>();
 
-	LOG_DEBUG(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i->getBoundingBox() << std::endl;
-	LOG_DEBUG(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j->getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i.getBoundingBox() << std::endl;
+	LOG_DEBUG(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j.getBoundingBox() << std::endl;
 
 	vigra::MultiArray<2, double>& distances_j = getDistanceMap(volume_j);
 
@@ -70,7 +54,7 @@ HausdorffDistance::volumesDistance(
 	for (int y = 0; y < bb_i.height(); y++)
 	for (int x = 0; x < bb_i.width();  x++) {
 
-		if (!(*volume_i)(x, y, 0))
+		if (!volume_i(x, y, 0))
 			continue;
 
 		// point in global coordinates
@@ -128,35 +112,35 @@ HausdorffDistance::lowerBound(const CragVolume& a, const CragVolume& b) {
 }
 
 vigra::MultiArray<2, double>&
-HausdorffDistance::getDistanceMap(std::shared_ptr<CragVolume> volume) {
+HausdorffDistance::getDistanceMap(const CragVolume& volume) {
 
 	UTIL_TIME_METHOD;
 
-	if (_distanceMaps.count(volume))
-		return _distanceMaps[volume];
+	if (_distanceMaps.count(&volume))
+		return _distanceMaps[&volume];
 
-	_padX = (int)(ceil(_maxDistance/volume->getResolutionX()));
-	_padY = (int)(ceil(_maxDistance/volume->getResolutionY()));
+	_padX = (int)(ceil(_maxDistance/volume.getResolutionX()));
+	_padY = (int)(ceil(_maxDistance/volume.getResolutionY()));
 
-	vigra::Shape2 size(volume->width() + 2*_padX, volume->height() + 2*_padY);
+	vigra::Shape2 size(volume.width() + 2*_padX, volume.height() + 2*_padY);
 
-	vigra::MultiArray<2, double>& distanceMap = _distanceMaps[volume];
+	vigra::MultiArray<2, double>& distanceMap = _distanceMaps[&volume];
 	distanceMap.reshape(size);
 	distanceMap = 0;
 
 	vigra::copyMultiArray(
-			volume->data().bind<2>(0),
+			volume.data().bind<2>(0),
 			distanceMap.subarray(
 					vigra::Shape2(
 							_padX,
 							_padY),
 					vigra::Shape2(
-							_padX + volume->width(),
-							_padY + volume->height())));
+							_padX + volume.width(),
+							_padY + volume.height())));
 
 	double pitch[2];
-	pitch[0] = volume->getResolutionX();
-	pitch[1] = volume->getResolutionY();
+	pitch[0] = volume.getResolutionX();
+	pitch[1] = volume.getResolutionY();
 
 
 	// perform distance transform with Euclidean norm

@@ -10,6 +10,7 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
+#include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/vectors.h>
@@ -167,7 +168,13 @@ int main(int argc, char** argv) {
 
 			} else if (optionBestEffortLoss.as<std::string>() == "hausdorff") {
 
-				hausdorffLoss = new HausdorffLoss(crag, volumes, groundTruth, optionMaxHausdorffDistance);
+				// get ground truth volumes
+				Crag        gtCrag;
+				CragVolumes gtVolumes(gtCrag);
+				CragImport  import;
+				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
+
+				hausdorffLoss = new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
 				bestEffort = new BestEffort(crag, volumes, *hausdorffLoss);
 
 			} else {
@@ -214,8 +221,14 @@ int main(int argc, char** argv) {
 				ExplicitVolume<int> groundTruth;
 				volumeStore.retrieveGroundTruth(groundTruth);
 
+				// get ground truth volumes
+				Crag        gtCrag;
+				CragVolumes gtVolumes(gtCrag);
+				CragImport  import;
+				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
+
 				LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-				hausdorffLoss = new HausdorffLoss(crag, volumes, groundTruth, optionMaxHausdorffDistance);
+				hausdorffLoss = new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
 			}
 
 			loss = hausdorffLoss;

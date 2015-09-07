@@ -129,7 +129,7 @@ CragStackCombiner::findLinks(
 	double maxResolution = std::max(
 			volsA[*cragA.nodes().begin()]->getResolutionX(),
 			volsA[*cragA.nodes().begin()]->getResolutionY());
-	HausdorffDistance hausdorff(volsA, volsB, _maxDistance + maxResolution);
+	HausdorffDistance hausdorff(_maxDistance + maxResolution);
 
 	for (Crag::CragNode i : cragA.nodes()) {
 
@@ -151,7 +151,7 @@ CragStackCombiner::findLinks(
 			UTIL_TIME_SCOPE("CragStackCombiner::findLinks Hausdorff distance computation");
 
 			double i_j, j_i;
-			hausdorff(i, j, i_j, j_i);
+			hausdorff(*volsA[i], *volsB[j], i_j, j_i);
 
 			double distance = std::max(i_j, j_i);
 

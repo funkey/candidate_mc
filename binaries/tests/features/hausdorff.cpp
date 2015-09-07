@@ -70,29 +70,29 @@ void hausdorff() {
 	volumesB.setLeafNodeVolume(b1, volumeB1);
 	volumesB.setLeafNodeVolume(b2, volumeB2);
 
-	HausdorffDistance hausdorff(volumesA, volumesB, 100);
+	HausdorffDistance hausdorff(100);
 
 	double a_b, b_a;
-	hausdorff(a1, b1, a_b, b_a);
+	hausdorff(*volumesA[a1], *volumesB[b1], a_b, b_a);
 
 	// Hausdorff should be sqrt(2*2 + 8*8) = 8.25 for A->B and 2 for B->A
 	BOOST_CHECK_CLOSE(a_b, 8.246, 0.01);
 	BOOST_CHECK_CLOSE(b_a, 2.0,   0.01);
 
 	// same for parents
-	hausdorff(p_a1, p_b1, a_b, b_a);
+	hausdorff(*volumesA[p_a1], *volumesB[p_b1], a_b, b_a);
 	BOOST_CHECK_CLOSE(a_b, 8.246, 0.01);
 	BOOST_CHECK_CLOSE(b_a, 2.0,   0.01);
 
 	// between a1 and b2, the distances should be sqrt(3*3 + 13*13) = 13.342 
 	// A->B and sqrt(3*3 + 3*3) = 4.243 for B->A
-	hausdorff(a1, b2, a_b, b_a);
+	hausdorff(*volumesA[a1], *volumesB[b2], a_b, b_a);
 	BOOST_CHECK_CLOSE(a_b, 13.342, 0.01);
 	BOOST_CHECK_CLOSE(b_a, 4.243,  0.01);
 
 	// between root_a and root_b Hausdorff should be sqrt(2*2 + 8*8) = 8.25 for 
 	// A->B and 2 for B->A
-	hausdorff(root_a, root_b, a_b, b_a);
+	hausdorff(*volumesA[root_a], *volumesB[root_b], a_b, b_a);
 	BOOST_CHECK_CLOSE(a_b, 8.246, 0.01);
 	BOOST_CHECK_CLOSE(b_a, 2.0,   0.01);
 }
@@ -168,16 +168,16 @@ void hausdorff_anisotropic() {
 	volumesB.setLeafNodeVolume(b2, volumeB2);
 
 	{
-		HausdorffDistance hausdorff(volumesA, volumesB, 100);
+		HausdorffDistance hausdorff(100);
 
 		double a_b, b_a;
-		hausdorff(a1, b1, a_b, b_a);
+		hausdorff(*volumesA[a1], *volumesB[b1], a_b, b_a);
 
 		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
 		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
 
 		// same for parents
-		hausdorff(p_a1, p_b1, a_b, b_a);
+		hausdorff(*volumesA[p_a1], *volumesB[p_b1], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
 		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
 
@@ -185,28 +185,28 @@ void hausdorff_anisotropic() {
 		//
 		// between a1 and b2, the distances should be sqrt(13*13 + 10*10) A->B and 
 		// sqrt(3*3 + 3*3) = 4.243 for B->A
-		hausdorff(a1, b2, a_b, b_a);
+		hausdorff(*volumesA[a1], *volumesB[b2], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, sqrt(13*13 + 2*2), 0.01);
 		BOOST_CHECK_CLOSE(b_a, sqrt(3*3 + 2*2),   0.01);
 
 		// between root_a and root_b Hausdorff should be sqrt(2*2 + 16*16) for A->B 
 		// and 4 for B->A
-		hausdorff(root_a, root_b, a_b, b_a);
+		hausdorff(*volumesA[root_a], *volumesB[root_b], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, sqrt(4*4 + 8*8), 0.01);
 		BOOST_CHECK_CLOSE(b_a, sqrt(4*4),       0.01);
 	}
 
 	{
-		HausdorffDistance hausdorff(volumesA, volumesB, 10);
+		HausdorffDistance hausdorff(10);
 
 		double a_b, b_a;
-		hausdorff(a1, b1, a_b, b_a);
+		hausdorff(*volumesA[a1], *volumesB[b1], a_b, b_a);
 
 		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
 		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
 
 		// same for parents
-		hausdorff(p_a1, p_b1, a_b, b_a);
+		hausdorff(*volumesA[p_a1], *volumesB[p_b1], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
 		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
 
@@ -214,13 +214,13 @@ void hausdorff_anisotropic() {
 		//
 		// between a1 and b2, the distances should be sqrt(13*13 + 10*10) A->B and 
 		// sqrt(3*3 + 3*3) = 4.243 for B->A
-		hausdorff(a1, b2, a_b, b_a);
+		hausdorff(*volumesA[a1], *volumesB[b2], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(13*13 + 2*2)), 0.01);
 		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(3*3 + 2*2)),   0.01);
 
 		// between root_a and root_b Hausdorff should be sqrt(2*2 + 16*16) for A->B 
 		// and 4 for B->A
-		hausdorff(root_a, root_b, a_b, b_a);
+		hausdorff(*volumesA[root_a], *volumesB[root_b], a_b, b_a);
 		BOOST_CHECK_CLOSE(a_b, std::min(10.0, sqrt(4*4 + 8*8)), 0.01);
 		BOOST_CHECK_CLOSE(b_a, std::min(10.0, sqrt(4*4)),       0.01);
 	}
