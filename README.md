@@ -48,3 +48,107 @@ Compile:
   ```
   make
   ```
+Usage:
+------
+
+You need:
+
+* raw volume (path "raw" in the following)
+* boundary prediction volume (path "boundary" in the following)
+* a hierarchical segmentation in one of the following formats:
+  * merge-tree: A volume (path "mergetree" in the following) that encodes the hierarchical segmentation with different intensities. The candidates are all connected components of foreground of all possible thresholds of the image. Subset relations are added automatically for candidates that are contained in others. To get candidates without borders in between, the merge-tree image can also be given as a "spaced edge image", which has twice the resolution as the other volumes such that every other voxel corresponds to a voxel in the other volumes. Boundaries are drawn as non-zero intensity lines between the voxels. Candidates are again extracted as connected components of all possible thresholds, however, for spaced edge images they are downsampled by a factor of two to match the raw, intensity, and ground truth volumes.
+  * supervoxel image plus merge history: provide a volume containing supervoxel ids, and a text file with rows `a b c` that state that candidate `a` and `b` got merged into `c`.
+* optionally: ground truth volume (path "gt" in the following), either as black/white volume or as supervoxel id volume
+
+Every volume can either be a stack of images (in this case, the path points to a directory) or a single image for 2D (in this case, the path points to a single image file).
+
+### Create a Project
+
+Create a project file using the binary `create_project` with the following arguments:
+
+```
+--intensities=<raw>
+--boundaries=<boundary>
+```
+
+For anisotropic volumes, the options `--resX`, `--resY`, and `--resZ` can be given as well.
+
+If your hierarchical segmentation is stored in a merge-tree volume (path "mergetree"), add
+
+```
+--mergeTree=<mergetree>
+```
+
+If the merge tree is a spaced edge image (see above), add
+
+```
+--spacedEdgeImage
+```
+
+as well. Ground truth is provided by
+
+```
+--groundTruth=<gt>
+```
+
+By default, it is assumed that the ground truth is a volume of supervoxel ids. If your ground truth is a black/white image, where each white connected component corresponds to a true foreground object, add the following option:
+
+```
+--extractGroundTruthLabels
+```
+
+There are more options available that influence the CRAG that is being extracted from the given files, see
+
+```
+./create_project --help
+```
+
+for details. Once done, you will find a `project.hdf` in you current directory.
+
+### Inspect the CRAG
+
+Start the CRAG viewer with
+
+```
+./crag_viewer
+```
+
+to inspect the created CRAG. Use `CTRL` and mouse drag/wheel to pan/zoom. For 3D volumes, scrolling without `CTRL` will move the visible section through the volume, and dragging rotates the volume. Double clicking on a point on the section will show the smallest candidate at this point. Scrolling with `SHIFT` will let you go up and down the candidate hierarchy. Scrolling with `ALT` will let you cycle through the adjacent candidates of the currently selected candidate.
+
+### Extract Features
+
+After the project has been created, features can be extracted for each candidate and adjacency edge. For that, simple run
+
+```
+./extract_features
+```
+
+For options that influence the type of features being extracted, see
+
+```
+./extract_features --help
+```
+
+### Learn Feature Weights
+
+If ground truth was provided, you can learn feature weights that produce a segmentation minimizing a structured loss by calling
+
+```
+./train
+```
+
+Again, see
+
+```
+./train --help
+```
+
+for options like the loss to use for the learning or the regularizer weight. Once training finished, you will find a `feature_weights.txt` in the current directory.
+
+### Solve
+
+To create a segmentation (for the same or another project with the same features), simple call
+
+```
+./solve
+```
