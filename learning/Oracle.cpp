@@ -5,6 +5,10 @@
 
 logger::LogChannel oraclelog("oraclelog", "[Oracle] ");
 
+util::ProgramOption optionStoreEachMostViolated(
+		util::_long_name        = "storeMostViolated",
+		util::_description_text = "In each training iteration, store the currently most violated solution.");
+
 util::ProgramOption optionStoreEachCurrentlyBest(
 		util::_long_name        = "storeCurrentlyBest",
 		util::_description_text = "In each training iteration, store the currently best solution.");
@@ -19,9 +23,12 @@ Oracle::operator()(
 
 	MultiCut::Status status = _mostViolatedMulticut.solve();
 
-	std::stringstream filename;
-	filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
-	_mostViolatedMulticut.storeSolution(_volumes, filename.str(), true);
+	if (optionStoreEachMostViolated) {
+
+		std::stringstream filename;
+		filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
+		_mostViolatedMulticut.storeSolution(_volumes, filename.str(), true);
+	}
 
 	if (status != MultiCut::SolutionFound)
 		UTIL_THROW_EXCEPTION(
