@@ -14,14 +14,15 @@
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/vectors.h>
-#include <learning/GradientOptimizer.h>
+#include <learning/BestEffort.h>
 #include <learning/BundleOptimizer.h>
-#include <learning/Oracle.h>
+#include <learning/ContourDistanceLoss.h>
+#include <learning/GradientOptimizer.h>
 #include <learning/HammingLoss.h>
 #include <learning/HausdorffLoss.h>
+#include <learning/Oracle.h>
 #include <learning/OverlapLoss.h>
 #include <learning/TopologicalLoss.h>
-#include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
@@ -176,6 +177,17 @@ int main(int argc, char** argv) {
 
 				hausdorffLoss = new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
 				bestEffort = new BestEffort(crag, volumes, *hausdorffLoss);
+
+			} else if (optionBestEffortLoss.as<std::string>() == "contour") {
+
+				// get ground truth volumes
+				Crag        gtCrag;
+				CragVolumes gtVolumes(gtCrag);
+				CragImport  import;
+				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
+
+				ContourDistanceLoss contourLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
+				bestEffort = new BestEffort(crag, volumes, contourLoss);
 
 			} else {
 
