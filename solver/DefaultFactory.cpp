@@ -140,5 +140,5 @@ DefaultFactory::createQuadraticSolverBackend(Preference preference) const {
 
 // if this is not available as well, throw an exception
 
-	BOOST_THROW_EXCEPTION(NoSolverException() << error_message("No linear solver available."));
+	BOOST_THROW_EXCEPTION(NoSolverException() << error_message("No quadratic solver available."));
 }
