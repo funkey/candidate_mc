@@ -207,10 +207,10 @@ CragImport::readSupervoxels(
 		util::point<float, 3>      resolution,
 		util::point<float, 3>      offset) {
 
-	int _, maxId;
-	ids.data().minmax(&_, &maxId);
+	int minId, maxId;
+	ids.data().minmax(&minId, &maxId);
 
-	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << _ << " and " << maxId << std::endl;
+	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << minId << " and " << maxId << std::endl;
 
 	std::map<int, util::box<int, 3>> bbs;
 	for (unsigned int z = 0; z < ids.depth();  z++)
@@ -218,6 +218,10 @@ CragImport::readSupervoxels(
 	for (unsigned int x = 0; x < ids.width();  x++) {
 
 		int id = ids(x, y, z);
+
+		if (id == 0)
+			continue;
+
 		bbs[id].fit(
 				util::box<int, 3>(
 						x,   y,   z,
@@ -243,6 +247,10 @@ CragImport::readSupervoxels(
 	for (unsigned int x = 0; x < ids.width();  x++) {
 
 		int id = ids(x, y, z);
+
+		if (id == 0)
+			continue;
+
 		Crag::Node n = idToNode[id];
 
 		(*volumes[n])(x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
