@@ -9,7 +9,7 @@ Overlap::operator()(const CragVolume& a, const CragVolume& b) {
 	double overlap = 0;
 	double voxelVolume = a.getResolution().x()*a.getResolution().y()*a.getResolution().z();
 
-	util::point<int, 3> offset = (b.getOffset() - a.getOffset())/a.getResolution();
+	util::point<int, 3> offset = (a.getOffset() - b.getOffset())/a.getResolution();
 
 	for (int z = 0; z < a.depth();  z++)
 	for (int y = 0; y < a.height(); y++)
