@@ -70,15 +70,15 @@ Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
 	_hdfFile.cd_mk("volumes");
 
 	int numNodes = 0;
-	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n)
-		if (volumes.getCrag().isLeafNode(n)) {
+	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n) {
 
-			if (numNodes%100 == 0)
-				LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
+		if (numNodes%100 == 0)
+			LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
 
-			writeVolume(*volumes[n], boost::lexical_cast<std::string>(volumes.getCrag().id(n)));
-			numNodes++;
-		}
+		writeVolume(*volumes[n], boost::lexical_cast<std::string>(volumes.getCrag().id(n)));
+		numNodes++;
+	}
+
 	LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::endl;
 }
 
@@ -162,7 +162,7 @@ Hdf5CragStore::retrieveVolumes(CragVolumes& volumes) {
 		Crag::Node n = volumes.getCrag().nodeFromId(id);
 		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>();
 		readVolume(*volume, vol);
-		volumes.setLeafNodeVolume(n, volume);
+		volumes.setVolume(n, volume);
 
 		UTIL_ASSERT(!volume->getBoundingBox().isZero());
 	}

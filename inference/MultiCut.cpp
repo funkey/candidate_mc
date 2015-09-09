@@ -134,8 +134,18 @@ MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename,
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		if (!_crag.isLeafNode(n))
-			continue;
+		if (boundary) {
+
+			// draw only leaf nodes if we want to visualize the boundary
+			if (!_crag.isLeafNode(n))
+				continue;
+
+		} else {
+
+			// otherwise, draw only selected nodes
+			if (!_selected[n])
+				continue;
+		}
 
 		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
 		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();

@@ -65,10 +65,10 @@ void hausdorff() {
 	(*volumeB1)(8, 3, 0) = 1;
 	(*volumeB2)(8, 3, 0) = 1;
 
-	volumesA.setLeafNodeVolume(a1, volumeA1);
-	volumesA.setLeafNodeVolume(a2, volumeA2);
-	volumesB.setLeafNodeVolume(b1, volumeB1);
-	volumesB.setLeafNodeVolume(b2, volumeB2);
+	volumesA.setVolume(a1, volumeA1);
+	volumesA.setVolume(a2, volumeA2);
+	volumesB.setVolume(b1, volumeB1);
+	volumesB.setVolume(b2, volumeB2);
 
 	HausdorffDistance hausdorff(100);
 
@@ -162,10 +162,10 @@ void hausdorff_anisotropic() {
 	(*volumeB1)(8, 3, 0) = 1;
 	(*volumeB2)(8, 3, 0) = 1;
 
-	volumesA.setLeafNodeVolume(a1, volumeA1);
-	volumesA.setLeafNodeVolume(a2, volumeA2);
-	volumesB.setLeafNodeVolume(b1, volumeB1);
-	volumesB.setLeafNodeVolume(b2, volumeB2);
+	volumesA.setVolume(a1, volumeA1);
+	volumesA.setVolume(a2, volumeA2);
+	volumesB.setVolume(b1, volumeB1);
+	volumesB.setVolume(b2, volumeB2);
 
 	{
 		HausdorffDistance hausdorff(100);

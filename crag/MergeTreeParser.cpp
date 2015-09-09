@@ -111,34 +111,32 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 	bool isLeafNode = (level == 0);
 	LOG_ALL(mergetreeparserlog) << "is" << (isLeafNode ? "" : " not") << " a leaf node" << std::endl;
 
-	// extract volumes for leaf nodes
-	if (isLeafNode) {
+	// extract and set volume
 
-		util::box<unsigned int, 3> boundingBox;
+	util::box<unsigned int, 3> boundingBox;
 
-		for (PixelList::const_iterator i = begin; i != end; i++)
-			boundingBox.fit(
-					util::box<unsigned int, 3>(
-							util::point<unsigned int, 3>(
-									i->x(),     i->y(),     0),
-							util::point<unsigned int, 3>(
-									i->x() + 1, i->y() + 1, 1)));
+	for (PixelList::const_iterator i = begin; i != end; i++)
+		boundingBox.fit(
+				util::box<unsigned int, 3>(
+						util::point<unsigned int, 3>(
+								i->x(),     i->y(),     0),
+						util::point<unsigned int, 3>(
+								i->x() + 1, i->y() + 1, 1)));
 
-		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(
-				boundingBox.width(),
-				boundingBox.height(),
-				boundingBox.depth(),
-				false);
+	std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(
+			boundingBox.width(),
+			boundingBox.height(),
+			boundingBox.depth(),
+			false);
 
-		for (PixelList::const_iterator i = begin; i != end; i++)
-			(*volume)[i->project<3>() - boundingBox.min()] = true;
+	for (PixelList::const_iterator i = begin; i != end; i++)
+		(*volume)[i->project<3>() - boundingBox.min()] = true;
 
-		util::point<float, 3> volumeOffset = _offset + boundingBox.min()*_resolution;
+	util::point<float, 3> volumeOffset = _offset + boundingBox.min()*_resolution;
 
-		volume->setResolution(_resolution);
-		volume->setOffset(volumeOffset);
-		_volumes.setLeafNodeVolume(node, volume);
-	}
+	volume->setResolution(_resolution);
+	volume->setOffset(volumeOffset);
+	_volumes.setVolume(node, volume);
 
 	// put the new node on the stack
 	_roots.push(node);

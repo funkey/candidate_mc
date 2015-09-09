@@ -27,7 +27,7 @@ void hdf5_store() {
 		for (unsigned char& v : volume->data())
 			v = rand()%256;
 
-		volumes.setLeafNodeVolume(crag.nodeFromId(i), volume);
+		volumes.setVolume(crag.nodeFromId(i), volume);
 
 		for (int j = i; j < i + 4; j++)
 			crag.addSubsetArc(

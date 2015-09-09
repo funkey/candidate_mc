@@ -2,15 +2,29 @@
 #include "CragVolumes.h"
 
 void
-CragVolumes::setLeafNodeVolume(Crag::Node leafNode, std::shared_ptr<CragVolume> volume) {
+CragVolumes::setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume) {
 
-	if (!_crag.isLeafNode(leafNode))
-		UTIL_THROW_EXCEPTION(
-				UsageError,
-				"volumes can only be set for leaf nodes");
-
-	_volumes[leafNode] = volume;
+	_volumes[n] = volume;
 	setBoundingBoxDirty();
+}
+
+void
+CragVolumes::propagateLeafNodeVolumes() {
+
+	// compute all non-leaf-node volumes by recursively combining children, 
+	// starting from all root nodes
+	for (Crag::CragNode n : _crag.nodes()) {
+
+		if (!_crag.isRootNode(n) || _crag.isLeafNode(n))
+			continue;
+
+		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
+
+		_volumes[n] = std::make_shared<CragVolume>();
+		recFill(nodeBoundingBox, *_volumes[n], n);
+
+		UTIL_ASSERT_REL(nodeBoundingBox, ==, _volumes[n]->getBoundingBox());
+	}
 }
 
 util::box<float, 3>
@@ -46,17 +60,10 @@ CragVolumes::getBoundingBox(Crag::Node n) const {
 std::shared_ptr<CragVolume>
 CragVolumes::operator[](Crag::Node n) const {
 
-	if (!_volumes[n]) {
-
-		// if there was no volume set or already computed, do it now
-
-		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
-
-		_volumes[n] = std::make_shared<CragVolume>();
-		recFill(nodeBoundingBox, *_volumes[n], n);
-
-		UTIL_ASSERT_REL(nodeBoundingBox, ==, _volumes[n]->getBoundingBox());
-	}
+	if (!_volumes[n])
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"no volume set for leaf node " << _crag.id(n));
 
 	return _volumes[n];
 }

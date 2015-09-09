@@ -85,8 +85,7 @@ CragStackCombiner::copyNodes(
 
 		Crag::CragNode n = target.addNode();
 
-		if (source.isLeafNode(i))
-			targetVolumes.setLeafNodeVolume(n, sourceVolumes[i]);
+		targetVolumes.setVolume(n, sourceVolumes[i]);
 
 		nodeMap[i] = n;
 	}

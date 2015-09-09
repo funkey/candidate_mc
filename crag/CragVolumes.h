@@ -15,20 +15,9 @@ class CragVolumes : public Volume {
 public:
 
 	/**
-	 * Create a volume map for the given Crag. The volumes of leaf nodes are 
-	 * read from the given leaf node labels volume, where each voxel value is 
-	 * the id of the leaf node it belongs to.
-	 */
-	CragVolumes(
-			const Crag& crag,
-			std::shared_ptr<ExplicitVolume<unsigned int>> leafNodeLabels) :
-		_crag(crag),
-		_volumes(crag),
-		_leafNodeLabels(leafNodeLabels) {}
-
-	/**
-	 * Create an empty volume map for the given Crag. Leaf node volumes have to 
-	 * be set explicitly via setLeafNodeVolume() before the map can be used.
+	 * Create an empty volume map for the given Crag. Populate it using 
+	 * setVolume() for each node or setVolume() for each leaf node and 
+	 * propagateLeafNodeVolumes().
 	 */
 	CragVolumes(const Crag& crag) :
 		_crag(crag),
@@ -38,26 +27,28 @@ public:
 
 	CragVolumes(CragVolumes&& other) :
 		_crag(other._crag),
-		_volumes(other._crag),
-		_leafNodeLabels(other._leafNodeLabels) {
+		_volumes(other._crag) {
 
 		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
 			_volumes[n] = other._volumes[n];
 			other._volumes[n].reset();
 		}
-
-		other._leafNodeLabels.reset();
 	}
 
 	/**
-	 * Set the volume of a leaf node.
+	 * Set the volume of a node.
 	 */
-	void setLeafNodeVolume(Crag::Node leafNode, std::shared_ptr<CragVolume> volume);
+	void setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume);
 
 	/**
-	 * Get the volume of a candidate. For non-leaf node candidates, the volume 
-	 * will be created and cached for later queries.
+	 * Propagate the volumes of leaf nodes upwards, such that each higher volume 
+	 * is simply the union of its candidates.
+	 */
+	void propagateLeafNodeVolumes();
+
+	/**
+	 * Get the volume of a candidate.
 	 */
 	std::shared_ptr<CragVolume> operator[](Crag::Node n) const;
 
@@ -82,7 +73,7 @@ protected:
 
 		util::box<float, 3> bb;
 		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-			if (_crag.isLeafNode(n))
+			if (_volumes[n])
 				bb += operator[](n)->getBoundingBox();
 
 		return bb;
@@ -98,8 +89,6 @@ private:
 	const Crag& _crag;
 
 	mutable Crag::NodeMap<std::shared_ptr<CragVolume>> _volumes;
-
-	std::shared_ptr<ExplicitVolume<unsigned int>> _leafNodeLabels;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_VOLUMES_H__

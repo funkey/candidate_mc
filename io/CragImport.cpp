@@ -238,9 +238,10 @@ CragImport::readSupervoxels(
 		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(bb.width(), bb.height(), bb.depth(), 0);
 		volume->setResolution(resolution);
 		volume->setOffset(offset + bb.min()*resolution);
-		volumes.setLeafNodeVolume(n, volume);
+		volumes.setVolume(n, volume);
 		idToNode[id] = n;
 	}
+	volumes.propagateLeafNodeVolumes();
 
 	for (unsigned int z = 0; z < ids.depth();  z++)
 	for (unsigned int y = 0; y < ids.height(); y++)

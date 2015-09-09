@@ -43,8 +43,7 @@ DownSampler::process(const Crag& crag, const CragVolumes& volumes, Crag& downSam
 
 		Crag::Node copy = _copyMap[n];
 
-		if (downSampled.isLeafNode(copy))
-			downSampledVolumes.setLeafNodeVolume(copy, volumes[crag.toRag(n)]);
+		downSampledVolumes.setVolume(copy, volumes[crag.toRag(n)]);
 	}
 
 	int numNodes = 0;
