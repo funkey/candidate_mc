@@ -265,6 +265,8 @@ int main(int argc, char** argv) {
 			annotator.annotate(*crag, *volumes);
 		}
 
+		// Statistics
+
 		int numNodes = 0;
 		int numRootNodes = 0;
 		double sumSubsetDepth = 0;
@@ -301,6 +303,8 @@ int main(int argc, char** argv) {
 		LOG_USER(logger::out) << "\tmax subset depth : " << maxSubsetDepth << std::endl;
 		LOG_USER(logger::out) << "\tmin subset depth : " << minSubsetDepth << std::endl;
 		LOG_USER(logger::out) << "\tmean subset depth: " << sumSubsetDepth/numRootNodes << std::endl;
+
+		// Store CRAG and volumes
 
 		{
 			UTIL_TIME_SCOPE("saving CRAG");

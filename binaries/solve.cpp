@@ -16,6 +16,7 @@
 #include <io/Hdf5CragStore.h>
 #include <io/vectors.h>
 #include <io/volumes.h>
+#include <crag/DownSampler.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
 #include <features/FeatureExtractor.h>
 #include <inference/MultiCut.h>
@@ -92,6 +93,16 @@ util::ProgramOption optionOffsetZ(
 		util::_description_text = "The z offset of the input images.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionDownsampleCrag(
+		util::_long_name        = "downSampleCrag",
+		util::_description_text = "Reduce the number of candidates in the CRAG by removing candidates smaller than minCandidateSize, "
+		                          "followed by contraction of single children with their parents.");
+
+util::ProgramOption optionMinCandidateSize(
+		util::_long_name        = "minCandidateSize",
+		util::_description_text = "The minimal size for a candidate to keep it during downsampling (see downSampleCrag).",
+		util::_default_value    = 100);
+
 int main(int argc, char** argv) {
 
 	try {
@@ -99,20 +110,20 @@ int main(int argc, char** argv) {
 		util::ProgramOptions::init(argc, argv);
 		logger::LogManager::init();
 
-		Crag        crag;
-		CragVolumes volumes(crag);
+		Crag* crag = new Crag();
+		CragVolumes* volumes = new CragVolumes(*crag);
 
-		NodeFeatures nodeFeatures(crag);
-		EdgeFeatures edgeFeatures(crag);
+		NodeFeatures nodeFeatures(*crag);
+		EdgeFeatures edgeFeatures(*crag);
 
 		if (optionProjectFile) {
 
 			Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
-			cragStore.retrieveCrag(crag);
-			cragStore.retrieveVolumes(volumes);
+			cragStore.retrieveCrag(*crag);
+			cragStore.retrieveVolumes(*volumes);
 
-			cragStore.retrieveNodeFeatures(crag, nodeFeatures);
-			cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
+			cragStore.retrieveNodeFeatures(*crag, nodeFeatures);
+			cragStore.retrieveEdgeFeatures(*crag, edgeFeatures);
 
 		} else {
 
@@ -128,13 +139,29 @@ int main(int argc, char** argv) {
 			std::string mergeTreePath = optionMergeTree;
 
 			CragImport import;
-			import.readCrag(mergeTreePath, crag, volumes, resolution, offset);
+			import.readCrag(mergeTreePath, *crag, *volumes, resolution, offset);
+
+			if (optionDownsampleCrag) {
+
+				UTIL_TIME_SCOPE("downsample CRAG");
+
+				Crag* downSampled = new Crag();
+				CragVolumes* downSampledVolumes = new CragVolumes(*downSampled);
+
+				DownSampler downSampler(optionMinCandidateSize.as<int>());
+				downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
+
+				delete crag;
+				delete volumes;
+				crag = downSampled;
+				volumes = downSampledVolumes;
+			}
 
 			{
 				UTIL_TIME_SCOPE("find CRAG adjacencies");
 
 				PlanarAdjacencyAnnotator annotator(PlanarAdjacencyAnnotator::Direct);
-				annotator.annotate(crag, volumes);
+				annotator.annotate(*crag, *volumes);
 			}
 
 			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
@@ -147,7 +174,7 @@ int main(int argc, char** argv) {
 			boundaries.setOffset(offset);
 			boundaries.normalize();
 
-			FeatureExtractor featureExtractor(crag, volumes, intensities, boundaries);
+			FeatureExtractor featureExtractor(*crag, *volumes, intensities, boundaries);
 			featureExtractor.extract(nodeFeatures, edgeFeatures);
 		}
 
@@ -157,11 +184,11 @@ int main(int argc, char** argv) {
 		int maxSubsetDepth = 0;
 		int minSubsetDepth = 1e6;
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		for (Crag::NodeIt n(*crag); n != lemon::INVALID; ++n) {
 
-			if (crag.isRootNode(n)) {
+			if (crag->isRootNode(n)) {
 
-				int depth = crag.getLevel(n);
+				int depth = crag->getLevel(n);
 
 				sumSubsetDepth += depth;
 				minSubsetDepth = std::min(minSubsetDepth, depth);
@@ -173,10 +200,10 @@ int main(int argc, char** argv) {
 		}
 
 		int numAdjEdges = 0;
-		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+		for (Crag::EdgeIt e(*crag); e != lemon::INVALID; ++e)
 			numAdjEdges++;
 		int numSubEdges = 0;
-		for (Crag::SubsetArcIt e(crag); e != lemon::INVALID; ++e)
+		for (Crag::SubsetArcIt e(*crag); e != lemon::INVALID; ++e)
 			numSubEdges++;
 
 		LOG_USER(logger::out) << "created CRAG" << std::endl;
@@ -190,7 +217,7 @@ int main(int argc, char** argv) {
 
 		std::vector<double> weights = retrieveVector<double>(optionFeatureWeights);
 
-		Costs costs(crag);
+		Costs costs(*crag);
 
 		float edgeBias = optionMergeBias;
 		float nodeBias = optionForegroundBias;
@@ -198,7 +225,7 @@ int main(int argc, char** argv) {
 		unsigned int numNodeFeatures = nodeFeatures.dims();
 		unsigned int numEdgeFeatures = edgeFeatures.dims();
 
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		for (Crag::NodeIt n(*crag); n != lemon::INVALID; ++n) {
 
 			costs.node[n] = nodeBias;
 
@@ -206,7 +233,7 @@ int main(int argc, char** argv) {
 				costs.node[n] += weights[i]*nodeFeatures[n][i];
 		}
 
-		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+		for (Crag::EdgeIt e(*crag); e != lemon::INVALID; ++e) {
 
 			costs.edge[e] = edgeBias;
 
@@ -214,15 +241,18 @@ int main(int argc, char** argv) {
 				costs.edge[e] += weights[i + numNodeFeatures]*edgeFeatures[e][i];
 		}
 
-		MultiCut multicut(crag);
+		MultiCut multicut(*crag);
 
 		multicut.setCosts(costs);
 		{
 			UTIL_TIME_SCOPE("solve candidate multi-cut");
 			multicut.solve();
 		}
-		multicut.storeSolution(volumes, "solution.tif");
-		multicut.storeSolution(volumes, "solution_boundary.tif", true);
+		multicut.storeSolution(*volumes, "solution.tif");
+		multicut.storeSolution(*volumes, "solution_boundary.tif", true);
+
+		delete crag;
+		delete volumes;
 
 	} catch (Exception& e) {
 
