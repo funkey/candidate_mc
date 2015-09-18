@@ -1,3 +1,4 @@
+define_module(merge_tree               BINARY SOURCES merge_tree.cpp              LINKS mergetree util vigra)
 define_module(create_project           BINARY SOURCES create_project.cpp          LINKS crag imageprocessing io)
 define_module(extract_features         BINARY SOURCES extract_features.cpp        LINKS crag features learning io util)
 define_module(train                    BINARY SOURCES train.cpp                   LINKS learning crag io util)
