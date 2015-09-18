@@ -40,6 +40,7 @@ add_subdirectory(io)
 add_subdirectory(inference)
 add_subdirectory(learning)
 add_subdirectory(gui)
+add_subdirectory(mergetree)
 add_subdirectory(binaries)
 
 ###############

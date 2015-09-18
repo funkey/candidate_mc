@@ -3,6 +3,7 @@
 
 #include <vigra/impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
+#include <util/Logger.h>
 
 template <typename T>
 ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
