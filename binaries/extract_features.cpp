@@ -35,6 +35,10 @@ util::ProgramOption optionNoFeatures(
 		                          "best-effort features, if set). Used for testing the learning "
 		                          "method.");
 
+util::ProgramOption optionNoSkeletons(
+		util::_long_name        = "noSkeletons",
+		util::_description_text = "Do not extract skeletons for the candidates.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -101,14 +105,17 @@ int main(int argc, char** argv) {
 			cragStore.saveEdgeFeatures(crag, edgeFeatures);
 		}
 
-		Skeletons skeletons(crag);
+		if (!optionNoSkeletons) {
 
-		SkeletonExtractor skeletonExtractor(crag, volumes);
-		skeletonExtractor.extract(skeletons);
+			Skeletons skeletons(crag);
 
-		{
-			UTIL_TIME_SCOPE("storing skeletons");
-			cragStore.saveSkeletons(crag, skeletons);
+			SkeletonExtractor skeletonExtractor(crag, volumes);
+			skeletonExtractor.extract(skeletons);
+
+			{
+				UTIL_TIME_SCOPE("storing skeletons");
+				cragStore.saveSkeletons(crag, skeletons);
+			}
 		}
 
 	} catch (boost::exception& e) {
