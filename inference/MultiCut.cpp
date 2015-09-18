@@ -1,7 +1,7 @@
 #include <boost/filesystem.hpp>
 #include <lemon/dijkstra.h>
 #include <lemon/connectivity.h>
-#include <solver/DefaultFactory.h>
+#include <solver/SolverFactory.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/box.hpp>
@@ -39,7 +39,7 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
 		_numEdges++;
 
-	DefaultFactory factory;
+	SolverFactory factory;
 	_solver = factory.createLinearSolverBackend();
 
 	prepareSolver();

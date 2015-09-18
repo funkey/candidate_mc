@@ -6,7 +6,7 @@
 #include <util/helpers.hpp>
 #include <util/Logger.h>
 #include "learning/BundleCollector.h"
-#include "solver/DefaultFactory.h"
+#include "solver/SolverFactory.h"
 
 logger::LogChannel bundleoptimizerlog("bundleoptimizerlog", "[BundleOptimizer] ");
 
@@ -215,7 +215,7 @@ BundleOptimizer::setupQp(const Weights& w) {
 
 	if (!_solver) {
 
-		DefaultFactory factory;
+		SolverFactory factory;
 		_solver = factory.createQuadraticSolverBackend();
 	}
 

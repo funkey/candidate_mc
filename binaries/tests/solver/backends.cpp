@@ -1,6 +1,6 @@
 #include <config.h>
 #include <tests.h>
-#include <solver/DefaultFactory.h>
+#include <solver/SolverFactory.h>
 
 #ifdef HAVE_GUROBI
 #include <gurobi_c++.h>
@@ -57,7 +57,7 @@ void backends() {
 
 	constraints.add(onlyOneConstraint);
 
-	DefaultFactory factory;
+	SolverFactory factory;
 
 #ifdef HAVE_GUROBI
 	{

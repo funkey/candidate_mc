@@ -7,7 +7,7 @@
 
 struct NoSolverException : virtual Exception {};
 
-class DefaultFactory :
+class SolverFactory :
 		public LinearSolverBackendFactory,
 		public QuadraticSolverBackendFactory {
 

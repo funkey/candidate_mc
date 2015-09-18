@@ -1,4 +1,4 @@
-#include "DefaultFactory.h"
+#include "SolverFactory.h"
 
 #include <config.h>
 #include <util/ProgramOptions.h>
@@ -34,7 +34,7 @@ util::ProgramOption optionUseScip(
 );
 
 LinearSolverBackend*
-DefaultFactory::createLinearSolverBackend(Preference preference) const {
+SolverFactory::createLinearSolverBackend(Preference preference) const {
 
 	if (optionUseGurobi.as<bool>() && optionUseCplex.as<bool>())
 		UTIL_THROW_EXCEPTION(
@@ -94,7 +94,7 @@ DefaultFactory::createLinearSolverBackend(Preference preference) const {
 }
 
 QuadraticSolverBackend*
-DefaultFactory::createQuadraticSolverBackend(Preference preference) const {
+SolverFactory::createQuadraticSolverBackend(Preference preference) const {
 
 	if (optionUseGurobi.as<bool>() && optionUseCplex.as<bool>())
 		UTIL_THROW_EXCEPTION(
