@@ -1,11 +1,9 @@
 #ifndef CANDIDATE_MC_SOLVER_MULTI_CUT_H__
 #define CANDIDATE_MC_SOLVER_MULTI_CUT_H__
 
-#include <pipeline/Value.h>
-#include <pipeline/Process.h>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
-#include <solver/LinearSolver.h>
+#include <solver/LinearSolverBackend.h>
 #include <vigra/tinyvector.hxx>
 #include "Costs.h"
 
@@ -58,6 +56,8 @@ public:
 
 	MultiCut(const Crag& crag, const Parameters& parameters = Parameters());
 
+	~MultiCut();
+
 	/**
 	 * Set the costs (or reward, if negative) of accepting a node or an edge.
 	 */
@@ -90,7 +90,7 @@ public:
 	/**
 	 * Get the value of the current solution.
 	 */
-	double getValue() { return _solution->getValue(); }
+	double getValue() { return _solution.getValue(); }
 
 	/**
 	 * Store the solution as label image in the given image file.
@@ -142,14 +142,12 @@ private:
 
 	std::map<int, unsigned int> _edgeIdToVarMap;
 
-	pipeline::Value<LinearObjective>        _objective;
-	pipeline::Value<LinearConstraints>      _constraints;
-	pipeline::Value<LinearSolverParameters> _solverParameters;
-	pipeline::Process<LinearSolver>         _solver;
-	pipeline::Value<Solution>               _solution;
+	LinearObjective      _objective;
+	LinearConstraints    _constraints;
+	LinearSolverBackend* _solver;
+	Solution             _solution;
 
 	Parameters _parameters;
-
 
     std::vector<LinearConstraint> _allTreePathConstraints;
 };

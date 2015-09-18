@@ -1,10 +1,9 @@
 #ifndef INFERENCE_LINEAR_CONSTRAINTS_H__
 #define INFERENCE_LINEAR_CONSTRAINTS_H__
 
-#include <pipeline/all.h>
 #include "LinearConstraint.h"
 
-class LinearConstraints : public pipeline::Data {
+class LinearConstraints {
 
 	typedef std::vector<LinearConstraint> linear_constraints_type;
 

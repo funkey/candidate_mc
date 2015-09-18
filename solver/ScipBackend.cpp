@@ -132,7 +132,7 @@ ScipBackend::setConstraints(const LinearConstraints& constraints) {
 	LOG_DEBUG(sciplog) << "setting " << constraints.size() << " constraints" << std::endl;
 
 	unsigned int j = 0;
-	foreach (const LinearConstraint& constraint, constraints) {
+	for (const LinearConstraint& constraint : constraints) {
 
 		if (j > 0)
 			if (j % 1000 == 0)

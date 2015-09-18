@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_LEARNING_LOSS_H__
 #define CANDIDATE_MC_LEARNING_LOSS_H__
 
+#include <set>
 #include <inference/Costs.h>
 #include <inference/MultiCut.h>
 

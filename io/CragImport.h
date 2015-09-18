@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_IO_CRAG_IMPORT_H__
 #define CANDIDATE_MC_IO_CRAG_IMPORT_H__
 
+#include <map>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 

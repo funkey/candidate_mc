@@ -1,6 +1,7 @@
 #ifndef TREE_MC_IO_CRAG_STORE_H__
 #define TREE_MC_IO_CRAG_STORE_H__
 
+#include <set>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <features/NodeFeatures.h>

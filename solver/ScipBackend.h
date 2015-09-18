@@ -8,7 +8,6 @@
 #include <scip/scip.h>
 
 #include "LinearConstraints.h"
-#include "LinearSolverParameters.h"
 #include "QuadraticObjective.h"
 #include "QuadraticSolverBackend.h"
 #include "Sense.h"

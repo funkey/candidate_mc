@@ -2,12 +2,12 @@
 #define INFERENCE_QUADRATIC_OBJECTIVE_H__
 
 #include <map>
+#include <vector>
 #include <utility>
 
-#include <pipeline/all.h>
 #include "Sense.h"
 
-class QuadraticObjective : public pipeline::Data {
+class QuadraticObjective {
 
 public:
 

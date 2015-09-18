@@ -1,6 +1,7 @@
 #ifndef INFERENCE_LINEAR_SOLVER_BACKEND_H__
 #define INFERENCE_LINEAR_SOLVER_BACKEND_H__
 
+#include <util/exceptions.h>
 #include "LinearObjective.h"
 #include "LinearConstraints.h"
 #include "Solution.h"

@@ -1,6 +1,7 @@
 #include <boost/filesystem.hpp>
 #include <lemon/dijkstra.h>
 #include <lemon/connectivity.h>
+#include <solver/DefaultFactory.h>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/box.hpp>
@@ -30,6 +31,7 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	_labels(crag),
 	_numNodes(0),
 	_numEdges(0),
+	_solver(0),
 	_parameters(parameters) {
 
 	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
@@ -37,22 +39,31 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
 		_numEdges++;
 
+	DefaultFactory factory;
+	_solver = factory.createLinearSolverBackend();
+
 	prepareSolver();
 	setVariables();
 	if (!_parameters.noConstraints)
 		setInitialConstraints();
 }
 
+MultiCut::~MultiCut() {
+
+	if (_solver)
+		delete _solver;
+}
+
 void
 MultiCut::setCosts(const Costs& costs) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		_objective->setCoefficient(
+		_objective.setCoefficient(
 				nodeIdToVar(_crag.id(n)),
 				costs.node[n]);
 
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-		_objective->setCoefficient(
+		_objective.setCoefficient(
 				edgeIdToVar(_crag.id(e)),
 				costs.edge[e]);
 }
@@ -63,7 +74,7 @@ MultiCut::solve(unsigned int numIterations) {
 	if (numIterations == 0)
 		numIterations = _parameters.numIterations;
 
-	_solver->setInput("objective", _objective);
+	_solver->setObjective(_objective);
 
 	for (unsigned int i = 0; i < numIterations; i++) {
 
@@ -77,7 +88,7 @@ MultiCut::solve(unsigned int numIterations) {
 
 			LOG_USER(multicutlog)
 					<< "optimal solution with value "
-					<< _solution->getValue() << " found"
+					<< _solution.getValue() << " found"
 					<< std::endl;
 
 			int numSelected = 0;
@@ -209,13 +220,10 @@ MultiCut::prepareSolver() {
 	LOG_DEBUG(multicutlog) << "preparing solver..." << std::endl;
 
 	// one binary indicator per node and edge
-	_objective->resize(_numNodes + _numEdges);
-	_objective->setSense(_parameters.minimize ? Minimize : Maximize);
-	_solverParameters->setVariableType(Binary);
+	_objective.resize(_numNodes + _numEdges);
+	_objective.setSense(_parameters.minimize ? Minimize : Maximize);
 
-	_solver->setInput("parameters", _solverParameters);
-
-	_solution = _solver->getOutput("solution");
+	_solver->initialize(_numNodes + _numEdges, Binary);
 }
 
 void
@@ -295,7 +303,7 @@ MultiCut::setInitialConstraints() {
 		rejectionConstraint.setRelation(LessEqual);
 		rejectionConstraint.setValue(0.0);
 
-		_constraints->add(rejectionConstraint);
+		_constraints.add(rejectionConstraint);
 		numRejectionConstraints++;
 	}
 
@@ -347,7 +355,7 @@ MultiCut::setInitialConstraints() {
 		forceParentConstraint.setRelation(LessEqual);
 		forceParentConstraint.setValue(childEdges.size() - 1);
 
-		_constraints->add(forceParentConstraint);
+		_constraints.add(forceParentConstraint);
 		numForceParentConstraints++;
 	}
 
@@ -393,7 +401,7 @@ MultiCut::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathI
             _allTreePathConstraints.push_back(treePathConstraint);
         }
         else{
-            _constraints->add(treePathConstraint);
+            _constraints.add(treePathConstraint);
             numConstraintsAdded++;
         }
 	}
@@ -407,14 +415,14 @@ void
 MultiCut::findCut() {
 
 	// re-set constraints to inform solver about potential changes
-	_solver->setInput("linear constraints", _constraints);
+	_solver->setConstraints(_constraints);
 
 	LOG_USER(multicutlog) << "searching for optimal cut..." << std::endl;
 
 	// get selected candidates
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
 
-		_selected[n] = ((*_solution)[nodeIdToVar(_crag.id(n))] > 0.5);
+		_selected[n] = (_solution[nodeIdToVar(_crag.id(n))] > 0.5);
 
 		LOG_ALL(multicutlog)
 				<< _crag.id(n) << ": "
@@ -425,7 +433,7 @@ MultiCut::findCut() {
 	// get merged edges
 	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
 
-		_merged[e] = ((*_solution)[edgeIdToVar(_crag.id(e))] > 0.5);
+		_merged[e] = (_solution[edgeIdToVar(_crag.id(e))] > 0.5);
 
 		LOG_ALL(multicutlog)
 				<< "(" << _crag.id(_crag.u(e))
@@ -465,8 +473,8 @@ MultiCut::findViolatedConstraints() {
 
     if(optionLazyTreePathConstraints.as<bool>()){
         for(auto & c : _allTreePathConstraints){
-            if(c.isViolated(*_solution)){
-                _constraints->add(c);
+            if(c.isViolated(_solution)){
+                _constraints.add(c);
                 ++treePathConstraintAdded;
             }
         }
@@ -577,7 +585,7 @@ MultiCut::findViolatedConstraints() {
 
 		LOG_DEBUG(multicutlog) << cycleConstraint << std::endl;
 
-		_constraints->add(cycleConstraint);
+		_constraints.add(cycleConstraint);
 
 		constraintsAdded++;
 
