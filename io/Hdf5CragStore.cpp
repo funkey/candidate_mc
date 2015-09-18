@@ -171,6 +171,8 @@ Hdf5CragStore::retrieveVolumes(CragVolumes& volumes) {
 void
 Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) {
 
+	LOG_USER(hdf5storelog) << "saving node features... " << std::flush;
+
 	_hdfFile.root();
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
@@ -193,6 +195,8 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 	}
 
 	_hdfFile.write("nodes", allFeatures);
+
+	LOG_USER(hdf5storelog) << "done." << std::endl;
 }
 
 void
@@ -227,6 +231,8 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 	if (features.dims() == 0)
 		return;
 
+	LOG_USER(hdf5storelog) << "saving edge features... " << std::flush;
+
 	_hdfFile.root();
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
@@ -250,6 +256,8 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 	}
 
 	_hdfFile.write("edges", allFeatures);
+
+	LOG_USER(hdf5storelog) << "done." << std::endl;
 }
 
 void
