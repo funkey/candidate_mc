@@ -56,19 +56,8 @@ SolverFactory::createLinearSolverBackend(Preference preference) const {
 // by default, create a gurobi backend
 #ifdef HAVE_GUROBI
 
-	if (preference == Any || preference == Gurobi) {
-
-		try {
-
-			return new GurobiBackend();
-
-		} catch (GRBException& e) {
-
-			UTIL_THROW_EXCEPTION(
-					LinearSolverBackendException,
-					"gurobi error: " << e.getMessage());
-		}
-	}
+	if (preference == Any || preference == Gurobi)
+		return new GurobiBackend();
 
 #endif
 
@@ -114,19 +103,8 @@ SolverFactory::createQuadraticSolverBackend(Preference preference) const {
 // by default, create a gurobi backend
 #ifdef HAVE_GUROBI
 
-	if (preference == Any || preference == Gurobi) {
-
-		try {
-
+	if (preference == Any || preference == Gurobi)
 			return new GurobiBackend();
-
-		} catch (GRBException& e) {
-
-			UTIL_THROW_EXCEPTION(
-					LinearSolverBackendException,
-					"gurobi error: " << e.getMessage());
-		}
-	}
 
 #endif
 
