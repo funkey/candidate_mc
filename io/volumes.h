@@ -3,7 +3,7 @@
 
 #include <vigra/impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
-#include <util/Logger.h>
+#include <util/exceptions.h>
 
 template <typename T>
 ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
@@ -21,8 +21,18 @@ ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
 	ExplicitVolume<T> volume(info.width(), info.height(), depth);
 
 	for (int z = 0; z < depth; z++) {
-		vigra::ImageImportInfo info = vigra::ImageImportInfo(filenames[z].c_str());
-		importImage(info, volume.data().template bind<2>(z));
+
+		try {
+
+			vigra::ImageImportInfo info = vigra::ImageImportInfo(filenames[z].c_str());
+			importImage(info, volume.data().template bind<2>(z));
+
+		} catch (std::exception& e) {
+
+			UTIL_THROW_EXCEPTION(
+					IOError,
+					"error reading " << filenames[z] << ": " << e.what());
+		}
 	}
 
 	return volume;
