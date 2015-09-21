@@ -88,6 +88,11 @@ CragStackCombiner::copyNodes(
 		targetVolumes.setVolume(n, sourceVolumes[i]);
 
 		nodeMap[i] = n;
+
+		LOG_ALL(cragstackcombinerlog)
+				<< "copied node " << source.id(i) << " at " << sourceVolumes[i]->getBoundingBox()
+				<< " to " << target.id(n) << " at " << targetVolumes[n]->getBoundingBox()
+				<< std::endl;
 	}
 
 	for (Crag::CragEdge e : source.edges()) {
@@ -132,9 +137,11 @@ CragStackCombiner::findLinks(
 
 	for (Crag::CragNode i : cragA.nodes()) {
 
-		LOG_DEBUG(cragstackcombinerlog) << "checking for links of node " << cragA.id(i) << std::endl;
-
 		for (Crag::CragNode j : cragB.nodes()) {
+
+			LOG_DEBUG(cragstackcombinerlog)
+					<< "check linking of nodes " << cragA.id(i)
+					<< " and " << cragB.id(j) << std::endl;
 
 			if (_requireBbOverlap) {
 
@@ -143,8 +150,14 @@ CragStackCombiner::findLinks(
 				util::box<float, 2> bb_i = volsA[i]->getBoundingBox().project<2>();
 				util::box<float, 2> bb_j = volsB[j]->getBoundingBox().project<2>();
 
+				LOG_ALL(cragstackcombinerlog)
+						<< "bounding boxes are " << bb_i << " and " << bb_j << std::endl;
+
 				if (!bb_i.intersects(bb_j))
 					continue;
+
+				LOG_ALL(cragstackcombinerlog)
+						<< "bounding boxes overlap" << std::endl;
 			}
 
 			UTIL_TIME_SCOPE("CragStackCombiner::findLinks Hausdorff distance computation");
@@ -152,10 +165,19 @@ CragStackCombiner::findLinks(
 			double i_j, j_i;
 			hausdorff(*volsA[i], *volsB[j], i_j, j_i);
 
+			LOG_ALL(cragstackcombinerlog)
+					<< "Hausdorff distances are: " << i_j << " and " << j_i << std::endl;
+
 			double distance = std::max(i_j, j_i);
 
-			if (distance <= _maxDistance)
+			if (distance <= _maxDistance) {
+
+				LOG_ALL(cragstackcombinerlog)
+						<< "smaller than " << _maxDistance
+						<< ", adding link" << std::endl;
+
 				links.push_back(std::make_pair(i, j));
+			}
 		}
 	}
 

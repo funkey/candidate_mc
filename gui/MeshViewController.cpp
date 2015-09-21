@@ -165,7 +165,9 @@ MeshViewController::prevNeighbor() {
 void
 MeshViewController::showSingleMesh(Crag::Node n) {
 
-	LOG_USER(meshviewcontrollerlog) << "showing node with id " << _crag.id(n) << std::endl;
+	LOG_USER(meshviewcontrollerlog)
+			<< "showing node with id " << _crag.id(n)
+			<< " at " << _volumes[n]->getBoundingBox() << std::endl;
 
 	_current = n;
 	_meshes->clear();
