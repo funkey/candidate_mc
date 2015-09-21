@@ -16,6 +16,7 @@ END_TEST_MODULE()
 void exceptionTranslator(const Exception& error) {
 
 	handleException(error, std::cout);
+	throw error;
 }
 
 int main(int argc, char** argv) {
