@@ -3,6 +3,7 @@
 
 #include <vigra/impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
+#include <util/Logger.h>
 #include <util/exceptions.h>
 
 template <typename T>
