@@ -65,11 +65,15 @@ CragStackCombiner::combine(
 						sourcesCrags[z],
 						sourcesVolumes[z]);
 
-		for (const auto& pair : links)
-			targetCrag.addAdjacencyEdge(
-					_prevNodeMap[pair.first],
-					_nextNodeMap[pair.second]);
+		for (const auto& pair : links) {
+
+			Crag::CragNode parent = targetCrag.addNode();
+			targetCrag.addSubsetArc(_prevNodeMap[pair.first], parent);
+			targetCrag.addSubsetArc(_nextNodeMap[pair.second], parent);
+		}
 	}
+
+	targetVolumes.fillEmptyVolumes();
 }
 
 std::map<Crag::CragNode, Crag::CragNode>
