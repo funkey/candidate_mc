@@ -35,7 +35,7 @@ DownSampler::process(const Crag& crag, const CragVolumes& volumes, Crag& downSam
 		}
 	}
 
-	// make sure all leaf nodes have a valid volume
+	// make sure all copied nodes have a valid volume
 	for (Crag::SubsetNodeIt n(crag); n != lemon::INVALID; ++n) {
 
 		if (!_copyMap.count(n))
@@ -107,21 +107,9 @@ DownSampler::size(const Crag& crag, const CragVolumes& volumes, Crag::SubsetNode
 		return _sizes[n];
 
 	int nodeSize = 0;
-
-	if (crag.isLeafNode(crag.toRag(n))) {
-
-		const CragVolume& volume = *volumes[crag.toRag(n)];
-
-		for (auto& p : volume.data())
-			if (p)
-				nodeSize++;
-
-		return nodeSize;
-	}
-
-	for (Crag::SubsetInArcIt childEdge(crag, n); childEdge != lemon::INVALID; ++childEdge)
-		nodeSize += size(crag, volumes, crag.getSubsetGraph().oppositeNode(n, childEdge));
-
+	for (auto& p : volumes[crag.toRag(n)]->data())
+		if (p)
+			nodeSize++;
 	_sizes[n] = nodeSize;
 
 	return nodeSize;
