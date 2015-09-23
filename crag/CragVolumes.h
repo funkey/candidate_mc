@@ -42,20 +42,18 @@ public:
 	void setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume);
 
 	/**
-	 * Propagate the volumes of leaf nodes upwards, such that each higher volume 
-	 * is simply the union of its candidates.
+	 * Fill empty volumes with the unions of their child volumes. If the child 
+	 * volumes are empty, too, this function is invoked recursively. Assumes 
+	 * that all leaf nodes have a volume and that empty volumes have only empty 
+	 * parents.
 	 */
-	void propagateLeafNodeVolumes();
+	void fillEmptyVolumes();
 
 	/**
-	 * Get the volume of a candidate.
+	 * Get the volume of a candidate. Don't use this operator to set volumes, 
+	 * use setVolume() instead.
 	 */
 	std::shared_ptr<CragVolume> operator[](Crag::Node n) const;
-
-	/**
-	 * Get the bounding box of a candidate.
-	 */
-	util::box<float, 3> getBoundingBox(Crag::Node n) const;
 
 	/**
 	 * Get the bounding box of all volumes combined.
@@ -81,10 +79,9 @@ protected:
 
 private:
 
-	void recFill(
-			const util::box<float, 3>& boundingBox,
-			CragVolume&                volume,
-			Crag::Node                 n) const;
+	// Fill the volume of each empty node under (including) n with the union of 
+	// the nodes ancestors.
+	void recFill(Crag::CragNode n) const;
 
 	const Crag& _crag;
 

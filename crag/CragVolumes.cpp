@@ -1,5 +1,8 @@
-#include <util/assert.h>
 #include "CragVolumes.h"
+#include <util/Logger.h>
+#include <util/assert.h>
+
+logger::LogChannel cragvolumeslog("cragvolumeslog", "[CragVolumes] ");
 
 void
 CragVolumes::setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume) {
@@ -9,52 +12,17 @@ CragVolumes::setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume) {
 }
 
 void
-CragVolumes::propagateLeafNodeVolumes() {
+CragVolumes::fillEmptyVolumes() {
 
-	// compute all non-leaf-node volumes by recursively combining children, 
-	// starting from all root nodes
+	// fill empty volumes by recursively combining children, starting from all 
+	// root nodes
 	for (Crag::CragNode n : _crag.nodes()) {
 
 		if (!_crag.isRootNode(n) || _crag.isLeafNode(n))
 			continue;
 
-		const util::box<float, 3>& nodeBoundingBox = getBoundingBox(n);
-
-		_volumes[n] = std::make_shared<CragVolume>();
-		recFill(nodeBoundingBox, *_volumes[n], n);
-
-		UTIL_ASSERT_REL(nodeBoundingBox, ==, _volumes[n]->getBoundingBox());
+		recFill(n);
 	}
-}
-
-util::box<float, 3>
-CragVolumes::getBoundingBox(Crag::Node n) const {
-
-	// for leaf nodes, we assume the volume is known already
-
-	if (_crag.isLeafNode(n)) {
-
-		if (!_volumes[n])
-			UTIL_THROW_EXCEPTION(
-					UsageError,
-					"no volume set for leaf node " << _crag.id(n));
-
-		return _volumes[n]->getBoundingBox();
-	}
-
-	// if we have an explicit volume for the node already, just use that
-
-	if (_volumes[n])
-		return _volumes[n]->getBoundingBox();
-
-	// otherwise, combine the children node's bounding boxes
-
-	util::box<float, 3> bb;
-
-	for (Crag::SubsetInArcIt e(_crag, _crag.toSubset(n)); e != lemon::INVALID; ++e)
-		bb += getBoundingBox(_crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e)));
-
-	return bb;
 }
 
 std::shared_ptr<CragVolume>
@@ -63,60 +31,84 @@ CragVolumes::operator[](Crag::Node n) const {
 	if (!_volumes[n])
 		UTIL_THROW_EXCEPTION(
 				UsageError,
-				"no volume set for leaf node " << _crag.id(n));
+				"no volume set for node " << _crag.id(n));
 
 	return _volumes[n];
 }
 
 void
-CragVolumes::recFill(
-		const util::box<float, 3>& boundingBox,
-		CragVolume&                volume,
-		Crag::Node                 n) const {
+CragVolumes::recFill(Crag::CragNode n) const {
 
-	if (_crag.isLeafNode(n)) {
+	LOG_ALL(cragvolumeslog) << "filling node " << _crag.id(n) << std::endl;
 
-		// if n is a leaf node, just copy the voxels in the target volume
+	// if n already has a volume, there is nothing to do
+	if (_volumes[n] && !_volumes[n]->getBoundingBox().isZero()) {
 
-		const CragVolume& leaf = *_volumes[n];
+		LOG_ALL(cragvolumeslog) << "\talready has a volume" << std::endl;
+		return;
+	}
 
-		UTIL_ASSERT(!leaf.getBoundingBox().isZero());
+	// fill all children
+	util::box<float, 3> bb;
+	util::point<float, 3> childrenResolution;
+	for (Crag::CragArc childArc : _crag.inArcs(n)) {
 
-		util::point<unsigned int, 3> volumeOffset =
-				boundingBox.min()/
-				leaf.getResolution();
-		util::point<unsigned int, 3> leafOffset =
-				leaf.getBoundingBox().min()/
-				leaf.getResolution();
-		util::point<unsigned int, 3> offset = leafOffset - volumeOffset;
+		Crag::CragNode child = childArc.source();
 
-		if (volume.getBoundingBox().isZero()) {
+		LOG_ALL(cragvolumeslog) << "\tprocessing child" << std::endl;
+		recFill(child);
+		LOG_ALL(cragvolumeslog) << "\tdone processing child" << std::endl;
 
-			volume = CragVolume(
-					boundingBox.width() /leaf.getResolution().x(),
-					boundingBox.height()/leaf.getResolution().y(),
-					boundingBox.depth() /leaf.getResolution().z());
-			volume.setOffset(boundingBox.min());
-			volume.setResolution(leaf.getResolution());
-		}
+		bb += _volumes[child]->getBoundingBox();
 
-		for (unsigned int z = 0; z < leaf.depth();  z++)
-		for (unsigned int y = 0; y < leaf.height(); y++)
-		for (unsigned int x = 0; x < leaf.width();  x++) {
+		LOG_ALL(cragvolumeslog) << "\tchild bounding box is " << _volumes[child]->getBoundingBox() << std::endl;
 
-			if (leaf(x, y, z) > 0)
-				volume(
+		if (childrenResolution.isZero())
+			childrenResolution = _volumes[child]->getResolution();
+		else
+			UTIL_ASSERT_REL(childrenResolution, ==, _volumes[child]->getResolution());
+
+		LOG_ALL(cragvolumeslog) << "\taccumulated bounding box is " << bb << std::endl;
+	}
+
+	// create a new volume for this node
+	_volumes[n] = std::make_shared<CragVolume>(
+			bb.width() /childrenResolution.x(),
+			bb.height()/childrenResolution.y(),
+			bb.depth() /childrenResolution.z());
+	CragVolume& nVolume = *_volumes[n];
+	nVolume.setOffset(bb.min());
+	nVolume.setResolution(childrenResolution);
+
+	// descrete offset of n in global volume
+	util::point<unsigned int, 3> volumeOffset = bb.min()/childrenResolution;
+
+	// combine children
+	for (Crag::CragArc childArc : _crag.inArcs(n)) {
+
+		Crag::CragNode child = childArc.source();
+		const CragVolume& childVolume = *_volumes[child];
+
+		// descrete offset of child in global volume
+		util::point<unsigned int, 3> childOffset =
+				childVolume.getBoundingBox().min()/
+				childVolume.getResolution();
+
+		// offset to get from positions in n to positions in child
+		util::point<unsigned int, 3> offset = childOffset - volumeOffset;
+
+		// copy childVolume into nVolume
+		for (unsigned int z = 0; z < childVolume.depth();  z++)
+		for (unsigned int y = 0; y < childVolume.height(); y++)
+		for (unsigned int x = 0; x < childVolume.width();  x++) {
+
+			if (childVolume(x, y, z) > 0)
+				nVolume(
 						offset.x() + x,
 						offset.y() + y,
-						offset.z() + z) = leaf(x, y, z);
+						offset.z() + z) = childVolume(x, y, z);
 		}
-
-	} else {
-
-		// if n is a compound node, copy all children's volumes in the target 
-		// volume
-
-		for (Crag::SubsetInArcIt e(_crag, _crag.toSubset(n)); e != lemon::INVALID; ++e)
-			recFill(boundingBox, volume, _crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(n), e)));
 	}
+
+	UTIL_ASSERT_REL(bb, ==, _volumes[n]->getBoundingBox());
 }
