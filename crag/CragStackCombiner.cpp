@@ -47,6 +47,7 @@ CragStackCombiner::combine(
 	_prevNodeMap.clear();
 	_nextNodeMap.clear();
 
+	unsigned int nodesAdded = 0;
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
@@ -71,7 +72,11 @@ CragStackCombiner::combine(
 			targetCrag.addSubsetArc(_prevNodeMap[pair.first], parent);
 			targetCrag.addSubsetArc(_nextNodeMap[pair.second], parent);
 		}
+
+		nodesAdded += links.size();
 	}
+
+	LOG_USER(cragstackcombinerlog) << "added " << nodesAdded << " link nodes" << std::endl;
 
 	targetVolumes.fillEmptyVolumes();
 }
