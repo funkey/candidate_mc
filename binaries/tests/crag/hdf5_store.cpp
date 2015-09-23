@@ -18,11 +18,12 @@ void hdf5_store() {
 						crag.nodeFromId(i),
 						crag.nodeFromId(j));
 
+	// set a volume for every 5th node, create subset links to next 4 nodes
 	for (int i = 0; i < 100; i += 5) {
 
 		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(5, 5, 5);
-		volume->setOffset(rand(), rand(), rand());
-		volume->setResolution(rand(), rand(), rand());
+		volume->setOffset(rand()%100, rand()%100, rand()%100);
+		volume->setResolution(1.0, 1.0, 1.0);
 
 		for (unsigned char& v : volume->data())
 			v = rand()%256;
@@ -34,6 +35,8 @@ void hdf5_store() {
 					crag.nodeFromId(j),
 					crag.nodeFromId(j+1));
 	}
+
+	volumes.fillEmptyVolumes();
 
 	Hdf5CragStore store("test.hdf");
 

@@ -241,7 +241,7 @@ CragImport::readSupervoxels(
 		volumes.setVolume(n, volume);
 		idToNode[id] = n;
 	}
-	volumes.propagateLeafNodeVolumes();
+	volumes.fillEmptyVolumes();
 
 	for (unsigned int z = 0; z < ids.depth();  z++)
 	for (unsigned int y = 0; y < ids.height(); y++)

@@ -501,7 +501,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 		UTIL_TIME_SCOPE("extract node statistics features");
 
 		// the bounding box of the volume
-		const util::box<float, 3>&   nodeBoundingBox    = _volumes.getBoundingBox(n);
+		const util::box<float, 3>&   nodeBoundingBox    = _volumes[n]->getBoundingBox();
 		util::point<unsigned int, 3> nodeSize           = (nodeBoundingBox.max() - nodeBoundingBox.min())/_volumes[n]->getResolution();
 		util::point<float, 3>        nodeOffset         = nodeBoundingBox.min() - _raw.getBoundingBox().min();
 		util::point<unsigned int, 3> nodeDiscreteOffset = nodeOffset/_volumes[n]->getResolution();
