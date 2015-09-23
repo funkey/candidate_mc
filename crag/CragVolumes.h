@@ -81,11 +81,11 @@ private:
 
 	// Fill the volume of each empty node under (including) n with the union of 
 	// the nodes ancestors.
-	void recFill(Crag::CragNode n) const;
+	void recFill(Crag::CragNode n);
 
 	const Crag& _crag;
 
-	mutable Crag::NodeMap<std::shared_ptr<CragVolume>> _volumes;
+	Crag::NodeMap<std::shared_ptr<CragVolume>> _volumes;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_VOLUMES_H__

@@ -37,7 +37,7 @@ CragVolumes::operator[](Crag::Node n) const {
 }
 
 void
-CragVolumes::recFill(Crag::CragNode n) const {
+CragVolumes::recFill(Crag::CragNode n) {
 
 	LOG_ALL(cragvolumeslog) << "filling node " << _crag.id(n) << std::endl;
 
