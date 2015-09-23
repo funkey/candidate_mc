@@ -73,13 +73,13 @@ Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
 	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n) {
 
 		if (numNodes%100 == 0)
-			LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::flush;
+			LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes written" << std::flush;
 
 		writeVolume(*volumes[n], boost::lexical_cast<std::string>(volumes.getCrag().id(n)));
 		numNodes++;
 	}
 
-	LOG_USER(hdf5storelog) << logger::delline << numNodes << " leaf node volumes written" << std::endl;
+	LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes written" << std::endl;
 }
 
 void
