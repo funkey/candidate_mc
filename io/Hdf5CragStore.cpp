@@ -315,84 +315,6 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 }
 
 void
-Hdf5CragStore::saveNodeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"node_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"node_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
-Hdf5CragStore::retrieveNodeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd("crag");
-	_hdfFile.cd("features");
-
-	vigra::ArrayVector<double> f;
-	_hdfFile.readAndResize(
-			"node_features_min",
-			f);
-	min.resize(f.size());
-	std::copy(f.begin(), f.end(), min.begin());
-	_hdfFile.write(
-			"node_features_max",
-			f);
-	max.resize(f.size());
-	std::copy(f.begin(), f.end(), max.begin());
-}
-
-void
-Hdf5CragStore::saveEdgeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"edge_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"edge_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
-Hdf5CragStore::retrieveEdgeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd("crag");
-	_hdfFile.cd("features");
-
-	vigra::ArrayVector<double> f;
-	_hdfFile.readAndResize(
-			"edge_features_min",
-			f);
-	min.resize(f.size());
-	std::copy(f.begin(), f.end(), min.begin());
-	_hdfFile.readAndResize(
-			"edge_features_max",
-			f);
-	max.resize(f.size());
-	std::copy(f.begin(), f.end(), max.begin());
-}
-
-void
 Hdf5CragStore::saveSkeletons(const Crag& crag, const Skeletons& skeletons) {
 
 	_hdfFile.root();
@@ -453,53 +375,37 @@ Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
 void
 Hdf5CragStore::saveFeatureWeights(const FeatureWeights& weights) {
 
-	_hdfFile.root();
-	_hdfFile.cd_mk("feature_weights");
-
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
-
-		const std::vector<double>& w = weights[type];
-
-		_hdfFile.write(
-				std::string("node_") + boost::lexical_cast<std::string>(type),
-				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
-	}
-
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
-
-		const std::vector<double>& w = weights[type];
-
-		_hdfFile.write(
-				std::string("edge_") + boost::lexical_cast<std::string>(type),
-				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
-	}
+	writeWeights(weights, "feature_weights");
 }
 
 void
 Hdf5CragStore::retrieveFeatureWeights(FeatureWeights& weights) {
 
-	_hdfFile.root();
-	_hdfFile.cd("feature_weights");
+	readWeights(weights, "feature_weights");
+}
 
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+void
+Hdf5CragStore::saveFeaturesMin(const FeatureWeights& min) {
 
-		vigra::ArrayVector<double> w;
-		_hdfFile.readAndResize(
-				std::string("node_") + boost::lexical_cast<std::string>(type),
-				w);
-		weights[type].resize(w.size());
-		std::copy(w.begin(), w.end(), weights[type].begin());
-	}
+	writeWeights(min, "features_min");
+}
 
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+void
+Hdf5CragStore::retrieveFeaturesMin(FeatureWeights& min) {
 
-		vigra::ArrayVector<double> w;
-		_hdfFile.readAndResize(
-				std::string("edge_") + boost::lexical_cast<std::string>(type),
-				w);
-		weights[type].resize(w.size());
-		std::copy(w.begin(), w.end(), weights[type].begin());
-	}
+	readWeights(min, "features_min");
+}
+
+void
+Hdf5CragStore::saveFeaturesMax(const FeatureWeights& max) {
+
+	writeWeights(max, "features_max");
+}
+
+void
+Hdf5CragStore::retrieveFeaturesMax(FeatureWeights& max) {
+
+	readWeights(max, "features_max");
 }
 
 void
@@ -590,6 +496,58 @@ Hdf5CragStore::writeGraphVolume(const GraphVolume& graphVolume) {
 	p[1] = graphVolume.getOffset().y();
 	p[2] = graphVolume.getOffset().z();
 	_hdfFile.write("offset", p);
+}
+
+void
+Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk(name);
+
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+
+		const std::vector<double>& w = weights[type];
+
+		_hdfFile.write(
+				std::string("node_") + boost::lexical_cast<std::string>(type),
+				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
+	}
+
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		const std::vector<double>& w = weights[type];
+
+		_hdfFile.write(
+				std::string("edge_") + boost::lexical_cast<std::string>(type),
+				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
+	}
+}
+
+void
+Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
+
+	_hdfFile.root();
+	_hdfFile.cd(name);
+
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+
+		vigra::ArrayVector<double> w;
+		_hdfFile.readAndResize(
+				std::string("node_") + boost::lexical_cast<std::string>(type),
+				w);
+		weights[type].resize(w.size());
+		std::copy(w.begin(), w.end(), weights[type].begin());
+	}
+
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		vigra::ArrayVector<double> w;
+		_hdfFile.readAndResize(
+				std::string("edge_") + boost::lexical_cast<std::string>(type),
+				w);
+		weights[type].resize(w.size());
+		std::copy(w.begin(), w.end(), weights[type].begin());
+	}
 }
 
 void

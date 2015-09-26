@@ -55,20 +55,6 @@ public:
 	void saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) override;
 
 	/**
-	 * Store the min and max values of the node features.
-	 */
-	void saveNodeFeaturesMinMax(
-			const std::vector<double>& min,
-			const std::vector<double>& max) override;
-
-	/**
-	 * Store the min and max values of the edge features.
-	 */
-	void saveEdgeFeaturesMinMax(
-			const std::vector<double>& min,
-			const std::vector<double>& max) override;
-
-	/**
 	 * Store the skeletons for candidates of a CRAG.
 	 */
 	void saveSkeletons(const Crag& crag, const Skeletons& skeletons);
@@ -77,6 +63,12 @@ public:
 	 * Store a set of feature weights.
 	 */
 	void saveFeatureWeights(const FeatureWeights& weights) override;
+
+	/**
+	 * Store the min and max values of the node features.
+	 */
+	void saveFeaturesMin(const FeatureWeights& min);
+	void saveFeaturesMax(const FeatureWeights& max);
 
 	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
@@ -106,16 +98,8 @@ public:
 	/**
 	 * Retrieve the min and max values of the node features.
 	 */
-	void retrieveNodeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) override;
-
-	/**
-	 * Retrieve the min and max values of the edge features.
-	 */
-	void retrieveEdgeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) override;
+	void retrieveFeaturesMin(FeatureWeights& min);
+	void retrieveFeaturesMax(FeatureWeights& max);
 
 	/**
 	 * Retrieve skeletons for the candidates of the CRAG.
@@ -179,6 +163,9 @@ private:
 
 	void writeGraphVolume(const GraphVolume& graphVolume);
 	void readGraphVolume(GraphVolume& graphVolume);
+
+	void writeWeights(const FeatureWeights& weights, std::string name);
+	void readWeights(FeatureWeights& weights, std::string name);
 
 	vigra::HDF5File _hdfFile;
 };

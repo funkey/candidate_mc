@@ -31,24 +31,18 @@ public:
 	}
 
 	/**
-	 * Extract node and edge features.
-	 */
-	void extract(
-			NodeFeatures& nodeFeatures,
-			EdgeFeatures& edgeFeatures);
-
-	/**
-	 * Extract node and edge features. For the normalization of the feature 
-	 * values, the provided min and max (instead of computing them from the 
-	 * extracted features). Use this for a testing dataset where you want to 
-	 * make sure that the features are normalized in the same way as in the 
-	 * training dataset.
+	 * Extract node and edge features, along with the respective min and max 
+	 * values that have been used for normalization. If the provided min and max 
+	 * are not empty, they will be used for normalizing the features (instead of 
+	 * computing min and max from the extracted features). Use this for a 
+	 * testing dataset where you want to make sure that the features are 
+	 * normalized in the same way as in the training dataset.
 	 */
 	void extract(
 			NodeFeatures& nodeFeatures,
 			EdgeFeatures& edgeFeatures,
-			const FeatureWeights& min,
-			const FeatureWeights& max);
+			FeatureWeights& min,
+			FeatureWeights& max);
 
 private:
 
@@ -69,9 +63,9 @@ private:
 		NodeFeatures&  _features;
 	};
 
-	void extractNodeFeatures(NodeFeatures& nodeFeatures, const FeatureWeights& min, const FeatureWeights& max);
+	void extractNodeFeatures(NodeFeatures& nodeFeatures, FeatureWeights& min, FeatureWeights& max);
 
-	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, const FeatureWeights& min, const FeatureWeights& max);
+	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, FeatureWeights& min, FeatureWeights& max);
 
 	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
 
@@ -102,6 +96,8 @@ private:
 
 	// number of "real" edge features, before add squares and bias
 	int _numOriginalEdgeFeatures;
+
+	bool _useProvidedMinMax;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

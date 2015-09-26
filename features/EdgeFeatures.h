@@ -48,22 +48,16 @@ public:
 		features(Crag::NoAssignmentEdge).normalize(min[Crag::NoAssignmentEdge], max[Crag::NoAssignmentEdge]);
 	}
 
-	FeatureWeights getMin() {
+	void getMin(FeatureWeights& min) {
 
-		FeatureWeights min;
 		min[Crag::AdjacencyEdge] = features(Crag::AdjacencyEdge).getMin();
 		min[Crag::NoAssignmentEdge] = features(Crag::NoAssignmentEdge).getMin();
-
-		return min;
 	}
 
-	FeatureWeights getMax() {
+	void getMax(FeatureWeights& max) {
 
-		FeatureWeights max;
 		max[Crag::AdjacencyEdge] = features(Crag::AdjacencyEdge).getMax();
 		max[Crag::NoAssignmentEdge] = features(Crag::NoAssignmentEdge).getMax();
-
-		return max;
 	}
 
 private:

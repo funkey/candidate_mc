@@ -52,24 +52,18 @@ public:
 		features(Crag::AssignmentNode).normalize(min[Crag::AssignmentNode], max[Crag::AssignmentNode]);
 	}
 
-	FeatureWeights getMin() {
+	void getMin(FeatureWeights& min) {
 
-		FeatureWeights min;
 		min[Crag::VolumeNode] = features(Crag::VolumeNode).getMin();
 		min[Crag::SliceNode] = features(Crag::SliceNode).getMin();
 		min[Crag::AssignmentNode] = features(Crag::AssignmentNode).getMin();
-
-		return min;
 	}
 
-	FeatureWeights getMax() {
+	void getMax(FeatureWeights& max) {
 
-		FeatureWeights max;
 		max[Crag::VolumeNode] = features(Crag::VolumeNode).getMax();
 		max[Crag::SliceNode] = features(Crag::SliceNode).getMax();
 		max[Crag::AssignmentNode] = features(Crag::AssignmentNode).getMax();
-
-		return max;
 	}
 
 private:

@@ -41,16 +41,8 @@ public:
 	/**
 	 * Store the min and max values of the node features.
 	 */
-	virtual void saveNodeFeaturesMinMax(
-			const std::vector<double>& min,
-			const std::vector<double>& max) = 0;
-
-	/**
-	 * Store the min and max values of the edge features.
-	 */
-	virtual void saveEdgeFeaturesMinMax(
-			const std::vector<double>& min,
-			const std::vector<double>& max) = 0;
+	virtual void saveFeaturesMin(const FeatureWeights& min) = 0;
+	virtual void saveFeaturesMax(const FeatureWeights& max) = 0;
 
 	/**
 	 * Store the skeletons for candidates of a CRAG.
@@ -90,16 +82,8 @@ public:
 	/**
 	 * Retrieve the min and max values of the node features.
 	 */
-	virtual void retrieveNodeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) = 0;
-
-	/**
-	 * Retrieve the min and max values of the edge features.
-	 */
-	virtual void retrieveEdgeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) = 0;
+	virtual void retrieveFeaturesMin(FeatureWeights& min) = 0;
+	virtual void retrieveFeaturesMax(FeatureWeights& max) = 0;
 
 	/**
 	 * Retrieve skeletons for the candidates of the CRAG.

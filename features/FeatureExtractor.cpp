@@ -147,20 +147,14 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 void
 FeatureExtractor::extract(
 		NodeFeatures& nodeFeatures,
-		EdgeFeatures& edgeFeatures) {
-
-	extractNodeFeatures(nodeFeatures, FeatureWeights(), FeatureWeights());
-	extractEdgeFeatures(nodeFeatures, edgeFeatures, FeatureWeights(), FeatureWeights());
-
-	visualizeEdgeFeatures(edgeFeatures);
-}
-
-void
-FeatureExtractor::extract(
-		NodeFeatures& nodeFeatures,
 		EdgeFeatures& edgeFeatures,
-		const FeatureWeights& min,
-		const FeatureWeights& max) {
+		FeatureWeights& min,
+		FeatureWeights& max) {
+
+	if (!min.empty() && !max.empty())
+		_useProvidedMinMax = true;
+	else
+		_useProvidedMinMax = false;
 
 	extractNodeFeatures(nodeFeatures, min, max);
 	extractEdgeFeatures(nodeFeatures, edgeFeatures, min, max);
@@ -169,8 +163,8 @@ FeatureExtractor::extract(
 void
 FeatureExtractor::extractNodeFeatures(
 		NodeFeatures& nodeFeatures,
-		const FeatureWeights& min,
-		const FeatureWeights& max) {
+		FeatureWeights& min,
+		FeatureWeights& max) {
 
 	int numNodes = _crag.nodes().size();
 
@@ -197,8 +191,7 @@ FeatureExtractor::extractNodeFeatures(
 
 	if (optionNormalize) {
 
-		// if we were given a min and max
-		if (!min.empty() && !max.empty()) {
+		if (_useProvidedMinMax) {
 
 			LOG_USER(featureextractorlog) << "normalizing node features with provided min and max" << std::endl;
 			LOG_ALL(featureextractorlog)
@@ -212,6 +205,8 @@ FeatureExtractor::extractNodeFeatures(
 			LOG_USER(featureextractorlog) << "normalizing node features" << std::endl;
 
 			nodeFeatures.normalize();
+			nodeFeatures.getMin(min);
+			nodeFeatures.getMax(max);
 		}
 	}
 
@@ -260,8 +255,8 @@ void
 FeatureExtractor::extractEdgeFeatures(
 		const NodeFeatures& nodeFeatures,
 		EdgeFeatures&       edgeFeatures,
-		const FeatureWeights& min,
-		const FeatureWeights& max) {
+		FeatureWeights& min,
+		FeatureWeights& max) {
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
 
@@ -286,8 +281,7 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (optionNormalize && edgeFeatures.dims(Crag::AdjacencyEdge) > 0) {
 
-		// if we were given a min and max
-		if (!min.empty() && !max.empty()) {
+		if (_useProvidedMinMax) {
 
 			LOG_USER(featureextractorlog) << "normalizing edge features with provided min and max" << std::endl;
 			LOG_ALL(featureextractorlog)
@@ -301,6 +295,8 @@ FeatureExtractor::extractEdgeFeatures(
 			LOG_USER(featureextractorlog) << "normalizing edge features" << std::endl;
 
 			edgeFeatures.normalize();
+			edgeFeatures.getMin(min);
+			edgeFeatures.getMax(max);
 		}
 	}
 
