@@ -58,6 +58,11 @@ public:
 	virtual void saveSkeletons(const Crag& crag, const Skeletons& skeletons) = 0;
 
 	/**
+	 * Store a set of feature weights.
+	 */
+	virtual void saveFeatureWeights(const FeatureWeights& weights) = 0;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -100,6 +105,11 @@ public:
 	 * Retrieve skeletons for the candidates of the CRAG.
 	 */
 	virtual void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) = 0;
+
+	/**
+	 * Retrieve feature weights.
+	 */
+	virtual void retrieveFeatureWeights(FeatureWeights& weights) = 0;
 
 	/**
 	 * Store a segmentation, represented by sets of leaf nodes.

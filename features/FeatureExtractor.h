@@ -30,9 +30,25 @@ public:
 		_segmentations = sampleSegmentations;
 	}
 
+	/**
+	 * Extract node and edge features.
+	 */
 	void extract(
 			NodeFeatures& nodeFeatures,
 			EdgeFeatures& edgeFeatures);
+
+	/**
+	 * Extract node and edge features. For the normalization of the feature 
+	 * values, the provided min and max (instead of computing them from the 
+	 * extracted features). Use this for a testing dataset where you want to 
+	 * make sure that the features are normalized in the same way as in the 
+	 * training dataset.
+	 */
+	void extract(
+			NodeFeatures& nodeFeatures,
+			EdgeFeatures& edgeFeatures,
+			const FeatureWeights& min,
+			const FeatureWeights& max);
 
 private:
 
@@ -43,19 +59,19 @@ private:
 	class FeatureNodeAdaptor {
 
 	public:
-		FeatureNodeAdaptor(Crag::Node node, NodeFeatures& features) : _node(node), _features(features) {}
+		FeatureNodeAdaptor(Crag::CragNode node, NodeFeatures& features) : _node(node), _features(features) {}
 
 		inline void append(unsigned int /*ignored*/, double value) { _features.append(_node, value); }
 
 	private:
 
-		Crag::Node    _node;
-		NodeFeatures& _features;
+		Crag::CragNode _node;
+		NodeFeatures&  _features;
 	};
 
-	void extractNodeFeatures(NodeFeatures& nodeFeatures);
+	void extractNodeFeatures(NodeFeatures& nodeFeatures, const FeatureWeights& min, const FeatureWeights& max);
 
-	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
+	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, const FeatureWeights& min, const FeatureWeights& max);
 
 	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
 

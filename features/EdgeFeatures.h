@@ -3,7 +3,106 @@
 
 #include "Features.h"
 
-typedef Features<Crag::EdgeMap<std::vector<double>>> EdgeFeatures;
+class EdgeFeatures {
+
+	typedef Features<Crag::EdgeMap<std::vector<double>>> FeaturesType;
+
+public:
+
+	EdgeFeatures(const Crag& crag) :
+			_crag(crag),
+			_adFeatures(crag),
+			_naFeatures(crag) {}
+
+	inline void append(Crag::CragEdge e, double feature) {
+
+		features(_crag.type(e)).append(e, feature);
+	}
+
+	const std::vector<double>& operator[](Crag::CragEdge e) const {
+
+		return features(_crag.type(e))[e];
+	}
+
+	std::vector<double>& operator[](Crag::CragEdge e) {
+
+		return features(_crag.type(e))[e];
+	}
+
+	inline unsigned int dims(Crag::EdgeType type) const {
+
+		return features(type).dims();
+	}
+
+	void normalize() {
+
+		features(Crag::AdjacencyEdge).normalize();
+		features(Crag::NoAssignmentEdge).normalize();
+	}
+
+	void normalize(
+			const FeatureWeights& min,
+			const FeatureWeights& max) {
+
+		features(Crag::AdjacencyEdge).normalize(min[Crag::AdjacencyEdge], max[Crag::AdjacencyEdge]);
+		features(Crag::NoAssignmentEdge).normalize(min[Crag::NoAssignmentEdge], max[Crag::NoAssignmentEdge]);
+	}
+
+	FeatureWeights getMin() {
+
+		FeatureWeights min;
+		min[Crag::AdjacencyEdge] = features(Crag::AdjacencyEdge).getMin();
+		min[Crag::NoAssignmentEdge] = features(Crag::NoAssignmentEdge).getMin();
+
+		return min;
+	}
+
+	FeatureWeights getMax() {
+
+		FeatureWeights max;
+		max[Crag::AdjacencyEdge] = features(Crag::AdjacencyEdge).getMax();
+		max[Crag::NoAssignmentEdge] = features(Crag::NoAssignmentEdge).getMax();
+
+		return max;
+	}
+
+private:
+
+	FeaturesType& features(Crag::EdgeType type) {
+
+		switch (type) {
+
+			case Crag::AdjacencyEdge:
+				return _adFeatures;
+			case Crag::NoAssignmentEdge:
+				return _naFeatures;
+			case Crag::AssignmentEdge:
+				UTIL_THROW_EXCEPTION(
+						UsageError,
+						"edges of type AssignmentEdge don't have features");
+		}
+	}
+
+	const FeaturesType& features(Crag::EdgeType type) const {
+
+		switch (type) {
+
+			case Crag::AdjacencyEdge:
+				return _adFeatures;
+			case Crag::NoAssignmentEdge:
+				return _naFeatures;
+			case Crag::AssignmentEdge:
+				UTIL_THROW_EXCEPTION(
+						UsageError,
+						"edges of type AssignmentEdge don't have features");
+		}
+	}
+
+	const Crag& _crag;
+
+	FeaturesType _adFeatures;
+	FeaturesType _naFeatures;
+};
 
 #endif // CANDIDATE_MC_FEATURES_EDGE_FEATURES_H__
 

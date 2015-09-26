@@ -1,6 +1,8 @@
 #ifndef CANDIDATE_MC_IO_VECTORS_H__
 #define CANDIDATE_MC_IO_VECTORS_H__
 
+#include <fstream>
+
 template <typename T>
 void storeVector(const std::vector<T>& v, std::string filename) {
 

@@ -9,14 +9,14 @@ public:
 
 	typedef SetContent parent_type;
 
-	SetCandidate(Crag::Node n) :
+	SetCandidate(Crag::CragNode n) :
 			_n(n) {}
 
-	Crag::Node getCandidate() const { return _n; }
+	Crag::CragNode getCandidate() const { return _n; }
 
 private:
 
-	Crag::Node _n;
+	Crag::CragNode _n;
 };
 
 class SetEdge : public sg_gui::SetContent {
@@ -25,14 +25,14 @@ public:
 
 	typedef SetContent parent_type;
 
-	SetEdge(Crag::Edge e) :
+	SetEdge(Crag::CragEdge e) :
 			_e(e) {}
 
-	Crag::Edge getEdge() const { return _e; }
+	Crag::CragEdge getEdge() const { return _e; }
 
 private:
 
-	Crag::Edge _e;
+	Crag::CragEdge _e;
 };
 
 #endif // CANDIDATE_MC_GUI_SIGNALS_H__

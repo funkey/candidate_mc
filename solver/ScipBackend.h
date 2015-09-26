@@ -77,18 +77,6 @@ private:
 	// size of a and x
 	unsigned int _numVariables;
 
-	// rows in A
-	unsigned int _numEqConstraints;
-
-	// rows in C
-	unsigned int _numIneqConstraints;
-
-	// the verbosity of the output
-	int _verbosity;
-
-	// a value by which to scale the objective
-	double _scale;
-
 	SCIP* _scip;
 
 	std::vector<SCIP_VAR*> _variables;

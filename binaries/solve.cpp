@@ -12,6 +12,7 @@
 #include <util/exceptions.h>
 #include <util/helpers.hpp>
 #include <util/timing.h>
+#include <util/assert.h>
 #include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/vectors.h>
@@ -44,6 +45,25 @@ util::ProgramOption optionProjectFile(
 		util::_short_name       = "p",
 		util::_description_text = "The treemc project file.");
 
+inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
+
+	UTIL_ASSERT_REL(a.size(), ==, b.size());
+
+	double sum = 0;
+	auto ba = a.begin();
+	auto ea = a.end();
+	auto bb = b.begin();
+
+	while (ba != ea) {
+
+		sum += (*ba)*(*bb);
+		ba++;
+		bb++;
+	}
+
+	return sum;
+}
+
 int main(int argc, char** argv) {
 
 	try {
@@ -64,30 +84,24 @@ int main(int argc, char** argv) {
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
-		std::vector<double> weights = retrieveVector<double>(optionFeatureWeights);
+		FeatureWeights weights;
+		cragStore.retrieveFeatureWeights(weights);
 
 		Costs costs(crag);
 
 		float edgeBias = optionMergeBias;
 		float nodeBias = optionForegroundBias;
 
-		unsigned int numNodeFeatures = nodeFeatures.dims();
-		unsigned int numEdgeFeatures = edgeFeatures.dims();
-
-		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		for (Crag::CragNode n : crag.nodes()) {
 
 			costs.node[n] = nodeBias;
-
-			for (unsigned int i = 0; i < numNodeFeatures; i++)
-				costs.node[n] += weights[i]*nodeFeatures[n][i];
+			costs.node[n] += dot(weights[crag.type(n)], nodeFeatures[n]);
 		}
 
-		for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+		for (Crag::CragEdge e : crag.edges()) {
 
 			costs.edge[e] = edgeBias;
-
-			for (unsigned int i = 0; i < numEdgeFeatures; i++)
-				costs.edge[e] += weights[i + numNodeFeatures]*edgeFeatures[e][i];
+			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
 		}
 
 		MultiCut multicut(crag);

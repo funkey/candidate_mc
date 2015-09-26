@@ -62,7 +62,7 @@ public:
 			const CragVolumes&                     volumes,
 			std::shared_ptr<ExplicitVolume<float>> labels);
 
-	void loadMeshes(const std::vector<Crag::Node>& nodes);
+	void loadMeshes(const std::vector<Crag::CragNode>& nodes);
 
 	void onSignal(sg_gui::VolumePointSelected& signal);
 
@@ -80,13 +80,13 @@ private:
 
 	void prevNeighbor();
 
-	void showSingleMesh(Crag::Node n);
+	void showSingleMesh(Crag::CragNode n);
 
-	void showNeighbor(Crag::Node n);
+	void showNeighbor(Crag::CragNode n);
 
-	void addMesh(Crag::Node n);
+	void addMesh(Crag::CragNode n);
 
-	void removeMesh(Crag::Node n);
+	void removeMesh(Crag::CragNode n);
 
 	const Crag& _crag;
 
@@ -96,13 +96,13 @@ private:
 
 	std::shared_ptr<sg_gui::Meshes> _meshes;
 
-	std::map<Crag::Node, std::shared_ptr<sg_gui::Mesh>> _meshCache;
+	std::map<Crag::CragNode, std::shared_ptr<sg_gui::Mesh>> _meshCache;
 
-	Crag::Node _current;
+	Crag::CragNode _current;
 
-	std::vector<Crag::Node> _path;
+	std::vector<Crag::CragNode> _path;
 
-	std::vector<Crag::Node> _neighbors;
+	std::vector<Crag::CragNode> _neighbors;
 
 	int _currentNeighbor;
 };

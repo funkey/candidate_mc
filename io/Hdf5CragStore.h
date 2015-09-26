@@ -74,6 +74,11 @@ public:
 	void saveSkeletons(const Crag& crag, const Skeletons& skeletons);
 
 	/**
+	 * Store a set of feature weights.
+	 */
+	void saveFeatureWeights(const FeatureWeights& weights) override;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -116,6 +121,11 @@ public:
 	 * Retrieve skeletons for the candidates of the CRAG.
 	 */
 	void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) override;
+
+	/**
+	 * Retrieve feature weights.
+	 */
+	void retrieveFeatureWeights(FeatureWeights& weights) override;
 
 	/**
 	 * Store a segmentation, represented by sets of leaf nodes.

@@ -5,6 +5,7 @@
 #include <inference/MultiCut.h>
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
+#include <util/assert.h>
 #include "Loss.h"
 #include "BestEffort.h"
 
@@ -36,30 +37,35 @@ public:
 		_iteration(0) {}
 
 	void operator()(
-			const std::vector<double>& weights,
-			double&                    value,
-			std::vector<double>&       gradient);
+			const FeatureWeights& weights,
+			double&               value,
+			FeatureWeights&       gradient);
 
 private:
 
-	void updateCosts(const std::vector<double>& weights);
+	void updateCosts(const FeatureWeights& weights);
 
-	void accumulateGradient(std::vector<double>& gradient);
+	void accumulateGradient(FeatureWeights& gradient);
 
-	inline double nodeCost(const std::vector<double>& weights, const std::vector<double>& nodeFeatures) const {
+	inline double nodeCost(Crag::CragNode n, const FeatureWeights& weights) const {
 
-		return dot(weights.begin(), weights.begin() + _nodeFeatures.dims(), nodeFeatures.begin());
+		return dot(weights[_crag.type(n)], _nodeFeatures[n]);
 	}
 
-	inline double edgeCost(const std::vector<double>& weights, const std::vector<double>& edgeFeatures) const {
+	inline double edgeCost(Crag::CragEdge e, const FeatureWeights& weights) const {
 
-		return dot(weights.begin() + _nodeFeatures.dims(), weights.end(), edgeFeatures.begin());
+		return dot(weights[_crag.type(e)], _edgeFeatures[e]);
 	}
 
-	template <typename IT>
-	inline double dot(IT ba, IT ea, IT bb) const {
+	inline double dot(const std::vector<double>& a, const std::vector<double>& b) const {
+
+		UTIL_ASSERT_REL(a.size(), ==, b.size());
 
 		double sum = 0;
+		auto ba = a.begin();
+		auto ea = a.end();
+		auto bb = b.begin();
+
 		while (ba != ea) {
 
 			sum += (*ba)*(*bb);

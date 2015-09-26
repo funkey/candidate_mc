@@ -194,6 +194,11 @@ public:
 			return CragNode(_crag.getAdjacencyGraph().v(_edge));
 		}
 
+		CragNode opposite(CragNode n) {
+
+			return CragNode(_crag.getAdjacencyGraph().oppositeNode(n, _edge));
+		}
+
 		/**
 		 * Implicit conversion operator to an edge of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this edge can be used as 
@@ -303,12 +308,12 @@ public:
 	/**
 	 * Get the type of a node.
 	 */
-	NodeType type(CragNode n) { return _nodeTypes[n]; }
+	NodeType type(CragNode n) const { return _nodeTypes[n]; }
 
 	/**
 	 * Get the type of an edge.
 	 */
-	EdgeType type(CragEdge e) { return _edgeTypes[e]; }
+	EdgeType type(CragEdge e) const { return _edgeTypes[e]; }
 
 	/**
 	 * Set the grid graph, to which the affiliated edges between leaf node 
@@ -427,6 +432,8 @@ public:
 		for (auto i = arcs().begin(); i != arcs().end(); i++, s++) {}
 		return s;
 	}
+
+	static CragNode Invalid;
 
 private:
 

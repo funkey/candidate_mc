@@ -280,22 +280,8 @@ int main(int argc, char** argv) {
 				*bestEffort,
 				multiCutParameters);
 
-		std::vector<double> weights;
-
-		if (!optionInitialWeights) {
-
-			weights.resize(nodeFeatures.dims() + edgeFeatures.dims(), optionInitialWeightValues.as<double>());
-
-		} else {
-
-			weights = retrieveVector<double>(optionInitialWeights.as<std::string>());
-
-			if (weights.size() != nodeFeatures.dims() + edgeFeatures.dims())
-				UTIL_THROW_EXCEPTION(
-						UsageError,
-						"provided feature weights file has wrong number of entries " <<
-						"(" << weights.size() << ", should be " << nodeFeatures.dims() + edgeFeatures.dims());
-		}
+		// create initial set of weights for the given features
+		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());
 
 		if (optionGradientOptimizer) {
 
@@ -314,7 +300,7 @@ int main(int argc, char** argv) {
 			optimizer.optimize(oracle, weights);
 		}
 
-		storeVector(weights, optionFeatureWeights);
+		cragStore.saveFeatureWeights(weights);
 
 		if (destructLoss && loss != 0)
 			delete loss;

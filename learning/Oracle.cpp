@@ -15,9 +15,9 @@ util::ProgramOption optionStoreEachCurrentlyBest(
 
 void
 Oracle::operator()(
-			const std::vector<double>& weights,
-			double&                    value,
-			std::vector<double>&       gradient) {
+			const FeatureWeights& weights,
+			double&               value,
+			FeatureWeights&       gradient) {
 
 	updateCosts(weights);
 
@@ -44,12 +44,12 @@ Oracle::operator()(
 	// margin = value - loss
 
 	double mostViolatedEnergy = 0;
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::CragNode n : _crag.nodes())
 		if (_mostViolatedMulticut.getSelectedRegions()[n])
-			mostViolatedEnergy += nodeCost(weights, _nodeFeatures[n]);
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+			mostViolatedEnergy += nodeCost(n, weights);
+	for (Crag::CragEdge e : _crag.edges())
 		if (_mostViolatedMulticut.getMergedEdges()[e])
-			mostViolatedEnergy += edgeCost(weights, _edgeFeatures[e]);
+			mostViolatedEnergy += edgeCost(e, weights);
 
 	double loss   = value - _B_c + mostViolatedEnergy;
 	double margin = value - loss;
@@ -72,7 +72,7 @@ Oracle::operator()(
 }
 
 void
-Oracle::updateCosts(const std::vector<double>& weights) {
+Oracle::updateCosts(const FeatureWeights& weights) {
 
 	// Let E(y,w) = <w,Φy>. We have to compute the value and gradient of
 	//
@@ -121,17 +121,17 @@ Oracle::updateCosts(const std::vector<double>& weights) {
 	// value.
 
 	// wΦ
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		_costs.node[n] = nodeCost(weights, _nodeFeatures[n]);
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-		_costs.edge[e] = edgeCost(weights, _edgeFeatures[e]);
+	for (Crag::CragNode n : _crag.nodes())
+		_costs.node[n] = nodeCost(n, weights);
+	for (Crag::CragEdge e : _crag.edges())
+		_costs.edge[e] = edgeCost(e, weights);
 
 	_currentBestMulticut.setCosts(_costs);
 
 	// -Δ_l
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::CragNode n : _crag.nodes())
 		_costs.node[n] -= _loss.node[n];
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+	for (Crag::CragEdge e : _crag.edges())
 		_costs.edge[e] -= _loss.edge[e];
 
 	// Δ_c
@@ -139,12 +139,12 @@ Oracle::updateCosts(const std::vector<double>& weights) {
 
 	// B_c
 	_B_c = 0;
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::CragNode n : _crag.nodes())
 		if (_bestEffort.node[n])
-			_B_c += nodeCost(weights, _nodeFeatures[n]);
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+			_B_c += nodeCost(n, weights);
+	for (Crag::CragEdge e : _crag.edges())
 		if (_bestEffort.edge[e])
-			_B_c += edgeCost(weights, _edgeFeatures[e]);
+			_B_c += edgeCost(e, weights);
 	_constant += _B_c;
 
 	// L(w) = max_y <w,Φy'-Φy> + Δ(y',y)
@@ -156,7 +156,7 @@ Oracle::updateCosts(const std::vector<double>& weights) {
 }
 
 void
-Oracle::accumulateGradient(std::vector<double>& gradient) {
+Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	// The gradient of the maximand in (1) at y* is
 	//
@@ -173,24 +173,25 @@ Oracle::accumulateGradient(std::vector<double>& gradient) {
 	// best-effort, and a negative contribution for the maximizer 
 	// y*.
 
-	std::fill(gradient.begin(), gradient.end(), 0);
+	gradient.fill(0);
 
-	unsigned int numNodeFeatures = _nodeFeatures.dims();
-	unsigned int numEdgeFeatures = _edgeFeatures.dims();
-
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		int sign = _bestEffort.node[n] - _mostViolatedMulticut.getSelectedRegions()[n];
 
-		for (unsigned int i = 0; i < numNodeFeatures; i++)
-			gradient[i] += _nodeFeatures[n][i]*sign;
+		const std::vector<double>& f = _nodeFeatures[n];
+		std::vector<double>&       g = gradient[_crag.type(n)];
+		for (unsigned int i = 0; i < f.size(); i++)
+			g[i] += f[i]*sign;
 	}
 
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
 		int sign = _bestEffort.edge[e] - _mostViolatedMulticut.getMergedEdges()[e];
 
-		for (unsigned int i = 0; i < numEdgeFeatures; i++)
-			gradient[i + numNodeFeatures] += _edgeFeatures[e][i]*sign;
+		const std::vector<double>& f = _edgeFeatures[e];
+		std::vector<double>&       g = gradient[_crag.type(e)];
+		for (unsigned int i = 0; i < f.size(); i++)
+			g[i] += f[i]*sign;
 	}
 }
