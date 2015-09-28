@@ -29,7 +29,7 @@ Dependencies
 
     Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
   
-  * only on Mac OS X: XQuartz (http://xquartz.macosforge.org/)
+  * XQuartz (only on OS X, http://xquartz.macosforge.org/)
 
 Configure:
 ----------
