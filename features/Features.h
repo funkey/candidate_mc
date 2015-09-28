@@ -28,7 +28,7 @@ class Features : public MapType {
 
 public:
 
-	Features(const Crag& crag) : MapType(crag), _crag(crag) {}
+	Features(const Crag& crag) : MapType(crag), _crag(crag), _dimsDirty(true) {}
 
 	/**
 	 * Add a single feature to the feature vector for a node. Converts nan into 
@@ -40,6 +40,8 @@ public:
 			feature = 0;
 
 		(*this)[n].push_back(feature);
+
+		_dimsDirty = true;
 	}
 
 	/**
@@ -47,12 +49,32 @@ public:
 	 */
 	inline unsigned int dims() const {
 
-		KeyIteratorType n(_crag);
+		if (!_dimsDirty)
+			return _dims;
 
-		if (n == lemon::INVALID)
-			return 0;
+		_dims = 0;
 
-		return (*this)[n].size();
+		bool first = true;
+		for (KeyIteratorType i(_crag); i != lemon::INVALID; ++i) {
+
+			if (first) {
+
+				_dims = (*this)[i].size();
+				first = false;
+
+			} else {
+
+				if ((*this)[i].size() != _dims)
+					UTIL_THROW_EXCEPTION(
+							UsageError,
+							"Features contains vectors of different sizes: "
+							"expected " << _dims << ", found " << (*this)[i].size() <<
+							" for id " << _crag.id(i));
+			}
+		}
+
+		_dimsDirty = false;
+		return _dims;
 	}
 
 	/**
@@ -165,6 +187,9 @@ private:
 	const Crag& _crag;
 
 	std::vector<double> _min, _max;
+
+	mutable unsigned int _dims;
+	mutable bool         _dimsDirty;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURES_H__
