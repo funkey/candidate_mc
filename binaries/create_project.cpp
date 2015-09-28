@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <memory>
 #include <boost/filesystem.hpp>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
@@ -168,6 +169,8 @@ int main(int argc, char** argv) {
 
 		CragImport import;
 
+		bool alreadyDownsampled = false;
+
 		if (optionMergeTree) {
 
 			UTIL_TIME_SCOPE("read CRAG from mergetree");
@@ -180,18 +183,45 @@ int main(int argc, char** argv) {
 				std::vector<std::string> files = getImageFiles(mergeTreePath);
 
 				// process one image after another
-				std::vector<Crag> crags(files.size());
-				std::vector<CragVolumes> cragsVolumes;
-				for (const Crag& c : crags)
-					cragsVolumes.push_back(CragVolumes(c));
+				std::vector<std::unique_ptr<Crag>> crags(files.size());
+				std::vector<std::unique_ptr<CragVolumes>> cragsVolumes;
+				for (auto& c : crags) {
+					c = std::unique_ptr<Crag>(new Crag);
+					cragsVolumes.push_back(std::unique_ptr<CragVolumes>(new CragVolumes(*c)));
+				}
 
 				int i = 0;
 				for (std::string file : files) {
 					
 					LOG_USER(logger::out) << "reading crag from " << file << std::endl;
 
-					import.readCrag(file, crags[i], cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+					import.readCrag(file, *crags[i], *cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
 					i++;
+				}
+
+				if (optionDownsampleCrag) {
+
+					UTIL_TIME_SCOPE("downsample CRAG");
+
+					DownSampler downSampler(optionMinCandidateSize.as<int>());
+
+					std::vector<std::unique_ptr<Crag>> downSampledCrags(crags.size());
+					std::vector<std::unique_ptr<CragVolumes>> downSampledVolumes(crags.size());
+
+					for (int i = 0; i < crags.size(); i++) {
+
+						downSampledCrags[i]   = std::unique_ptr<Crag>(new Crag());
+						downSampledVolumes[i] = std::unique_ptr<CragVolumes>(new CragVolumes(*downSampledCrags[i]));
+
+						downSampler.process(*crags[i], *cragsVolumes[i], *downSampledCrags[i], *downSampledVolumes[i]);
+					}
+
+					std::swap(cragsVolumes, downSampledVolumes);
+					std::swap(crags, downSampledCrags);
+
+					// prevent another downsampling on the candidates added by 
+					// the combiner
+					alreadyDownsampled = true;
 				}
 
 				// combine crags
@@ -242,7 +272,7 @@ int main(int argc, char** argv) {
 			return 0;
 		}
 
-		if (optionDownsampleCrag) {
+		if (optionDownsampleCrag && !alreadyDownsampled) {
 
 			UTIL_TIME_SCOPE("downsample CRAG");
 
