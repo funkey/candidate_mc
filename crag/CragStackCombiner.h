@@ -24,6 +24,7 @@ public:
 private:
 
 	std::map<Crag::CragNode, Crag::CragNode> copyNodes(
+			unsigned int       z,
 			const Crag&        source,
 			const CragVolumes& sourceVolumes,
 			Crag&              target,
@@ -43,6 +44,8 @@ private:
 
 	std::map<Crag::CragNode, Crag::CragNode> _prevNodeMap;
 	std::map<Crag::CragNode, Crag::CragNode> _nextNodeMap;
+
+	std::vector<Crag::CragNode> _noAssignmentNodes;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_STACK_COMBINER_H__

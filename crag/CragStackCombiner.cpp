@@ -2,6 +2,7 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/assert.h>
+#include <util/exceptions.h>
 #include <util/timing.h>
 #include "CragStackCombiner.h"
 
@@ -38,6 +39,9 @@ CragStackCombiner::combine(
 
 	UTIL_ASSERT_REL(sourcesCrags.size(), ==, sourcesVolumes.size());
 
+	if (sourcesCrags.size() == 0)
+		return;
+
 	LOG_USER(cragstackcombinerlog)
 			<< "combining CRAGs, "
 			<< (_requireBbOverlap ? "" : " do not ")
@@ -47,17 +51,51 @@ CragStackCombiner::combine(
 	_prevNodeMap.clear();
 	_nextNodeMap.clear();
 
+	// get the resolution of source volumes
+	util::point<float, 3> res;
+	for (unsigned int z = 0; z < sourcesCrags.size(); z++)
+		if (sourcesCrags[z]->nodes().size() > 0) {
+
+			res = (*sourcesVolumes[z])[*sourcesCrags[z]->nodes().begin()]->getResolution();
+			break;
+		}
+
+	if (res.isZero())
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"all provided CRAGs are empty");
+
+	// add one NoAssignmentNode between each pair of crags, and before first and 
+	// after last section
+	_noAssignmentNodes.clear();
+	for (unsigned int z = 0; z <= sourcesCrags.size(); z++) {
+
+		Crag::CragNode n = targetCrag.addNode(Crag::NoAssignmentNode);
+		_noAssignmentNodes.push_back(n);
+
+		// set a dummy 1x1x1 volume
+		std::shared_ptr<CragVolume> dummy = std::make_shared<CragVolume>(1, 1, 1);
+		dummy->data() = 1;
+		dummy->setOffset(
+				sourcesVolumes[0]->getBoundingBox().min().x(),
+				sourcesVolumes[0]->getBoundingBox().min().y(),
+				sourcesVolumes[0]->getBoundingBox().min().z() + (z - 0.5)*res.z());
+		dummy->setResolution(res);
+
+		targetVolumes.setVolume(n, dummy);
+	}
+
 	unsigned int nodesAdded = 0;
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
 
 		if (z == 1)
-			_prevNodeMap = copyNodes(*sourcesCrags[0], *sourcesVolumes[0], targetCrag, targetVolumes);
+			_prevNodeMap = copyNodes(z, *sourcesCrags[0], *sourcesVolumes[0], targetCrag, targetVolumes);
 		else
 			_prevNodeMap = _nextNodeMap;
 
-		_nextNodeMap = copyNodes(*sourcesCrags[z], *sourcesVolumes[z], targetCrag, targetVolumes);
+		_nextNodeMap = copyNodes(z, *sourcesCrags[z], *sourcesVolumes[z], targetCrag, targetVolumes);
 
 		std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links =
 				findLinks(
@@ -68,9 +106,12 @@ CragStackCombiner::combine(
 
 		for (const auto& pair : links) {
 
-			Crag::CragNode parent = targetCrag.addNode();
-			targetCrag.addSubsetArc(_prevNodeMap[pair.first], parent);
-			targetCrag.addSubsetArc(_nextNodeMap[pair.second], parent);
+			Crag::CragNode assignment = targetCrag.addNode(Crag::AssignmentNode);
+
+			targetCrag.addAdjacencyEdge(_prevNodeMap[pair.first], assignment);
+			targetCrag.addAdjacencyEdge(_nextNodeMap[pair.second], assignment);
+			targetCrag.addSubsetArc(_prevNodeMap[pair.first], assignment);
+			targetCrag.addSubsetArc(_nextNodeMap[pair.second], assignment);
 		}
 
 		nodesAdded += links.size();
@@ -83,6 +124,7 @@ CragStackCombiner::combine(
 
 std::map<Crag::CragNode, Crag::CragNode>
 CragStackCombiner::copyNodes(
+		unsigned int       z,
 		const Crag&        source,
 		const CragVolumes& sourceVolumes,
 		Crag&              target,
@@ -90,13 +132,18 @@ CragStackCombiner::copyNodes(
 
 	std::map<Crag::CragNode, Crag::CragNode> nodeMap;
 
+	// copy nodes
 	for (Crag::CragNode i : source.nodes()) {
 
-		Crag::CragNode n = target.addNode();
+		Crag::CragNode n = target.addNode(Crag::SliceNode);
 
 		targetVolumes.setVolume(n, sourceVolumes[i]);
 
 		nodeMap[i] = n;
+
+		// add adjacencies to NoAssignmentNodes befor and after
+		target.addAdjacencyEdge(n, _noAssignmentNodes[z]);
+		target.addAdjacencyEdge(n, _noAssignmentNodes[z+1]);
 
 		LOG_ALL(cragstackcombinerlog)
 				<< "copied node " << source.id(i) << " at " << sourceVolumes[i]->getBoundingBox()
@@ -104,6 +151,7 @@ CragStackCombiner::copyNodes(
 				<< std::endl;
 	}
 
+	// copy adjacencies
 	for (Crag::CragEdge e : source.edges()) {
 
 		Crag::CragNode u = nodeMap[e.u()];
@@ -112,6 +160,7 @@ CragStackCombiner::copyNodes(
 		target.addAdjacencyEdge(u, v);
 	}
 
+	// copy subset relations
 	for (Crag::CragArc a : source.arcs()) {
 
 		Crag::CragNode s = nodeMap[a.source()];
