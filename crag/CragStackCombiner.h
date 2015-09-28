@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_CRAG_CRAG_STACK_COMBINER_H__
 #define CANDIDATE_MC_CRAG_CRAG_STACK_COMBINER_H__
 
+#include <memory>
 #include <vector>
 #include "Crag.h"
 #include "CragVolumes.h"
@@ -15,10 +16,10 @@ public:
 	CragStackCombiner();
 
 	void combine(
-			const std::vector<Crag>&        sourcesCrags,
-			const std::vector<CragVolumes>& sourcesVolumes,
-			Crag&                           targetCrag,
-			CragVolumes&                    targetVolumes);
+			const std::vector<std::unique_ptr<Crag>>&        sourcesCrags,
+			const std::vector<std::unique_ptr<CragVolumes>>& sourcesVolumes,
+			Crag&                                            targetCrag,
+			CragVolumes&                                     targetVolumes);
 
 private:
 

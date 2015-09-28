@@ -31,10 +31,10 @@ CragStackCombiner::CragStackCombiner() :
 
 void
 CragStackCombiner::combine(
-		const std::vector<Crag>&        sourcesCrags,
-		const std::vector<CragVolumes>& sourcesVolumes,
-		Crag&                           targetCrag,
-		CragVolumes&                    targetVolumes) {
+		const std::vector<std::unique_ptr<Crag>>&        sourcesCrags,
+		const std::vector<std::unique_ptr<CragVolumes>>& sourcesVolumes,
+		Crag&                                            targetCrag,
+		CragVolumes&                                     targetVolumes) {
 
 	UTIL_ASSERT_REL(sourcesCrags.size(), ==, sourcesVolumes.size());
 
@@ -53,18 +53,18 @@ CragStackCombiner::combine(
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
 
 		if (z == 1)
-			_prevNodeMap = copyNodes(sourcesCrags[0], sourcesVolumes[0], targetCrag, targetVolumes);
+			_prevNodeMap = copyNodes(*sourcesCrags[0], *sourcesVolumes[0], targetCrag, targetVolumes);
 		else
 			_prevNodeMap = _nextNodeMap;
 
-		_nextNodeMap = copyNodes(sourcesCrags[z], sourcesVolumes[z], targetCrag, targetVolumes);
+		_nextNodeMap = copyNodes(*sourcesCrags[z], *sourcesVolumes[z], targetCrag, targetVolumes);
 
 		std::vector<std::pair<Crag::CragNode, Crag::CragNode>> links =
 				findLinks(
-						sourcesCrags[z-1],
-						sourcesVolumes[z-1],
-						sourcesCrags[z],
-						sourcesVolumes[z]);
+						*sourcesCrags[z-1],
+						*sourcesVolumes[z-1],
+						*sourcesCrags[z],
+						*sourcesVolumes[z]);
 
 		for (const auto& pair : links) {
 
