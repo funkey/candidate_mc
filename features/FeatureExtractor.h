@@ -92,7 +92,7 @@ private:
 	std::vector<std::vector<std::set<Crag::Node>>> _segmentations;
 
 	// number of "real" node features, before add squares and bias
-	int _numOriginalNodeFeatures;
+	int _numOriginalVolumeNodeFeatures;
 
 	// number of "real" edge features, before add squares and bias
 	int _numOriginalEdgeFeatures;

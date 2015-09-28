@@ -19,6 +19,9 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	writeDigraph(crag.getSubsetGraph());
 
 	_hdfFile.cd("/crag");
+	Hdf5GraphWriter::writeNodeMap(crag, crag.nodeTypes(), "types", Hdf5GraphWriter::DefaultConverter<Crag::NodeType, int>());
+
+	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("grid_graph");
 	vigra::ArrayVector<int> shape(3);
 	shape[0] = crag.getGridGraph().shape()[0];
@@ -94,6 +97,9 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 	_hdfFile.cd("/crag");
 	_hdfFile.cd("subsets");
 	readDigraph(crag.getSubsetGraph());
+
+	_hdfFile.cd("/crag");
+	Hdf5GraphReader::readNodeMap(crag, crag.nodeTypes(), "types", Hdf5GraphReader::DefaultConverter<int, Crag::NodeType>());
 
 	try {
 
@@ -226,11 +232,13 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 
 			Crag::CragNode n = crag.nodeFromId(allFeatures(0, i));
 
-			features[n].resize(dims);
+			std::vector<double> f;
+			f.resize(dims);
 			std::copy(
 					allFeatures.bind<1>(i).begin() + 1,
 					allFeatures.bind<1>(i).end(),
-					features[n].begin());
+					f.begin());
+			features.set(n, f);
 		}
 	}
 }
@@ -305,11 +313,13 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 						IOError,
 						"can not find edge for nodes " << crag.id(u) << " and " << crag.id(v));
 
-			features[*e].resize(dims);
+			std::vector<double> f;
+			f.resize(dims);
 			std::copy(
 					allFeatures.bind<1>(i).begin() + 2,
 					allFeatures.bind<1>(i).end(),
-					features[*e].begin());
+					f.begin());
+			features.set(*e, f);
 		}
 	}
 }

@@ -181,9 +181,15 @@ FeatureExtractor::extractNodeFeatures(
 
 	LOG_USER(featureextractorlog)
 			<< std::endl << "extracted " << nodeFeatures.dims(Crag::VolumeNode)
-			<< " features per node" << std::endl;
+			<< " features per volume node" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< std::endl << "extracted " << nodeFeatures.dims(Crag::SliceNode)
+			<< " features per slice node" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< std::endl << "extracted " << nodeFeatures.dims(Crag::AssignmentNode)
+			<< " features per assignment node" << std::endl;
 
-	_numOriginalNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
+	_numOriginalVolumeNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
 
 	///////////////////
 	// NORMALIZATION //
@@ -220,7 +226,7 @@ FeatureExtractor::extractNodeFeatures(
 
 		for (Crag::CragNode n : _crag.nodes()) {
 
-			std::vector<double>& features = nodeFeatures[n];
+			const std::vector<double>& features = nodeFeatures[n];
 
 			if (optionAddPairwiseFeatureProducts) {
 
@@ -228,25 +234,34 @@ FeatureExtractor::extractNodeFeatures(
 				unsigned int numOriginalFeatures = features.size();
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
 					for (unsigned int j = i; j < numOriginalFeatures; j++)
-						features.push_back(features[i]*features[j]);
+						nodeFeatures.append(n, features[i]*features[j]);
 			} else {
 
 				// compute all squares of all features and add them as well
 				unsigned int numOriginalFeatures = features.size();
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					features.push_back(features[i]*features[i]);
+					nodeFeatures.append(n, features[i]*features[i]);
 			}
 		}
 	}
 
 	// append a 1 for bias
 	for (Crag::CragNode n : _crag.nodes())
-		nodeFeatures.append(n, 1);
+		if (_crag.type(n) != Crag::NoAssignmentNode)
+			nodeFeatures.append(n, 1);
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
 			<< nodeFeatures.dims(Crag::VolumeNode)
 			<< " features per volume node" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< "after postprocessing, we have "
+			<< nodeFeatures.dims(Crag::SliceNode)
+			<< " features per slice node" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< "after postprocessing, we have "
+			<< nodeFeatures.dims(Crag::AssignmentNode)
+			<< " features per assignment node" << std::endl;
 
 	LOG_USER(featureextractorlog) << "done" << std::endl;
 }
@@ -271,9 +286,10 @@ FeatureExtractor::extractEdgeFeatures(
 
 	LOG_USER(featureextractorlog)
 			<< std::endl << "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
-			<< " features per edge" << std::endl;
-
-	_numOriginalEdgeFeatures = edgeFeatures.dims(Crag::AdjacencyEdge);
+			<< " features per adjacency edge" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< std::endl << "extracted " << edgeFeatures.dims(Crag::NoAssignmentEdge)
+			<< " features per no-assignment edge" << std::endl;
 
 	///////////////////
 	// NORMALIZATION //
@@ -310,7 +326,7 @@ FeatureExtractor::extractEdgeFeatures(
 
 		for (Crag::CragEdge e : _crag.edges()) {
 
-			std::vector<double>& features = edgeFeatures[e];
+			const std::vector<double>& features = edgeFeatures[e];
 
 			if (optionAddPairwiseFeatureProducts) {
 
@@ -318,20 +334,21 @@ FeatureExtractor::extractEdgeFeatures(
 				unsigned int numOriginalFeatures = features.size();
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
 					for (unsigned int j = i; j < numOriginalFeatures; j++)
-						features.push_back(features[i]*features[j]);
+						edgeFeatures.append(e, features[i]*features[j]);
 			} else {
 
 				// compute all squares of all features and add them as well
 				unsigned int numOriginalFeatures = features.size();
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					features.push_back(features[i]*features[i]);
+					edgeFeatures.append(e, features[i]*features[i]);
 			}
 		}
 	}
 
 	// append a 1 for bias
 	for (Crag::CragEdge e : _crag.edges())
-		edgeFeatures.append(e, 1);
+		if (_crag.type(e) != Crag::AssignmentEdge)
+			edgeFeatures.append(e, 1);
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
@@ -370,8 +387,11 @@ FeatureExtractor::recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag
 
 	numDescendants += numChildren;
 
-	nodeFeatures.append(n, level);
-	nodeFeatures.append(n, numDescendants);
+	if (_crag.type(n) != Crag::NoAssignmentNode) {
+
+		nodeFeatures.append(n, level);
+		nodeFeatures.append(n, numDescendants);
+	}
 
 	return std::make_pair(level, numDescendants);
 }
@@ -387,6 +407,9 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
+
+		if (_crag.type(n) == Crag::NoAssignmentNode)
+			continue;
 
 		if (i%10 == 0)
 			LOG_USER(featureextractorlog) << logger::delline << i << "/" << _crag.numNodes() << std::flush;
@@ -405,7 +428,7 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 		FeatureNodeAdaptor adaptor(n, nodeFeatures);
 
 		// flat candidates, extract 2D features
-		if (_volumes.getBoundingBox().depth()/_volumes[n]->getResolution().z() == 1) {
+		if (_crag.type(n) == Crag::SliceNode) {
 
 			RegionFeatures<2, float, unsigned char>::Parameters p;
 			p.computeStatistics    = false;
@@ -415,8 +438,7 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 			p.shapeFeaturesParameters.numAngleHistBins            = numAngleHistBins;
 			RegionFeatures<2, float, unsigned char> regionFeatures(labelImage.bind<2>(0), p);
 
-			if (_crag.id(n) == 0)
-				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
 
 			regionFeatures.fill(adaptor);
 
@@ -431,8 +453,7 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 			p.shapeFeaturesParameters.numAngleHistBins            = numAngleHistBins;
 			RegionFeatures<3, float, unsigned char> regionFeatures(labelImage, p);
 
-			if (_crag.id(n) == 0)
-				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
 
 			regionFeatures.fill(adaptor);
 		}
@@ -446,6 +467,9 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
+
+		if (_crag.type(n) == Crag::NoAssignmentNode)
+			continue;
 
 		if (i%10 == 0)
 			LOG_USER(featureextractorlog) << logger::delline << i << "/" << _crag.numNodes() << std::flush;
@@ -500,7 +524,9 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 		FeatureNodeAdaptor adaptor(n, nodeFeatures);
 
 		// flat candidates, extract 2D features
-		if (_volumes.getBoundingBox().depth()/_volumes[n]->getResolution().z() == 1) {
+		if (_crag.type(n) == Crag::SliceNode) {
+
+			LOG_ALL(featureextractorlog) << "extracting slice features" << std::endl;
 
 			RegionFeatures<2, float, unsigned char>::Parameters p;
 			p.computeStatistics    = true;
@@ -509,13 +535,14 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				p.statisticsParameters.computeCoordinateStatistics = false;
 			RegionFeatures<2, float, unsigned char> regionFeatures(rawNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
 
-			if (_crag.id(n) == 0)
-				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
 
 			regionFeatures.fill(adaptor);
 
 		// volumetric candidates
 		} else {
+
+			LOG_ALL(featureextractorlog) << "extracting volumetric features" << std::endl;
 
 			RegionFeatures<3, float, unsigned char>::Parameters p;
 			p.computeStatistics    = true;
@@ -524,10 +551,11 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				p.statisticsParameters.computeCoordinateStatistics = false;
 			RegionFeatures<3, float, unsigned char> regionFeatures(rawNodeImage, labelImage, p);
 
-			if (_crag.id(n) == 0)
-				LOG_DEBUG(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
+			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
 
 			regionFeatures.fill(adaptor);
+
+			LOG_ALL(featureextractorlog) << "done" << std::endl;
 		}
 
 		if (optionBoundariesFeatures) {
@@ -547,7 +575,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 								nodeDiscreteOffset.y() + nodeSize.y(),
 								nodeDiscreteOffset.z() + nodeSize.z()));
 
-			if (nodeSize.z() == 1) {
+			if (_crag.type(n) == Crag::SliceNode) {
 
 				RegionFeatures<2, float, unsigned char>::Parameters p;
 				p.computeStatistics    = true;
@@ -557,8 +585,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				RegionFeatures<2, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
 				boundariesRegionFeatures.fill(adaptor);
 
-				if (_crag.id(n) == 0)
-					LOG_DEBUG(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+				LOG_ALL(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
 
 			} else {
 
@@ -570,8 +597,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				RegionFeatures<3, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage, labelImage, p);
 				boundariesRegionFeatures.fill(adaptor);
 
-				if (_crag.id(n) == 0)
-					LOG_DEBUG(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+				LOG_ALL(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
 			}
 
 			if (optionBoundariesBoundaryFeatures) {
@@ -586,7 +612,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 
 				// create the boundary image by erosion and subtraction...
 				vigra::MultiArray<3, unsigned char> erosionImage(labelImage.shape());
-				if (depth == 1)
+				if (_crag.type(n) == Crag::SliceNode)
 					vigra::discErosion(labelImage.bind<2>(0), erosionImage.bind<2>(0), 1);
 				else
 					vigra::multiBinaryErosion(labelImage, erosionImage, 1);
@@ -595,7 +621,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				boundaryImage -= erosionImage;
 
 				// ...and fix the border of the label image
-				if (depth == 1) {
+				if (_crag.type(n) == Crag::SliceNode) {
 
 					for (unsigned int x = 0; x < width; x++) {
 
@@ -618,7 +644,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 							boundaryImage(x, y, z) |= labelImage(x, y, z);
 				}
 
-				if (depth == 1) {
+				if (_crag.type(n) == Crag::SliceNode) {
 
 					RegionFeatures<2, float, unsigned char>::Parameters p;
 					p.computeStatistics    = true;
@@ -628,8 +654,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					RegionFeatures<2, float, unsigned char> boundaryFeatures(boundariesNodeImage.bind<2>(0), boundaryImage.bind<2>(0), p);
 					boundaryFeatures.fill(adaptor);
 
-					if (_crag.id(n) == 0)
-						LOG_DEBUG(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+					LOG_ALL(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
 
 				} else {
 
@@ -641,8 +666,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					RegionFeatures<3, float, unsigned char> boundaryFeatures(boundariesNodeImage, boundaryImage, p);
 					boundaryFeatures.fill(adaptor);
 
-					if (_crag.id(n) == 0)
-						LOG_DEBUG(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+					LOG_ALL(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
 				}
 			}
 		}
@@ -657,6 +681,9 @@ FeatureExtractor::extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures) {
 		UTIL_TIME_SCOPE("extract edge segmentation features");
 
 		for (Crag::CragEdge e : _crag.edges()) {
+
+			if (_crag.type(e) != Crag::AdjacencyEdge)
+				continue;
 
 			Crag::Node u = e.u();
 			Crag::Node v = e.v();
@@ -682,6 +709,9 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 	////////////////////////
 	for (Crag::CragEdge e : _crag.edges()) {
 
+		if (_crag.type(e) != Crag::AdjacencyEdge)
+			continue;
+
 		Crag::CragNode u = e.u();
 		Crag::CragNode v = e.v();
 		// feature vectors from node u/v
@@ -689,11 +719,11 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 		const auto & featsV = nodeFeatures[v];
 
 		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
-		UTIL_ASSERT_REL(featsU.size(), >=, _numOriginalNodeFeatures);
-		UTIL_ASSERT_REL(featsV.size(), >=, _numOriginalNodeFeatures);
+		UTIL_ASSERT_REL(featsU.size(), >=, _numOriginalVolumeNodeFeatures);
+		UTIL_ASSERT_REL(featsV.size(), >=, _numOriginalVolumeNodeFeatures);
 
 		// loop over all features
-		for(size_t nfi=0; nfi < _numOriginalNodeFeatures; ++nfi){
+		for(size_t nfi=0; nfi < _numOriginalVolumeNodeFeatures; ++nfi){
 			// single feature from node u/v
 			const auto fu = featsU[nfi];
 			const auto fv = featsV[nfi];
@@ -714,6 +744,9 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 
 	// iterate over all edges
 	for (Crag::CragEdge e : _crag.edges()) {
+
+		if (_crag.type(e) != Crag::AdjacencyEdge)
+			continue;
 
 		// accumulate statistics
 		

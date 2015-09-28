@@ -33,14 +33,14 @@ public:
 
 private:
 
-	void downSampleCopy(const Crag& source, const CragVolumes& volumes, Crag::SubsetNode parent, Crag::SubsetNode n, bool singleChild, Crag& target);
+	void downSampleCopy(const Crag& source, const CragVolumes& volumes, Crag::CragNode parent, Crag::CragNode n, bool singleChild, Crag& target);
 
-	int size(const Crag& crag, const CragVolumes& volumes, Crag::SubsetNode n);
+	int size(const Crag& crag, const CragVolumes& volumes, Crag::CragNode n);
 
 	int _minSize;
 
-	std::map<Crag::SubsetNode, Crag::Node> _copyMap;
-	std::map<Crag::SubsetNode, int> _sizes;
+	std::map<Crag::CragNode, Crag::CragNode> _copyMap;
+	std::map<Crag::CragNode, int> _sizes;
 };
 
 #endif // CANDIDATE_MC_CRAG_DOWN_SAMPLER_H__

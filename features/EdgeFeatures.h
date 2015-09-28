@@ -5,7 +5,7 @@
 
 class EdgeFeatures {
 
-	typedef Features<Crag::EdgeMap<std::vector<double>>> FeaturesType;
+	typedef Features<Crag::CragEdge> FeaturesType;
 
 public:
 
@@ -24,9 +24,9 @@ public:
 		return features(_crag.type(e))[e];
 	}
 
-	std::vector<double>& operator[](Crag::CragEdge e) {
+	void set(Crag::CragEdge e, const std::vector<double>& v) {
 
-		return features(_crag.type(e))[e];
+		features(_crag.type(e)).set(e, v);
 	}
 
 	inline unsigned int dims(Crag::EdgeType type) const {
@@ -75,6 +75,10 @@ private:
 						UsageError,
 						"edges of type AssignmentEdge don't have features");
 		}
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"unknown edge type " << type);
 	}
 
 	const FeaturesType& features(Crag::EdgeType type) const {
@@ -90,6 +94,10 @@ private:
 						UsageError,
 						"edges of type AssignmentEdge don't have features");
 		}
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"unknown edge type " << type);
 	}
 
 	const Crag& _crag;

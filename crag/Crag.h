@@ -141,6 +141,11 @@ public:
 			return _node == other._node;
 		}
 
+		bool operator!=(CragNode other) const {
+
+			return !(_node == other._node);
+		}
+
 		/**
 		 * Implicit conversion operator to a node of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this node can be used as 
@@ -197,6 +202,11 @@ public:
 		CragNode opposite(CragNode n) {
 
 			return CragNode(_crag.getAdjacencyGraph().oppositeNode(n, _edge));
+		}
+
+		bool operator<(const CragEdge& other) const {
+
+			return _edge < other._edge;
 		}
 
 		/**
@@ -434,6 +444,11 @@ public:
 	}
 
 	static CragNode Invalid;
+
+	NodeMap<NodeType>& nodeTypes() { return _nodeTypes; }
+	const NodeMap<NodeType>& nodeTypes() const { return _nodeTypes; }
+	EdgeMap<EdgeType>& edgeTypes() { return _edgeTypes; }
+	const EdgeMap<EdgeType>& edgeTypes() const { return _edgeTypes; }
 
 private:
 

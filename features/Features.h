@@ -5,30 +5,12 @@
 #include <util/exceptions.h>
 #include "Crag.h"
 
-template <typename MapType>
-class Features : public MapType {
-
-	template <typename M>
-	struct KeyTraits {};
-
-	template <typename T>
-	struct KeyTraits<Crag::NodeMap<T>> {
-		typedef Crag::Node   KeyType;
-		typedef Crag::NodeIt KeyIteratorType;
-	};
-
-	template <typename T>
-	struct KeyTraits<Crag::EdgeMap<T>> {
-		typedef Crag::Edge   KeyType;
-		typedef Crag::EdgeIt KeyIteratorType;
-	};
-
-	typedef typename KeyTraits<MapType>::KeyType         KeyType;
-	typedef typename KeyTraits<MapType>::KeyIteratorType KeyIteratorType;
+template <typename KeyType>
+class Features {
 
 public:
 
-	Features(const Crag& crag) : MapType(crag), _crag(crag), _dimsDirty(true) {}
+	Features(const Crag& crag) : _crag(crag), _dimsDirty(true) {}
 
 	/**
 	 * Add a single feature to the feature vector for a node. Converts nan into 
@@ -39,8 +21,17 @@ public:
 		if (feature != feature)
 			feature = 0;
 
-		(*this)[n].push_back(feature);
+		_features[n].push_back(feature);
 
+		_dimsDirty = true;
+	}
+
+	/**
+	 * Explicitly set a feature vector.
+	 */
+	inline void set(KeyType n, const std::vector<double>& v) {
+
+		_features[n] = v;
 		_dimsDirty = true;
 	}
 
@@ -55,21 +46,26 @@ public:
 		_dims = 0;
 
 		bool first = true;
-		for (KeyIteratorType i(_crag); i != lemon::INVALID; ++i) {
+		int firstId;
+		for (auto& p : _features) {
+
+			KeyType n = p.first;
+			const std::vector<double>& f = p.second;
 
 			if (first) {
 
-				_dims = (*this)[i].size();
+				_dims = f.size();
 				first = false;
+				firstId = _crag.id(n);
 
 			} else {
 
-				if ((*this)[i].size() != _dims)
+				if (f.size() != _dims)
 					UTIL_THROW_EXCEPTION(
 							UsageError,
 							"Features contains vectors of different sizes: "
-							"expected " << _dims << ", found " << (*this)[i].size() <<
-							" for id " << _crag.id(i));
+							"expected " << _dims << " (as seen for id " << firstId << ")" <<
+							", found " << f.size() << " for id " << _crag.id(n));
 			}
 		}
 
@@ -124,6 +120,13 @@ public:
 		return _max;
 	}
 
+	const std::vector<double>& operator[](KeyType k) const { return _features.at(k); }
+
+protected:
+
+	// don't allow non-const access to feature vectors
+	std::vector<double>& operator[](KeyType k) { return _features[k]; }
+
 private:
 
 	void findMinMax() {
@@ -131,21 +134,21 @@ private:
 		_min.clear();
 		_max.clear();
 
-		for (KeyIteratorType n(_crag); n != lemon::INVALID; ++n) {
+		for (auto& p : _features) {
 
-			const std::vector<double>& features = (*this)[n];
+			const std::vector<double>& f = p.second;
 
 			if (_min.size() == 0) {
 
-				_min = features;
-				_max = features;
+				_min = f;
+				_max = f;
 
 			} else {
 
 				for (unsigned int i = 0; i < _min.size(); i++) {
 
-					_min[i] = std::min(_min[i], features[i]);
-					_max[i] = std::max(_max[i], features[i]);
+					_min[i] = std::min(_min[i], f[i]);
+					_max[i] = std::max(_max[i], f[i]);
 				}
 			}
 		}
@@ -165,26 +168,28 @@ private:
 					UsageError,
 					"provided min and max have different size " << min.size() << " than features " << dims());
 
-		for (KeyIteratorType n(_crag); n != lemon::INVALID; ++n) {
+		for (auto& p : _features) {
 
-			std::vector<double>& features = (*this)[n];
+			std::vector<double>& f = p.second;
 
-			if (features.size() != min.size())
+			if (f.size() != min.size())
 				UTIL_THROW_EXCEPTION(
 						UsageError,
-						"encountered a feature with differnt size " << features.size() << " than given min " << min.size());
+						"encountered a feature with differnt size " << f.size() << " than given min " << min.size());
 
 			for (unsigned int i = 0; i < min.size(); i++) {
 
 				if (max[i] - min[i] <= 1e-10)
 					continue;
 
-				features[i] = (features[i] - min[i])/(max[i] - min[i]);
+				f[i] = (f[i] - min[i])/(max[i] - min[i]);
 			}
 		}
 	}
 
 	const Crag& _crag;
+
+	std::map<KeyType, std::vector<double>> _features;
 
 	std::vector<double> _min, _max;
 

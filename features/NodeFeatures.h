@@ -6,7 +6,7 @@
 
 class NodeFeatures {
 
-	typedef Features<Crag::NodeMap<std::vector<double>>> FeaturesType;
+	typedef Features<Crag::CragNode> FeaturesType;
 
 public:
 
@@ -26,9 +26,9 @@ public:
 		return features(_crag.type(n))[n];
 	}
 
-	std::vector<double>& operator[](Crag::CragNode n) {
+	void set(Crag::CragNode n, const std::vector<double>& v) {
 
-		return features(_crag.type(n))[n];
+		features(_crag.type(n)).set(n, v);
 	}
 
 	inline unsigned int dims(Crag::NodeType type) const {
@@ -83,6 +83,10 @@ private:
 						UsageError,
 						"nodes of type NoAssignmentNode don't have features");
 		}
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"unknown node type " << type);
 	}
 
 	const FeaturesType& features(Crag::NodeType type) const {
@@ -100,6 +104,10 @@ private:
 						UsageError,
 						"nodes of type NoAssignmentNode don't have features");
 		}
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"unknown node type " << type);
 	}
 
 	const Crag& _crag;

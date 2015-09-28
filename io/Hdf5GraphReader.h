@@ -11,15 +11,15 @@ public:
 	/**
 	 * Converts numeric types into array-like objects for HDF5 storage.
 	 */
-	template <typename T>
+	template <typename T, typename To = T>
 	struct DefaultConverter {
 
 		typedef T ArrayValueType;
 		static const int ArraySize = 1;
 
-		T operator()(const vigra::ArrayVectorView<T>& array) const {
+		To operator()(const vigra::ArrayVectorView<T>& array) const {
 
-			return array[0];
+			return static_cast<To>(array[0]);
 		}
 	};
 
