@@ -36,23 +36,26 @@ DownSampler::process(const Crag& crag, const CragVolumes& volumes, Crag& downSam
 	}
 
 	// make sure all copied nodes have a valid volume
+	unsigned int numOriginalNodes = 0;
+	unsigned int numDownsampledNodes = 0;
 	for (Crag::SubsetNodeIt n(crag); n != lemon::INVALID; ++n) {
+
+		numOriginalNodes++;
 
 		if (!_copyMap.count(n))
 			continue;
 
+		numDownsampledNodes++;
 		Crag::Node copy = _copyMap[n];
 
 		downSampledVolumes.setVolume(copy, volumes[crag.toRag(n)]);
 	}
 
-	int numNodes = 0;
-	for (Crag::NodeIt n(downSampled); n != lemon::INVALID; ++n)
-		numNodes++;
-
 	LOG_USER(downsamplerlog)
 			<< "downsampled CRAG contains "
-			<< numNodes << " nodes"
+			<< numDownsampledNodes << " nodes, "
+			<< (numOriginalNodes - numDownsampledNodes) << " less "
+			<< "then original CRAG"
 			<< std::endl;
 }
 
