@@ -3,6 +3,15 @@
 #include <features/EdgeFeatures.h>
 #include <util/helpers.hpp>
 
+FeatureWeights::FeatureWeights() {
+
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode})
+		_nodeFeatureWeights[type] = std::vector<double>();
+
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge})
+		_edgeFeatureWeights[type] = std::vector<double>();
+}
+
 FeatureWeights::FeatureWeights(const NodeFeatures& nodeFeatures, const EdgeFeatures& edgeFeatures, double value) {
 
 	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode})

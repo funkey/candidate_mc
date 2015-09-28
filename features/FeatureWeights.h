@@ -17,7 +17,7 @@ public:
 	/**
 	 * Create an empty set of feature weights.
 	 */
-	FeatureWeights() {}
+	FeatureWeights();
 
 	/**
 	 * Create feature weights suitable for the passed features, and initialize 

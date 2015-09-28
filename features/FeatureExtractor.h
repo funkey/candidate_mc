@@ -98,6 +98,8 @@ private:
 	int _numOriginalEdgeFeatures;
 
 	bool _useProvidedMinMax;
+
+	std::map<Crag::CragNode, std::pair<int, int>> _topoFeatureCache;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

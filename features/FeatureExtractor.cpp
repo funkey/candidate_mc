@@ -364,36 +364,43 @@ FeatureExtractor::extractTopologicalNodeFeatures(NodeFeatures& nodeFeatures) {
 	for (Crag::CragNode n : _crag.nodes())
 		if (_crag.isRootNode(n))
 			recExtractTopologicalFeatures(nodeFeatures, n);
+
+	_topoFeatureCache.clear();
 }
 
 std::pair<int, int>
 FeatureExtractor::recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::CragNode n) {
 
-	int numChildren    = 0;
-	int numDescendants = 0;
-	int level          = 1; // level of leaf nodes
+	if (!_topoFeatureCache.count(n)) {
 
-	for (Crag::CragArc e : _crag.inArcs(n)) {
+		int numChildren    = 0;
+		int numDescendants = 0;
+		int level          = 1; // level of leaf nodes
 
-		std::pair<int, int> level_descendants =
-				recExtractTopologicalFeatures(
-						nodeFeatures,
-						e.source());
+		for (Crag::CragArc e : _crag.inArcs(n)) {
 
-		level = std::max(level, level_descendants.first + 1);
-		numDescendants += level_descendants.second;
-		numChildren++;
+			std::pair<int, int> level_descendants =
+					recExtractTopologicalFeatures(
+							nodeFeatures,
+							e.source());
+
+			level = std::max(level, level_descendants.first + 1);
+			numDescendants += level_descendants.second;
+			numChildren++;
+		}
+
+		numDescendants += numChildren;
+
+		if (_crag.type(n) != Crag::NoAssignmentNode) {
+
+			nodeFeatures.append(n, level);
+			nodeFeatures.append(n, numDescendants);
+
+			_topoFeatureCache[n] = std::make_pair(level, numDescendants);
+		}
 	}
 
-	numDescendants += numChildren;
-
-	if (_crag.type(n) != Crag::NoAssignmentNode) {
-
-		nodeFeatures.append(n, level);
-		nodeFeatures.append(n, numDescendants);
-	}
-
-	return std::make_pair(level, numDescendants);
+	return _topoFeatureCache[n];
 }
 
 void
@@ -714,10 +721,13 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 
 		Crag::CragNode u = e.u();
 		Crag::CragNode v = e.v();
+		std::cout << _crag.id(u) << " " << _crag.id(v) << std::endl;
 		// feature vectors from node u/v
 		const auto & featsU = nodeFeatures[u];
 		const auto & featsV = nodeFeatures[v];
 
+		UTIL_ASSERT(_crag.type(u) == Crag::VolumeNode || _crag.type(u) == Crag::SliceNode);
+		UTIL_ASSERT(_crag.type(v) == Crag::VolumeNode || _crag.type(v) == Crag::SliceNode);
 		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
 		UTIL_ASSERT_REL(featsU.size(), >=, _numOriginalVolumeNodeFeatures);
 		UTIL_ASSERT_REL(featsV.size(), >=, _numOriginalVolumeNodeFeatures);

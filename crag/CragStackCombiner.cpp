@@ -108,8 +108,8 @@ CragStackCombiner::combine(
 
 			Crag::CragNode assignment = targetCrag.addNode(Crag::AssignmentNode);
 
-			targetCrag.addAdjacencyEdge(_prevNodeMap[pair.first], assignment);
-			targetCrag.addAdjacencyEdge(_nextNodeMap[pair.second], assignment);
+			targetCrag.addAdjacencyEdge(_prevNodeMap[pair.first], assignment, Crag::AssignmentEdge);
+			targetCrag.addAdjacencyEdge(_nextNodeMap[pair.second], assignment, Crag::AssignmentEdge);
 			targetCrag.addSubsetArc(_prevNodeMap[pair.first], assignment);
 			targetCrag.addSubsetArc(_nextNodeMap[pair.second], assignment);
 		}
@@ -142,8 +142,8 @@ CragStackCombiner::copyNodes(
 		nodeMap[i] = n;
 
 		// add adjacencies to NoAssignmentNodes befor and after
-		target.addAdjacencyEdge(n, _noAssignmentNodes[z]);
-		target.addAdjacencyEdge(n, _noAssignmentNodes[z+1]);
+		target.addAdjacencyEdge(n, _noAssignmentNodes[z], Crag::NoAssignmentEdge);
+		target.addAdjacencyEdge(n, _noAssignmentNodes[z+1], Crag::NoAssignmentEdge);
 
 		LOG_ALL(cragstackcombinerlog)
 				<< "copied node " << source.id(i) << " at " << sourceVolumes[i]->getBoundingBox()
@@ -157,7 +157,7 @@ CragStackCombiner::copyNodes(
 		Crag::CragNode u = nodeMap[e.u()];
 		Crag::CragNode v = nodeMap[e.v()];
 
-		target.addAdjacencyEdge(u, v);
+		target.addAdjacencyEdge(u, v, source.type(e));
 	}
 
 	// copy subset relations

@@ -19,7 +19,18 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	writeDigraph(crag.getSubsetGraph());
 
 	_hdfFile.cd("/crag");
-	Hdf5GraphWriter::writeNodeMap(crag, crag.nodeTypes(), "types", Hdf5GraphWriter::DefaultConverter<Crag::NodeType, int>());
+	Hdf5GraphWriter::writeNodeMap(crag, crag.nodeTypes(), "node_types", Hdf5GraphWriter::DefaultConverter<Crag::NodeType, int>());
+
+	std::vector<int> edgeTypes;
+	for (Crag::CragEdge e : crag.edges()) {
+
+		edgeTypes.push_back(crag.id(e.u()));
+		edgeTypes.push_back(crag.id(e.v()));
+		edgeTypes.push_back(crag.type(e));
+	}
+	_hdfFile.write(
+			"edge_types",
+			vigra::ArrayVectorView<int>(edgeTypes.size(), const_cast<int*>(&edgeTypes[0])));
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("grid_graph");
@@ -99,7 +110,28 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 	readDigraph(crag.getSubsetGraph());
 
 	_hdfFile.cd("/crag");
-	Hdf5GraphReader::readNodeMap(crag, crag.nodeTypes(), "types", Hdf5GraphReader::DefaultConverter<int, Crag::NodeType>());
+	Hdf5GraphReader::readNodeMap(crag, crag.nodeTypes(), "node_types", Hdf5GraphReader::DefaultConverter<int, Crag::NodeType>());
+
+	vigra::ArrayVector<int> edgeTypes;
+	_hdfFile.readAndResize(
+			"edge_types",
+			edgeTypes);
+
+	for (unsigned int i = 0; i < edgeTypes.size();) {
+
+		Crag::Node u = crag.nodeFromId(edgeTypes[i]);
+		Crag::Node v = crag.nodeFromId(edgeTypes[i+1]);
+		Crag::EdgeType type = static_cast<Crag::EdgeType>(edgeTypes[i+2]);
+		i += 3;
+
+		// find edge in CRAG and set type
+		for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
+			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+
+				crag.edgeTypes()[e] = type;
+				break;
+			}
+	}
 
 	try {
 
@@ -190,6 +222,9 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 			if (crag.type(n) == type)
 				numNodes++;
 
+		if (numNodes == 0)
+			continue;
+
 		vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims(type) + 1, numNodes));
 
 		int nodeNum = 0;
@@ -222,6 +257,9 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 	vigra::MultiArray<2, double> allFeatures;
 
 	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+
+		if (!_hdfFile.existsDataset(std::string("nodes_") + boost::lexical_cast<std::string>(type)))
+			continue;
 
 		_hdfFile.readAndResize(std::string("nodes_") + boost::lexical_cast<std::string>(type), allFeatures);
 
@@ -259,6 +297,9 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 			if (crag.type(e) == type)
 				numEdges++;
 
+		if (numEdges == 0)
+			continue;
+
 		vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims(type) + 2, numEdges));
 
 		int edgeNum = 0;
@@ -290,6 +331,9 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 	_hdfFile.cd("features");
 
 	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		if (!_hdfFile.existsDataset(std::string("edges_") + boost::lexical_cast<std::string>(type)))
+			continue;
 
 		vigra::MultiArray<2, double> allFeatures;
 
@@ -518,6 +562,9 @@ Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 
 		const std::vector<double>& w = weights[type];
 
+		if (w.size() == 0)
+			continue;
+
 		_hdfFile.write(
 				std::string("node_") + boost::lexical_cast<std::string>(type),
 				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
@@ -526,6 +573,9 @@ Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
 
 		const std::vector<double>& w = weights[type];
+
+		if (w.size() == 0)
+			continue;
 
 		_hdfFile.write(
 				std::string("edge_") + boost::lexical_cast<std::string>(type),
@@ -541,6 +591,9 @@ Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
 
 	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
 
+		if (!_hdfFile.existsDataset(std::string("node_") + boost::lexical_cast<std::string>(type)))
+			continue;
+
 		vigra::ArrayVector<double> w;
 		_hdfFile.readAndResize(
 				std::string("node_") + boost::lexical_cast<std::string>(type),
@@ -550,6 +603,9 @@ Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
 	}
 
 	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		if (!_hdfFile.existsDataset(std::string("edge_") + boost::lexical_cast<std::string>(type)))
+			continue;
 
 		vigra::ArrayVector<double> w;
 		_hdfFile.readAndResize(
