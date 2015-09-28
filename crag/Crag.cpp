@@ -1,6 +1,8 @@
 #include "Crag.h"
 #include <util/assert.h>
 
+Crag::CragNode Crag::Invalid;
+
 int
 Crag::getLevel(Crag::Node n) const {
 

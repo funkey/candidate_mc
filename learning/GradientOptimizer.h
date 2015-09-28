@@ -60,12 +60,13 @@ public:
 	 * to provide:
 	 *
 	 *   void operator()(
-	 *			const std::vector<double>& current,
-	 *			double&                    value,
-	 *			std::vector<double>&       gradient);
+	 *			const Weights& current,
+	 *			double&        value,
+	 *			Weights&       gradient);
 	 *
 	 * and should return the value and gradient of the objective function 
-	 * (passed by reference) at point 'current'.
+	 * (passed by reference) at point 'current'. Weights has to be copy 
+	 * constructable and has to provide exportToVector() and importFromVector().
 	 */
     template <typename Oracle, typename Weights>
     OptimizerResult optimize(Oracle& oracle, Weights& w);
@@ -83,9 +84,21 @@ GradientOptimizer::GradientOptimizer(const Parameters& parameter) :
 
 template <typename Oracle, typename Weights>
 GradientOptimizer::OptimizerResult
-GradientOptimizer::optimize(Oracle& oracle, Weights& w) {
+GradientOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 	unsigned int t = 0;
+
+	// value of L at current w
+	double value = 0.0;
+
+	// the current weights as vector
+	std::vector<double> w = weights.exportToVector();
+
+	// gradient of L at current w
+	Weights gradient(weights);
+
+	// same as vector
+	std::vector<double> g;
 
 	while (true) {
 
@@ -95,28 +108,24 @@ GradientOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 		LOG_ALL(gradientoptimizerlog) << "current w is " << w << std::endl;
 
-		// value of L at current w
-		double value = 0.0;
-
-		// gradient of L at current w
-        Weights gradient(w.size());
-
 		// get current value and gradient
-		oracle(w, value, gradient);
+		weights.importFromVector(w);
+		oracle(weights, value, gradient);
+		g = gradient.exportToVector();
 
 		LOG_DEBUG(gradientoptimizerlog) << "       L(w)              is: " << value << std::endl;
-		LOG_ALL(gradientoptimizerlog)   << "      ∂L(w)/∂            is: " << gradient << std::endl;
+		LOG_ALL(gradientoptimizerlog)   << "      ∂L(w)/∂            is: " << g << std::endl;
 
 		double stepWidth = _parameter.initialStepWidth/(t + 1);
 
 		// ∂L(w)/∂ + ∂λ½|w|²/∂ = ∂L(w)/∂ + λw
 		for (int i = 0; i < w.size(); i++)
-			w[i] -= stepWidth*gradient[i] + _parameter.lambda*w[i];
+			w[i] -= stepWidth*g[i] + _parameter.lambda*w[i];
 
 		storeVector(w, std::string("feature_weights_") + boost::lexical_cast<std::string>(t) + ".txt");
 
 		double magnitude2 = 0;
-		for (double v : gradient)
+		for (double v : g)
 			magnitude2 += v*v;
 
 		LOG_DEBUG(gradientoptimizerlog) << "     |∂L(w)/∂|           is: " << sqrt(magnitude2) << std::endl;

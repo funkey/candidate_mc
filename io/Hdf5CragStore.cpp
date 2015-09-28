@@ -177,24 +177,31 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
 
-	int numNodes = 0;
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		numNodes++;
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
 
-	vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims() + 1, numNodes));
+		int numNodes = 0;
+		for (Crag::CragNode n : crag.nodes())
+			if (crag.type(n) == type)
+				numNodes++;
 
-	int nodeNum = 0;
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+		vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims(type) + 1, numNodes));
 
-		allFeatures(0, nodeNum) = crag.id(n);
-		std::copy(
-				features[n].begin(),
-				features[n].end(),
-				allFeatures.bind<1>(nodeNum).begin() + 1);
-		nodeNum++;
+		int nodeNum = 0;
+		for (Crag::CragNode n : crag.nodes()) {
+
+			if (crag.type(n) != type)
+				continue;
+
+			allFeatures(0, nodeNum) = crag.id(n);
+			std::copy(
+					features[n].begin(),
+					features[n].end(),
+					allFeatures.bind<1>(nodeNum).begin() + 1);
+			nodeNum++;
+		}
+
+		_hdfFile.write(std::string("nodes_") + boost::lexical_cast<std::string>(type), allFeatures);
 	}
-
-	_hdfFile.write("nodes", allFeatures);
 
 	LOG_USER(hdf5storelog) << "done." << std::endl;
 }
@@ -208,28 +215,28 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 
 	vigra::MultiArray<2, double> allFeatures;
 
-	_hdfFile.readAndResize("nodes", allFeatures);
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
 
-	int dims     = allFeatures.shape(0) - 1;
-	int numNodes = allFeatures.shape(1);
+		_hdfFile.readAndResize(std::string("nodes_") + boost::lexical_cast<std::string>(type), allFeatures);
 
-	for (int i = 0; i < numNodes; i++) {
+		int dims     = allFeatures.shape(0) - 1;
+		int numNodes = allFeatures.shape(1);
 
-		Crag::Node n = crag.nodeFromId(allFeatures(0, i));
+		for (int i = 0; i < numNodes; i++) {
 
-		features[n].resize(dims);
-		std::copy(
-				allFeatures.bind<1>(i).begin() + 1,
-				allFeatures.bind<1>(i).end(),
-				features[n].begin());
+			Crag::CragNode n = crag.nodeFromId(allFeatures(0, i));
+
+			features[n].resize(dims);
+			std::copy(
+					allFeatures.bind<1>(i).begin() + 1,
+					allFeatures.bind<1>(i).end(),
+					features[n].begin());
+		}
 	}
 }
 
 void
 Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) {
-
-	if (features.dims() == 0)
-		return;
 
 	LOG_USER(hdf5storelog) << "saving edge features... " << std::flush;
 
@@ -237,25 +244,32 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
 
-	int numEdges = 0;
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
-		numEdges++;
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
 
-	vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims() + 2, numEdges));
+		int numEdges = 0;
+		for (Crag::CragEdge e : crag.edges())
+			if (crag.type(e) == type)
+				numEdges++;
 
-	int edgeNum = 0;
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+		vigra::MultiArray<2, double> allFeatures(vigra::Shape2(features.dims(type) + 2, numEdges));
 
-		allFeatures(0, edgeNum) = crag.id(crag.u(e));
-		allFeatures(1, edgeNum) = crag.id(crag.v(e));
-		std::copy(
-				features[e].begin(),
-				features[e].end(),
-				allFeatures.bind<1>(edgeNum).begin() + 2);
-		edgeNum++;
+		int edgeNum = 0;
+		for (Crag::CragEdge e : crag.edges()) {
+
+			if (crag.type(e) != type)
+				continue;
+
+			allFeatures(0, edgeNum) = crag.id(e.u());
+			allFeatures(1, edgeNum) = crag.id(e.v());
+			std::copy(
+					features[e].begin(),
+					features[e].end(),
+					allFeatures.bind<1>(edgeNum).begin() + 2);
+			edgeNum++;
+		}
+
+		_hdfFile.write(std::string("edges_") + boost::lexical_cast<std::string>(type), allFeatures);
 	}
-
-	_hdfFile.write("edges", allFeatures);
 
 	LOG_USER(hdf5storelog) << "done." << std::endl;
 }
@@ -267,115 +281,37 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 	_hdfFile.cd("crag");
 	_hdfFile.cd("features");
 
-	if (!_hdfFile.existsDataset("edges"))
-		return;
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
 
-	vigra::MultiArray<2, double> allFeatures;
+		vigra::MultiArray<2, double> allFeatures;
 
-	_hdfFile.readAndResize("edges", allFeatures);
+		_hdfFile.readAndResize(std::string("edges_") + boost::lexical_cast<std::string>(type), allFeatures);
 
-	int dims     = allFeatures.shape(0) - 2;
-	int numEdges = allFeatures.shape(1);
+		int dims     = allFeatures.shape(0) - 2;
+		int numEdges = allFeatures.shape(1);
 
-	for (int i = 0; i < numEdges; i++) {
+		for (int i = 0; i < numEdges; i++) {
 
-		Crag::Node u = crag.nodeFromId(allFeatures(0, i));
-		Crag::Node v = crag.nodeFromId(allFeatures(1, i));
+			Crag::CragNode u = crag.nodeFromId(allFeatures(0, i));
+			Crag::CragNode v = crag.nodeFromId(allFeatures(1, i));
 
-		Crag::IncEdgeIt e(crag, u);
-		for (; e != lemon::INVALID; ++e)
-			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v)
-				break;
+			auto e = crag.adjEdges(u).begin();
+			for (; e != crag.adjEdges(u).end(); e++)
+				if ((*e).opposite(u) == v)
+					break;
 
-		if (e == lemon::INVALID)
-			UTIL_THROW_EXCEPTION(
-					IOError,
-					"can not find edge for nodes " << crag.id(u) << " and " << crag.id(v));
+			if (e == crag.adjEdges(u).end())
+				UTIL_THROW_EXCEPTION(
+						IOError,
+						"can not find edge for nodes " << crag.id(u) << " and " << crag.id(v));
 
-		features[e].resize(dims);
-		std::copy(
-				allFeatures.bind<1>(i).begin() + 2,
-				allFeatures.bind<1>(i).end(),
-				features[e].begin());
+			features[*e].resize(dims);
+			std::copy(
+					allFeatures.bind<1>(i).begin() + 2,
+					allFeatures.bind<1>(i).end(),
+					features[*e].begin());
+		}
 	}
-}
-
-void
-Hdf5CragStore::saveNodeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"node_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"node_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
-Hdf5CragStore::retrieveNodeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd("crag");
-	_hdfFile.cd("features");
-
-	vigra::ArrayVector<double> f;
-	_hdfFile.readAndResize(
-			"node_features_min",
-			f);
-	min.resize(f.size());
-	std::copy(f.begin(), f.end(), min.begin());
-	_hdfFile.write(
-			"node_features_max",
-			f);
-	max.resize(f.size());
-	std::copy(f.begin(), f.end(), max.begin());
-}
-
-void
-Hdf5CragStore::saveEdgeFeaturesMinMax(
-		const std::vector<double>& min,
-		const std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd_mk("crag");
-	_hdfFile.cd_mk("features");
-
-	_hdfFile.write(
-			"edge_features_min",
-			vigra::ArrayVectorView<double>(min.size(), const_cast<double*>(&min[0])));
-	_hdfFile.write(
-			"edge_features_max",
-			vigra::ArrayVectorView<double>(max.size(), const_cast<double*>(&max[0])));
-}
-
-void
-Hdf5CragStore::retrieveEdgeFeaturesMinMax(
-			std::vector<double>& min,
-			std::vector<double>& max) {
-
-	_hdfFile.root();
-	_hdfFile.cd("crag");
-	_hdfFile.cd("features");
-
-	vigra::ArrayVector<double> f;
-	_hdfFile.readAndResize(
-			"edge_features_min",
-			f);
-	min.resize(f.size());
-	std::copy(f.begin(), f.end(), min.begin());
-	_hdfFile.write(
-			"edge_features_max",
-			f);
-	max.resize(f.size());
-	std::copy(f.begin(), f.end(), max.begin());
 }
 
 void
@@ -434,6 +370,42 @@ Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
 
 		_hdfFile.cd_up();
 	}
+}
+
+void
+Hdf5CragStore::saveFeatureWeights(const FeatureWeights& weights) {
+
+	writeWeights(weights, "feature_weights");
+}
+
+void
+Hdf5CragStore::retrieveFeatureWeights(FeatureWeights& weights) {
+
+	readWeights(weights, "feature_weights");
+}
+
+void
+Hdf5CragStore::saveFeaturesMin(const FeatureWeights& min) {
+
+	writeWeights(min, "features_min");
+}
+
+void
+Hdf5CragStore::retrieveFeaturesMin(FeatureWeights& min) {
+
+	readWeights(min, "features_min");
+}
+
+void
+Hdf5CragStore::saveFeaturesMax(const FeatureWeights& max) {
+
+	writeWeights(max, "features_max");
+}
+
+void
+Hdf5CragStore::retrieveFeaturesMax(FeatureWeights& max) {
+
+	readWeights(max, "features_max");
 }
 
 void
@@ -524,6 +496,58 @@ Hdf5CragStore::writeGraphVolume(const GraphVolume& graphVolume) {
 	p[1] = graphVolume.getOffset().y();
 	p[2] = graphVolume.getOffset().z();
 	_hdfFile.write("offset", p);
+}
+
+void
+Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk(name);
+
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+
+		const std::vector<double>& w = weights[type];
+
+		_hdfFile.write(
+				std::string("node_") + boost::lexical_cast<std::string>(type),
+				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
+	}
+
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		const std::vector<double>& w = weights[type];
+
+		_hdfFile.write(
+				std::string("edge_") + boost::lexical_cast<std::string>(type),
+				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
+	}
+}
+
+void
+Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
+
+	_hdfFile.root();
+	_hdfFile.cd(name);
+
+	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+
+		vigra::ArrayVector<double> w;
+		_hdfFile.readAndResize(
+				std::string("node_") + boost::lexical_cast<std::string>(type),
+				w);
+		weights[type].resize(w.size());
+		std::copy(w.begin(), w.end(), weights[type].begin());
+	}
+
+	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+
+		vigra::ArrayVector<double> w;
+		_hdfFile.readAndResize(
+				std::string("edge_") + boost::lexical_cast<std::string>(type),
+				w);
+		weights[type].resize(w.size());
+		std::copy(w.begin(), w.end(), weights[type].begin());
+	}
 }
 
 void

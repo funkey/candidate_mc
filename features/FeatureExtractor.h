@@ -30,9 +30,19 @@ public:
 		_segmentations = sampleSegmentations;
 	}
 
+	/**
+	 * Extract node and edge features, along with the respective min and max 
+	 * values that have been used for normalization. If the provided min and max 
+	 * are not empty, they will be used for normalizing the features (instead of 
+	 * computing min and max from the extracted features). Use this for a 
+	 * testing dataset where you want to make sure that the features are 
+	 * normalized in the same way as in the training dataset.
+	 */
 	void extract(
 			NodeFeatures& nodeFeatures,
-			EdgeFeatures& edgeFeatures);
+			EdgeFeatures& edgeFeatures,
+			FeatureWeights& min,
+			FeatureWeights& max);
 
 private:
 
@@ -43,19 +53,19 @@ private:
 	class FeatureNodeAdaptor {
 
 	public:
-		FeatureNodeAdaptor(Crag::Node node, NodeFeatures& features) : _node(node), _features(features) {}
+		FeatureNodeAdaptor(Crag::CragNode node, NodeFeatures& features) : _node(node), _features(features) {}
 
 		inline void append(unsigned int /*ignored*/, double value) { _features.append(_node, value); }
 
 	private:
 
-		Crag::Node    _node;
-		NodeFeatures& _features;
+		Crag::CragNode _node;
+		NodeFeatures&  _features;
 	};
 
-	void extractNodeFeatures(NodeFeatures& nodeFeatures);
+	void extractNodeFeatures(NodeFeatures& nodeFeatures, FeatureWeights& min, FeatureWeights& max);
 
-	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
+	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, FeatureWeights& min, FeatureWeights& max);
 
 	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
 
@@ -86,6 +96,8 @@ private:
 
 	// number of "real" edge features, before add squares and bias
 	int _numOriginalEdgeFeatures;
+
+	bool _useProvidedMinMax;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

@@ -10,10 +10,63 @@
  *
  * This datastructure holds two graphs on the same set of nodes: An undirected 
  * region adjacency graph (rag) and a directed subset graph (subset).
+ *
+ * Each node and adjacency edge has a type (which defaults to Volume and 
+ * Adjacency, respectively) which can be used to specialize feature extraction 
+ * and solvers.
  */
 class Crag {
 
 public:
+
+	enum NodeType {
+
+		/**
+		 * Indicates that the candidate is a 3D region. Default.
+		 */
+		VolumeNode,
+
+		/**
+		 * Indicates that the candidate is a 2D region (possibly in a 3D 
+		 * volume). This information is used to extract features that are 
+		 * specific for 2D regions.
+		 */
+		SliceNode,
+
+		/**
+		 * Indicates that the candidate represents an assignment of slices 
+		 * across sections of a volume. Slice and Assignment candidates are 
+		 * supposed to form a bipartite graph on the adjacency edges.
+		 */
+		AssignmentNode,
+
+		/**
+		 * A special "assignment" node that represents no assignment of a 
+		 * candidate. This node has no features and no costs.
+		 */
+		NoAssignmentNode
+	};
+
+	enum EdgeType {
+
+		/**
+		 * Indicates that the connected candidates are adjacent.
+		 */
+		AdjacencyEdge,
+
+		/**
+		 * An adjecency edge that links Slice nodes and Assignment nodes. This 
+		 * edge has no features and no costs.
+		 */
+		AssignmentEdge,
+
+		/**
+		 * A special "assignment" edge connecting Slice nodes to the 
+		 * NoAssignment node. This edge has features to model costs for the 
+		 * appearance and disappearance of tracks.
+		 */
+		NoAssignmentEdge
+	};
 
 	typedef lemon::ListGraph     RagType;
 	typedef lemon::ListDigraph   SubsetType;
@@ -141,6 +194,11 @@ public:
 			return CragNode(_crag.getAdjacencyGraph().v(_edge));
 		}
 
+		CragNode opposite(CragNode n) {
+
+			return CragNode(_crag.getAdjacencyGraph().oppositeNode(n, _edge));
+		}
+
 		/**
 		 * Implicit conversion operator to an edge of the lemon region adjacency 
 		 * graph. Provided for convenience, such that this edge can be used as 
@@ -156,6 +214,8 @@ public:
 	#include "CragIterators.h"
 
 	Crag() :
+		_nodeTypes(_rag),
+		_edgeTypes(_rag),
 		_affiliatedEdges(_rag) {}
 
 	virtual ~Crag() {}
@@ -163,10 +223,13 @@ public:
 	/**
 	 * Add a node to the CRAG.
 	 */
-	inline CragNode addNode() {
+	inline CragNode addNode(NodeType type = VolumeNode) {
 
 		_ssg.addNode();
-		return CragNode(_rag.addNode());
+		CragNode n = _rag.addNode();
+		_nodeTypes[n] = type;
+
+		return n;
 	}
 
 	/**
@@ -195,9 +258,12 @@ public:
 	 * Indicate that the candidates represented by the given two nodes are 
 	 * adjacent.
 	 */
-	inline CragEdge addAdjacencyEdge(Node u, Node v) {
+	inline CragEdge addAdjacencyEdge(Node u, Node v, EdgeType type = AdjacencyEdge) {
 
-		return CragEdge(*this, _rag.addEdge(u, v));
+		CragEdge e(*this, _rag.addEdge(u, v));
+		_edgeTypes[e] = type;
+
+		return e;
 	}
 
 	/**
@@ -238,6 +304,16 @@ public:
 
 		return CragIncEdges(*this, n);
 	}
+
+	/**
+	 * Get the type of a node.
+	 */
+	NodeType type(CragNode n) const { return _nodeTypes[n]; }
+
+	/**
+	 * Get the type of an edge.
+	 */
+	EdgeType type(CragEdge e) const { return _edgeTypes[e]; }
 
 	/**
 	 * Set the grid graph, to which the affiliated edges between leaf node 
@@ -357,6 +433,8 @@ public:
 		return s;
 	}
 
+	static CragNode Invalid;
+
 private:
 
 	// adjacency graph
@@ -364,6 +442,10 @@ private:
 
 	// subset graph
 	lemon::ListDigraph _ssg;
+
+	NodeMap<NodeType> _nodeTypes;
+
+	EdgeMap<EdgeType> _edgeTypes;
 
 	vigra::GridGraph<3> _gridGraph;
 

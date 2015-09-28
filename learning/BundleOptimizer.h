@@ -77,12 +77,13 @@ public:
 	 * to provide:
 	 *
 	 *   void operator()(
-	 *			const std::vector<double>& current,
-	 *			double&                    value,
-	 *			std::vector<double>&       gradient);
+	 *			const Weights& current,
+	 *			double&        value,
+	 *			Weights&       gradient);
 	 *
 	 * and should return the value and gradient of the objective function 
-	 * (passed by reference) at point 'current'.
+	 * (passed by reference) at point 'current'. Weights has to be copy 
+	 * constructable and has to provide exportToVector() and importFromVector().
 	 */
     template <typename Oracle, typename Weights>
     OptimizerResult optimize(Oracle& oracle, Weights& w);
@@ -117,7 +118,11 @@ BundleOptimizer::~BundleOptimizer() {
 
 template <typename Oracle, typename Weights>
 BundleOptimizer::OptimizerResult
-BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
+BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
+
+	Weights gradient(weights);
+
+	std::vector<double> w = weights.exportToVector();
 
 	setupQp(w);
 
@@ -146,7 +151,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 
 		t++;
 
-        Weights w_tm1 = w;
+        std::vector<double> w_tm1 = w;
 
 		LOG_ALL(bundleoptimizerlog) << "current w is " << w_tm1 << std::endl;
 
@@ -154,10 +159,12 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& w) {
 		double L_w_tm1 = 0.0;
 
 		// gradient of L at current w
-        Weights a_t(w.size());
+        std::vector<double> a_t(w.size());
 
 		// get current value and gradient
-		oracle(w_tm1, L_w_tm1, a_t);
+		weights.importFromVector(w_tm1);
+		oracle(weights, L_w_tm1, gradient);
+		a_t = gradient.exportToVector();
 
 		LOG_DEBUG(bundleoptimizerlog) << "       L(w)              is: " << L_w_tm1 << std::endl;
 		LOG_ALL(bundleoptimizerlog) << "      ∂L(w)/∂            is: " << a_t << std::endl;

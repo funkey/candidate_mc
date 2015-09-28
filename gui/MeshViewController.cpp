@@ -18,13 +18,12 @@ MeshViewController::MeshViewController(
 	_volumes(volumes),
 	_labels(labels),
 	_meshes(std::make_shared<sg_gui::Meshes>()),
-	_current(lemon::INVALID),
 	_currentNeighbor(-1) {}
 
 void
-MeshViewController::loadMeshes(const std::vector<Crag::Node>& nodes) {
+MeshViewController::loadMeshes(const std::vector<Crag::CragNode>& nodes) {
 
-	for (Crag::Node node : nodes)
+	for (Crag::CragNode node : nodes)
 		addMesh(node);
 
 	send<sg_gui::SetMeshes>(_meshes);
@@ -40,14 +39,14 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 			signal.position().z(),
 			x, y, z);
 
-	Crag::Node n = _crag.nodeFromId((*_labels)(x, y, z));
+	Crag::CragNode n = _crag.nodeFromId((*_labels)(x, y, z));
 
-	if (n == lemon::INVALID)
+	if (n == Crag::Invalid)
 		return;
 
 	if (_meshes->contains(_crag.id(n))) {
 
-		_current = lemon::INVALID;
+		_current = Crag::CragNode();
 		removeMesh(n);
 
 	} else
@@ -105,15 +104,14 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 void
 MeshViewController::nextVolume() {
 
-	if (_current == lemon::INVALID)
+	if (_current == Crag::Invalid)
 		return;
 
-	Crag::SubsetOutArcIt parentEdge(_crag, _crag.toSubset(_current));
-
-	if (parentEdge == lemon::INVALID)
+	if (_crag.outArcs(_current).size() == 0)
 		return;
 
-	Crag::Node parent = _crag.toRag(_crag.getSubsetGraph().oppositeNode(_crag.toSubset(_current), parentEdge));
+	Crag::CragNode parent = (*_crag.outArcs(_current).begin()).target();
+	
 	_path.push_back(_current);
 
 	showSingleMesh(parent);
@@ -122,13 +120,13 @@ MeshViewController::nextVolume() {
 void
 MeshViewController::prevVolume() {
 
-	if (_current == lemon::INVALID)
+	if (_current == Crag::Invalid)
 		return;
 
 	if (_path.size() == 0)
 		return;
 
-	Crag::Node child = _path.back();
+	Crag::CragNode child = _path.back();
 	_path.pop_back();
 
 	showSingleMesh(child);
@@ -163,7 +161,7 @@ MeshViewController::prevNeighbor() {
 }
 
 void
-MeshViewController::showSingleMesh(Crag::Node n) {
+MeshViewController::showSingleMesh(Crag::CragNode n) {
 
 	LOG_USER(meshviewcontrollerlog)
 			<< "showing node with id " << _crag.id(n)
@@ -174,8 +172,8 @@ MeshViewController::showSingleMesh(Crag::Node n) {
 	addMesh(n);
 
 	_neighbors.clear();
-	for (Crag::IncEdgeIt e(_crag, _current); e != lemon::INVALID; ++e)
-		_neighbors.push_back(_crag.getAdjacencyGraph().oppositeNode(_current, e));
+	for (Crag::CragEdge e : _crag.adjEdges(_current))
+		_neighbors.push_back(e.opposite(_current));
 	_currentNeighbor = -1;
 
 	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
@@ -185,7 +183,7 @@ MeshViewController::showSingleMesh(Crag::Node n) {
 }
 
 void
-MeshViewController::showNeighbor(Crag::Node n) {
+MeshViewController::showNeighbor(Crag::CragNode n) {
 
 	LOG_USER(meshviewcontrollerlog) << "showing neighbor with id " << _crag.id(n) << std::endl;
 
@@ -193,8 +191,8 @@ MeshViewController::showNeighbor(Crag::Node n) {
 
 	send<sg_gui::SetMeshes>(_meshes);
 
-	for (Crag::IncEdgeIt e(_crag, _current); e != lemon::INVALID; ++e)
-		if (_crag.getAdjacencyGraph().oppositeNode(_current, e) == _neighbors[_currentNeighbor]) {
+	for (Crag::CragEdge e : _crag.adjEdges(_current))
+		if (e.opposite(_current) == _neighbors[_currentNeighbor]) {
 
 			send<SetEdge>(e);
 			break;
@@ -202,7 +200,7 @@ MeshViewController::showNeighbor(Crag::Node n) {
 }
 
 void
-MeshViewController::addMesh(Crag::Node n) {
+MeshViewController::addMesh(Crag::CragNode n) {
 
 	if (_meshCache.count(n)) {
 
@@ -218,7 +216,7 @@ MeshViewController::addMesh(Crag::Node n) {
 	sg_gui::MarchingCubes<Adaptor> marchingCubes;
 	std::shared_ptr<sg_gui::Mesh> mesh = marchingCubes.generateSurface(
 			adaptor,
-			sg_gui::MarchingCubes<Adaptor>::AcceptAbove(0.5),
+			sg_gui::MarchingCubes<Adaptor>::AcceptAbove(0),
 			optionCubeSize,
 			optionCubeSize,
 			optionCubeSize);
@@ -228,7 +226,7 @@ MeshViewController::addMesh(Crag::Node n) {
 }
 
 void
-MeshViewController::removeMesh(Crag::Node n) {
+MeshViewController::removeMesh(Crag::CragNode n) {
 
 	_meshes->remove(_crag.id(n));
 }

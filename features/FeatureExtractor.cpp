@@ -95,41 +95,6 @@ util::ProgramOption optionNormalize(
 	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
 );
 
-util::ProgramOption optionMinMaxFromFiles(
-	util::_module           = "features",
-	util::_long_name        = "minMaxFromFiles",
-	util::_description_text = "For the feature normalization, instead of using the min and max of the extracted features, "
-							  "use the min and max provided in the files (see {min,max}{Node,Edge}Features)."
-);
-
-util::ProgramOption optionMinNodeFeatures(
-	util::_module           = "features",
-	util::_long_name        = "minNodeFeatures",
-	util::_description_text = "A file containing the minimal values of the node features.",
-	util::_default_value    = "node_features_min.txt"
-);
-
-util::ProgramOption optionMaxNodeFeatures(
-	util::_module           = "features",
-	util::_long_name        = "maxNodeFeatures",
-	util::_description_text = "A file containing the minimal values of the node features.",
-	util::_default_value    = "node_features_max.txt"
-);
-
-util::ProgramOption optionMinEdgeFeatures(
-	util::_module           = "features",
-	util::_long_name        = "minEdgeFeatures",
-	util::_description_text = "A file containing the minimal values of the edge features.",
-	util::_default_value    = "edge_features_min.txt"
-);
-
-util::ProgramOption optionMaxEdgeFeatures(
-	util::_module           = "features",
-	util::_long_name        = "maxEdgeFeatures",
-	util::_description_text = "A file containing the minimal values of the edge features.",
-	util::_default_value    = "edge_features_max.txt"
-);
-
 /////////////////////////
 // STATISTICS FEATURES //
 /////////////////////////
@@ -182,20 +147,26 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 void
 FeatureExtractor::extract(
 		NodeFeatures& nodeFeatures,
-		EdgeFeatures& edgeFeatures) {
+		EdgeFeatures& edgeFeatures,
+		FeatureWeights& min,
+		FeatureWeights& max) {
 
-	extractNodeFeatures(nodeFeatures);
-	extractEdgeFeatures(nodeFeatures, edgeFeatures);
+	if (!min.empty() && !max.empty())
+		_useProvidedMinMax = true;
+	else
+		_useProvidedMinMax = false;
 
-	visualizeEdgeFeatures(edgeFeatures);
+	extractNodeFeatures(nodeFeatures, min, max);
+	extractEdgeFeatures(nodeFeatures, edgeFeatures, min, max);
 }
 
 void
-FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
+FeatureExtractor::extractNodeFeatures(
+		NodeFeatures& nodeFeatures,
+		FeatureWeights& min,
+		FeatureWeights& max) {
 
-	int numNodes = 0;
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		numNodes++;
+	int numNodes = _crag.nodes().size();
 
 	LOG_USER(featureextractorlog) << "extracting features for " << numNodes << " nodes" << std::endl;
 
@@ -209,10 +180,10 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 		extractNodeStatisticsFeatures(nodeFeatures);
 
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << nodeFeatures.dims()
+			<< std::endl << "extracted " << nodeFeatures.dims(Crag::VolumeNode)
 			<< " features per node" << std::endl;
 
-	_numOriginalNodeFeatures = nodeFeatures.dims();
+	_numOriginalNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
 
 	///////////////////
 	// NORMALIZATION //
@@ -220,30 +191,22 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 	if (optionNormalize) {
 
-		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
+		if (_useProvidedMinMax) {
 
-		if (optionMinMaxFromFiles) {
-
-			LOG_USER(featureextractorlog)
-					<< "reading feature minmax from files"
-					<< std::endl;
-
-			std::vector<double> min = retrieveVector<double>(optionMinNodeFeatures);
-			std::vector<double> max = retrieveVector<double>(optionMaxNodeFeatures);
-
+			LOG_USER(featureextractorlog) << "normalizing node features with provided min and max" << std::endl;
 			LOG_ALL(featureextractorlog)
-					<< "normalizing features with"
-					<<  std::endl << min << std::endl
-					<< "and"
-					<<  std::endl << max << std::endl;
+					<< "min:" << min << std::endl
+					<< "max:" << max << std::endl;
 
 			nodeFeatures.normalize(min, max);
 
 		} else {
 
+			LOG_USER(featureextractorlog) << "normalizing node features" << std::endl;
+
 			nodeFeatures.normalize();
-			storeVector(nodeFeatures.getMin(), optionMinNodeFeatures);
-			storeVector(nodeFeatures.getMax(), optionMaxNodeFeatures);
+			nodeFeatures.getMin(min);
+			nodeFeatures.getMax(max);
 		}
 	}
 
@@ -255,7 +218,7 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 
 		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
-		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+		for (Crag::CragNode n : _crag.nodes()) {
 
 			std::vector<double>& features = nodeFeatures[n];
 
@@ -277,13 +240,13 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 	}
 
 	// append a 1 for bias
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::CragNode n : _crag.nodes())
 		nodeFeatures.append(n, 1);
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
-			<< nodeFeatures.dims()
-			<< " features per node" << std::endl;
+			<< nodeFeatures.dims(Crag::VolumeNode)
+			<< " features per volume node" << std::endl;
 
 	LOG_USER(featureextractorlog) << "done" << std::endl;
 }
@@ -291,7 +254,9 @@ FeatureExtractor::extractNodeFeatures(NodeFeatures& nodeFeatures) {
 void
 FeatureExtractor::extractEdgeFeatures(
 		const NodeFeatures& nodeFeatures,
-		EdgeFeatures&       edgeFeatures) {
+		EdgeFeatures&       edgeFeatures,
+		FeatureWeights& min,
+		FeatureWeights& max) {
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
 
@@ -305,41 +270,33 @@ FeatureExtractor::extractEdgeFeatures(
 		extractEdgeSegmentationFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << edgeFeatures.dims()
+			<< std::endl << "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
 			<< " features per edge" << std::endl;
 
-	_numOriginalEdgeFeatures = edgeFeatures.dims();
+	_numOriginalEdgeFeatures = edgeFeatures.dims(Crag::AdjacencyEdge);
 
 	///////////////////
 	// NORMALIZATION //
 	///////////////////
 
-	if (optionNormalize && edgeFeatures.dims() > 0) {
+	if (optionNormalize && edgeFeatures.dims(Crag::AdjacencyEdge) > 0) {
 
-		LOG_USER(featureextractorlog) << "normalizing features" << std::endl;
+		if (_useProvidedMinMax) {
 
-		if (optionMinMaxFromFiles) {
-
-			LOG_USER(featureextractorlog)
-					<< "reading feature minmax from project file"
-					<< std::endl;
-
-			std::vector<double> min = retrieveVector<double>(optionMinEdgeFeatures);
-			std::vector<double> max = retrieveVector<double>(optionMaxEdgeFeatures);
-
+			LOG_USER(featureextractorlog) << "normalizing edge features with provided min and max" << std::endl;
 			LOG_ALL(featureextractorlog)
-					<< "normalizing features with"
-					<<  std::endl << min << std::endl
-					<< "and"
-					<<  std::endl << max << std::endl;
+					<< "min:" << min << std::endl
+					<< "max:" << max << std::endl;
 
 			edgeFeatures.normalize(min, max);
 
 		} else {
 
+			LOG_USER(featureextractorlog) << "normalizing edge features" << std::endl;
+
 			edgeFeatures.normalize();
-			storeVector(edgeFeatures.getMin(), optionMinEdgeFeatures);
-			storeVector(edgeFeatures.getMax(), optionMaxEdgeFeatures);
+			edgeFeatures.getMin(min);
+			edgeFeatures.getMax(max);
 		}
 	}
 
@@ -351,7 +308,7 @@ FeatureExtractor::extractEdgeFeatures(
 
 		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
-		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+		for (Crag::CragEdge e : _crag.edges()) {
 
 			std::vector<double>& features = edgeFeatures[e];
 
@@ -373,12 +330,12 @@ FeatureExtractor::extractEdgeFeatures(
 	}
 
 	// append a 1 for bias
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+	for (Crag::CragEdge e : _crag.edges())
 		edgeFeatures.append(e, 1);
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
-			<< edgeFeatures.dims()
+			<< edgeFeatures.dims(Crag::AdjacencyEdge)
 			<< " features per edge" << std::endl;
 }
 
@@ -699,10 +656,10 @@ FeatureExtractor::extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures) {
 
 		UTIL_TIME_SCOPE("extract edge segmentation features");
 
-		for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+		for (Crag::CragEdge e : _crag.edges()) {
 
-			Crag::Node u = _crag.u(e);
-			Crag::Node v = _crag.v(e);
+			Crag::Node u = e.u();
+			Crag::Node v = e.v();
 
 			// count how many times u and v were connected in all segmentations
 			int connected = 0;
@@ -723,9 +680,10 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 	// Edge Features      //
 	// from Node Features //
 	////////////////////////
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
-		Crag::Node u = _crag.u(e);
-		Crag::Node v = _crag.v(e);
+	for (Crag::CragEdge e : _crag.edges()) {
+
+		Crag::CragNode u = e.u();
+		Crag::CragNode v = e.v();
 		// feature vectors from node u/v
 		const auto & featsU = nodeFeatures[u];
 		const auto & featsV = nodeFeatures[v];
@@ -755,7 +713,7 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 	const auto & gridGraph = _crag.getGridGraph();
 
 	// iterate over all edges
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e){
+	for (Crag::CragEdge e : _crag.edges()) {
 
 		// accumulate statistics
 		
@@ -800,7 +758,7 @@ FeatureExtractor::visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures) {
 
 	util::box<float, 3>   cragBB = _volumes.getBoundingBox();
 	util::point<float, 3> resolution;
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		if (!_crag.isLeafNode(n))
 			continue;
@@ -817,7 +775,7 @@ FeatureExtractor::visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures) {
 			std::numeric_limits<int>::max());
 	edges = 0;
 
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+	for (Crag::CragEdge e : _crag.edges())
 		for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(e)) {
 
 			edges[_crag.getGridGraph().u(ae)] = edgeFeatures[e][0];

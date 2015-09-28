@@ -35,6 +35,11 @@ util::ProgramOption optionNoFeatures(
 		                          "best-effort features, if set). Used for testing the learning "
 		                          "method.");
 
+util::ProgramOption optionMinMaxFromProject(
+		util::_long_name        = "minMaxFromProject",
+		util::_description_text = "Instead of computing the min and max values of the features for normalization, "
+		                          "use min and max stored in the project file.");
+
 util::ProgramOption optionNoSkeletons(
 		util::_long_name        = "noSkeletons",
 		util::_description_text = "Do not extract skeletons for the candidates.");
@@ -73,9 +78,23 @@ int main(int argc, char** argv) {
 
 		if (!optionNoFeatures) {
 
+			FeatureWeights min, max;
+
+			if (optionMinMaxFromProject) {
+
+				cragStore.retrieveFeaturesMin(min);
+				cragStore.retrieveFeaturesMax(max);
+			}
+
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
 			featureExtractor.setSampleSegmentations(sampleSegmentations);
-			featureExtractor.extract(nodeFeatures, edgeFeatures);
+			featureExtractor.extract(nodeFeatures, edgeFeatures, min, max);
+
+			if (!optionMinMaxFromProject) {
+
+				cragStore.saveFeaturesMin(min);
+				cragStore.saveFeaturesMax(max);
+			}
 		}
 
 		if (optionAppendBestEffortFeature) {
