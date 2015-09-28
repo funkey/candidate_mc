@@ -28,6 +28,8 @@ Dependencies
   * Gurobi
 
     Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
+  
+  * XQuartz (only on OS X, http://xquartz.macosforge.org/)
 
 Configure:
 ----------
