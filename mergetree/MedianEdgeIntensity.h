@@ -45,7 +45,7 @@ public:
 		if (_edgeWeights.size() == 0)
 			return;
 		_maxEdgeWeight = *_edgeWeights.begin();
-		for (EdgeWeightsType::const_iterator i = _edgeWeights.begin(); i != _edgeWeights.end(); i++)
+		for (EdgeWeightsType::iterator i = _edgeWeights.begin(); i != _edgeWeights.end(); i++)
 			_maxEdgeWeight = std::max(_maxEdgeWeight, *i);
 	}
 

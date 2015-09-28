@@ -52,8 +52,8 @@ public:
 		_i(optionIntensityThreshold) {
 
 		// get initial region sizes and average intensities
-		vigra::MultiArray<2, int>::iterator   i = initialRegions.begin();
-		vigra::MultiArray<2, float>::iterator j = intensities.begin();
+		vigra::MultiArray<2, int>::const_iterator   i = initialRegions.begin();
+		vigra::MultiArray<2, float>::const_iterator j = intensities.begin();
 
 		UTIL_ASSERT(initialRegions.shape() == intensities.shape());
 

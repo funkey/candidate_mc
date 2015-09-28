@@ -1,1 +1,1 @@
-define_module(mergetree OBJECT LINKS vigra-git util)
+define_module(mergetree OBJECT LINKS vigra util)
