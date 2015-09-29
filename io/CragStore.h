@@ -7,6 +7,7 @@
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
 #include <features/Skeletons.h>
+#include <inference/Costs.h>
 
 /**
  * Interface definition for crag stores.
@@ -55,6 +56,11 @@ public:
 	virtual void saveFeatureWeights(const FeatureWeights& weights) = 0;
 
 	/**
+	 * Save node and edge costs (or loss) under the given name.
+	 */
+	virtual void saveCosts(const Crag& crag, const Costs& costs, std::string name) = 0;
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -94,6 +100,11 @@ public:
 	 * Retrieve feature weights.
 	 */
 	virtual void retrieveFeatureWeights(FeatureWeights& weights) = 0;
+
+	/**
+	 * Retrieve node and edge costs (or loss) of the given name.
+	 */
+	virtual void retrieveCosts(const Crag& crag, Costs& costs, std::string name) = 0;
 
 	/**
 	 * Store a segmentation, represented by sets of leaf nodes.

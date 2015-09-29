@@ -71,6 +71,11 @@ public:
 	void saveFeaturesMax(const FeatureWeights& max);
 
 	/**
+	 * Save node and edge costs (or loss) under the given name.
+	 */
+	void saveCosts(const Crag& crag, const Costs& costs, std::string name);
+
+	/**
 	 * Retrieve the candidate region adjacency graph (CRAG) associated to this 
 	 * store.
 	 */
@@ -110,6 +115,11 @@ public:
 	 * Retrieve feature weights.
 	 */
 	void retrieveFeatureWeights(FeatureWeights& weights) override;
+
+	/**
+	 * Retrieve node and edge costs (or loss) of the given name.
+	 */
+	void retrieveCosts(const Crag& crag, Costs& costs, std::string name);
 
 	/**
 	 * Store a segmentation, represented by sets of leaf nodes.
