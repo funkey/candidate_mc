@@ -17,12 +17,10 @@ util::ProgramOption optionForceParentCandidate(
 		util::_description_text = "Disallow merging of children into a shape that resembles their parent. "
 		                          "In this case, take the parent instead.");
 
-
 util::ProgramOption optionLazyTreePathConstraints(
         util::_long_name        = "lazyTreePathConstraints",
         util::_description_text = "Only add violated tree path constraints",
         util::_default_value    = false);
-
 
 MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
 	Solver(crag),
@@ -411,6 +409,9 @@ MultiCutSolver::findCut() {
 
 	// re-set constraints to inform solver about potential changes
 	_solver->setConstraints(_constraints);
+	std::string msg;
+	if (!_solver->solve(_solution, msg))
+		LOG_ERROR(multicutlog) << "solver did not find optimal solution: " << msg << std::endl;
 
 	LOG_USER(multicutlog) << "searching for optimal cut..." << std::endl;
 
