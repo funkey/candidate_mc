@@ -16,6 +16,7 @@
 #include <io/vectors.h>
 #include <learning/BestEffort.h>
 #include <learning/BundleOptimizer.h>
+#include <learning/AssignmentLoss.h>
 #include <learning/ContourDistanceLoss.h>
 #include <learning/GradientOptimizer.h>
 #include <learning/HammingLoss.h>
@@ -87,6 +88,12 @@ util::ProgramOption optionMaxHausdorffDistance(
 		util::_description_text = "The maximal Hausdorff distance that will be used for the Hausdorff loss.",
 		util::_default_value    = 1000); // matching tobasl experiments
 
+util::ProgramOption optionDryRun(
+		util::_long_name        = "dryRun",
+		util::_description_text = "Compute and store the best-effort loss, the best-effort, and the training loss; but "
+		                          "don't perform training.");
+
+
 int main(int argc, char** argv) {
 
 	try {
@@ -109,15 +116,15 @@ int main(int argc, char** argv) {
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
 
-		BestEffort*    bestEffort    = 0;
-		OverlapLoss*   overlapLoss   = 0;
-		HausdorffLoss* hausdorffLoss = 0;
+		std::unique_ptr<BestEffort> bestEffort;
+		std::unique_ptr<Loss>       bestEffortLoss;
+		std::unique_ptr<Loss>       trainingLoss;
 
 		if (optionBestEffortFromProjectFile) {
 
 			LOG_USER(logger::out) << "reading best-effort" << std::endl;
 
-			bestEffort = new BestEffort(crag);
+			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag));
 
 			vigra::HDF5File project(
 					optionProjectFile.as<std::string>(),
@@ -154,34 +161,41 @@ int main(int argc, char** argv) {
 			ExplicitVolume<int> groundTruth;
 			volumeStore.retrieveGroundTruth(groundTruth);
 
-			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-
 			if (optionBestEffortLoss.as<std::string>() == "overlap") {
 
-				overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
-				bestEffort = new BestEffort(crag, volumes, *overlapLoss);
+				LOG_USER(logger::out) << "using overlap loss for best-effort" << std::endl;
+
+				bestEffortLoss = std::unique_ptr<OverlapLoss>(new OverlapLoss(crag, volumes, groundTruth));
 
 			} else if (optionBestEffortLoss.as<std::string>() == "hausdorff") {
 
+				LOG_USER(logger::out) << "using hausdorff loss for best-effort" << std::endl;
+
 				// get ground truth volumes
 				Crag        gtCrag;
 				CragVolumes gtVolumes(gtCrag);
 				CragImport  import;
 				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
 
-				hausdorffLoss = new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
-				bestEffort = new BestEffort(crag, volumes, *hausdorffLoss);
+				bestEffortLoss = std::unique_ptr<HausdorffLoss>(new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance));
 
 			} else if (optionBestEffortLoss.as<std::string>() == "contour") {
 
+				LOG_USER(logger::out) << "using contour loss for best-effort" << std::endl;
+
 				// get ground truth volumes
 				Crag        gtCrag;
 				CragVolumes gtVolumes(gtCrag);
 				CragImport  import;
 				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
 
-				ContourDistanceLoss contourLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
-				bestEffort = new BestEffort(crag, volumes, contourLoss);
+				bestEffortLoss = std::unique_ptr<ContourDistanceLoss>(new ContourDistanceLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance));
+
+			} else if (optionBestEffortLoss.as<std::string>() == "assignment") {
+
+				LOG_USER(logger::out) << "using assignment loss for best-effort" << std::endl;
+
+				bestEffortLoss = std::unique_ptr<AssignmentLoss>(new AssignmentLoss(crag, volumes, groundTruth));
 
 			} else {
 
@@ -189,62 +203,54 @@ int main(int argc, char** argv) {
 						UsageError,
 						"unknown best-effort loss " + optionBestEffortLoss.as<std::string>());
 			}
-		}
 
-		Loss* loss = 0;
-		bool  destructLoss = false;
+			LOG_USER(logger::out) << "storing best-effort loss" << std::endl;
+
+			cragStore.saveCosts(crag, *bestEffortLoss, "best-effort_loss");
+
+			return 0;
+
+			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
+
+			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag, volumes, *bestEffortLoss));
+		}
 
 		if (optionLoss.as<std::string>() == "hamming") {
 
 			LOG_USER(logger::out) << "using Hamming loss" << std::endl;
 
-			loss = new HammingLoss(crag, *bestEffort);
-			destructLoss = true;
+			trainingLoss = std::unique_ptr<HammingLoss>(new HammingLoss(crag, *bestEffort));
 
 		} else if (optionLoss.as<std::string>() == "overlap") {
 
 			LOG_USER(logger::out) << "using overlap loss" << std::endl;
 
-			if (!overlapLoss) {
+			LOG_USER(logger::out) << "reading ground-truth" << std::endl;
+			ExplicitVolume<int> groundTruth;
+			volumeStore.retrieveGroundTruth(groundTruth);
 
-				LOG_USER(logger::out) << "reading ground-truth" << std::endl;
-				ExplicitVolume<int> groundTruth;
-				volumeStore.retrieveGroundTruth(groundTruth);
-
-				LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-				overlapLoss = new OverlapLoss(crag, volumes, groundTruth);
-			}
-
-			loss = overlapLoss;
+			trainingLoss = std::unique_ptr<OverlapLoss>(new OverlapLoss(crag, volumes, groundTruth));
 
 		} else if (optionLoss.as<std::string>() == "hausdorff") {
 
 			LOG_USER(logger::out) << "using hausdorff loss" << std::endl;
 
-			if (!hausdorffLoss) {
+			ExplicitVolume<int> groundTruth;
+			volumeStore.retrieveGroundTruth(groundTruth);
 
-				LOG_USER(logger::out) << "reading ground-truth" << std::endl;
-				ExplicitVolume<int> groundTruth;
-				volumeStore.retrieveGroundTruth(groundTruth);
+			// get ground truth volumes
+			Crag        gtCrag;
+			CragVolumes gtVolumes(gtCrag);
+			CragImport  import;
+			import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
 
-				// get ground truth volumes
-				Crag        gtCrag;
-				CragVolumes gtVolumes(gtCrag);
-				CragImport  import;
-				import.readSupervoxels(groundTruth, gtCrag, gtVolumes, groundTruth.getResolution(), groundTruth.getOffset());
-
-				LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
-				hausdorffLoss = new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance);
-			}
-
-			loss = hausdorffLoss;
+			trainingLoss = std::unique_ptr<HausdorffLoss>(new HausdorffLoss(crag, volumes, gtCrag, gtVolumes, optionMaxHausdorffDistance));
 
 		} else if (optionLoss.as<std::string>() == "topological") {
 
 			LOG_USER(logger::out) << "using topological loss" << std::endl;
 
-			loss = new TopologicalLoss(crag, *bestEffort);
-			destructLoss = true;
+			trainingLoss = std::unique_ptr<TopologicalLoss>(new TopologicalLoss(crag, *bestEffort));
 
 		} else {
 
@@ -262,7 +268,17 @@ int main(int argc, char** argv) {
 		if (optionNormalizeLoss) {
 
 			LOG_USER(logger::out) << "normalizing loss..." << std::endl;
-			loss->normalize(crag, multiCutParameters);
+			trainingLoss->normalize(crag, multiCutParameters);
+		}
+
+		LOG_USER(logger::out) << "storing training loss" << std::endl;
+
+		cragStore.saveCosts(crag, *trainingLoss, "training_loss");
+
+		if (optionDryRun) {
+
+			LOG_USER(logger::out) << "dry run -- skip learning" << std::endl;
+			return 0;
 		}
 
 		Oracle oracle(
@@ -270,7 +286,7 @@ int main(int argc, char** argv) {
 				volumes,
 				nodeFeatures,
 				edgeFeatures,
-				*loss,
+				*trainingLoss,
 				*bestEffort,
 				multiCutParameters);
 
@@ -295,18 +311,6 @@ int main(int argc, char** argv) {
 		}
 
 		cragStore.saveFeatureWeights(weights);
-
-		if (destructLoss && loss != 0)
-			delete loss;
-
-		if (overlapLoss)
-			delete overlapLoss;
-
-		if (hausdorffLoss)
-			delete hausdorffLoss;
-
-		if (bestEffort)
-			delete bestEffort;
 
 	} catch (boost::exception& e) {
 
