@@ -21,21 +21,21 @@ Oracle::operator()(
 
 	updateCosts(weights);
 
-	MultiCut::Status status = _mostViolatedMulticut.solve();
+	Solver::Status status = _mostViolatedSolver->solve();
 
-	if (optionStoreEachMostViolated) {
+	//if (optionStoreEachMostViolated) {
 
-		std::stringstream filename;
-		filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
-		_mostViolatedMulticut.storeSolution(_volumes, filename.str(), true);
-	}
+		//std::stringstream filename;
+		//filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
+		//_mostViolatedSolver->storeSolution(_volumes, filename.str(), true);
+	//}
 
-	if (status != MultiCut::SolutionFound)
+	if (status != Solver::SolutionFound)
 		UTIL_THROW_EXCEPTION(
 				Exception,
 				"solution not found");
 
-	value = _constant - _mostViolatedMulticut.getValue();
+	value = _constant - _mostViolatedSolver->getValue();
 
 	// value = E(y',w) - E(y*,w) + Δ(y',y*)
 	//       = B_c - <wΦ,y*> + <Δ_l,y*> + Δ_c
@@ -45,10 +45,10 @@ Oracle::operator()(
 
 	double mostViolatedEnergy = 0;
 	for (Crag::CragNode n : _crag.nodes())
-		if (_mostViolatedMulticut.getSelectedRegions()[n])
+		if (_mostViolatedSolver->getSelectedRegions()[n])
 			mostViolatedEnergy += nodeCost(n, weights);
 	for (Crag::CragEdge e : _crag.edges())
-		if (_mostViolatedMulticut.getMergedEdges()[e])
+		if (_mostViolatedSolver->getMergedEdges()[e])
 			mostViolatedEnergy += edgeCost(e, weights);
 
 	double loss   = value - _B_c + mostViolatedEnergy;
@@ -59,14 +59,14 @@ Oracle::operator()(
 
 	accumulateGradient(gradient);
 
-	if (optionStoreEachCurrentlyBest) {
+	//if (optionStoreEachCurrentlyBest) {
 
-		_currentBestMulticut.solve();
+		//_currentBestSolver->solve();
 
-		std::stringstream filename;
-		filename << "current-best_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
-		_currentBestMulticut.storeSolution(_volumes, filename.str(), true);
-	}
+		//std::stringstream filename;
+		//filename << "current-best_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
+		//_currentBestSolver->storeSolution(_volumes, filename.str(), true);
+	//}
 
 	_iteration++;
 }
@@ -126,7 +126,7 @@ Oracle::updateCosts(const FeatureWeights& weights) {
 	for (Crag::CragEdge e : _crag.edges())
 		_costs.edge[e] = edgeCost(e, weights);
 
-	_currentBestMulticut.setCosts(_costs);
+	_currentBestSolver->setCosts(_costs);
 
 	// -Δ_l
 	for (Crag::CragNode n : _crag.nodes())
@@ -152,7 +152,7 @@ Oracle::updateCosts(const FeatureWeights& weights) {
 	//      = max_y <wΦ,y'-y>  + <y,Δ_l> + Δ_c
 	//      = max_y <y,-wΦ + Δ_l> + <y',wΦ> + Δ_c
 
-	_mostViolatedMulticut.setCosts(_costs);
+	_mostViolatedSolver->setCosts(_costs);
 }
 
 void
@@ -177,7 +177,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		int sign = _bestEffort.node[n] - _mostViolatedMulticut.getSelectedRegions()[n];
+		int sign = _bestEffort.node[n] - _mostViolatedSolver->getSelectedRegions()[n];
 
 		const std::vector<double>& f = _nodeFeatures[n];
 		std::vector<double>&       g = gradient[_crag.type(n)];
@@ -187,7 +187,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		int sign = _bestEffort.edge[e] - _mostViolatedMulticut.getMergedEdges()[e];
+		int sign = _bestEffort.edge[e] - _mostViolatedSolver->getMergedEdges()[e];
 
 		const std::vector<double>& f = _edgeFeatures[e];
 		std::vector<double>&       g = gradient[_crag.type(e)];

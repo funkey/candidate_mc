@@ -5,12 +5,12 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/box.hpp>
-#include "MultiCut.h"
+#include "MultiCutSolver.h"
 
 #include <vigra/multi_impex.hxx>
 #include <vigra/functorexpression.hxx>
 
-logger::LogChannel multicutlog("multicutlog", "[MultiCut] ");
+logger::LogChannel multicutlog("multicutlog", "[MultiCutSolver] ");
 
 util::ProgramOption optionForceParentCandidate(
 		util::_long_name        = "forceParentCandidate",
@@ -24,11 +24,9 @@ util::ProgramOption optionLazyTreePathConstraints(
         util::_default_value    = false);
 
 
-MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
+MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
+	Solver(crag),
 	_crag(crag),
-	_merged(crag),
-	_selected(crag),
-	_labels(crag),
 	_numNodes(0),
 	_numEdges(0),
 	_solver(0),
@@ -48,14 +46,14 @@ MultiCut::MultiCut(const Crag& crag, const Parameters& parameters) :
 		setInitialConstraints();
 }
 
-MultiCut::~MultiCut() {
+MultiCutSolver::~MultiCutSolver() {
 
 	if (_solver)
 		delete _solver;
 }
 
 void
-MultiCut::setCosts(const Costs& costs) {
+MultiCutSolver::setCosts(const Costs& costs) {
 
 	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
 		_objective.setCoefficient(
@@ -68,15 +66,12 @@ MultiCut::setCosts(const Costs& costs) {
 				costs.edge[e]);
 }
 
-MultiCut::Status
-MultiCut::solve(unsigned int numIterations) {
-
-	if (numIterations == 0)
-		numIterations = _parameters.numIterations;
+MultiCutSolver::Status
+MultiCutSolver::solve() {
 
 	_solver->setObjective(_objective);
 
-	for (unsigned int i = 0; i < numIterations; i++) {
+	for (unsigned int i = 0; i < _parameters.numIterations; i++) {
 
 		LOG_USER(multicutlog)
 				<< "------------------------ iteration "
@@ -114,7 +109,7 @@ MultiCut::solve(unsigned int numIterations) {
 }
 
 void
-MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename, bool boundary) {
+MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& filename, bool boundary) {
 
 	util::box<float, 3>   cragBB = volumes.getBoundingBox();
 	util::point<float, 3> resolution;
@@ -215,7 +210,7 @@ MultiCut::storeSolution(const CragVolumes& volumes, const std::string& filename,
 }
 
 void
-MultiCut::prepareSolver() {
+MultiCutSolver::prepareSolver() {
 
 	LOG_DEBUG(multicutlog) << "preparing solver..." << std::endl;
 
@@ -227,7 +222,7 @@ MultiCut::prepareSolver() {
 }
 
 void
-MultiCut::setVariables() {
+MultiCutSolver::setVariables() {
 
 	LOG_DEBUG(multicutlog) << "setting variables..." << std::endl;
 
@@ -243,7 +238,7 @@ MultiCut::setVariables() {
 }
 
 void
-MultiCut::setInitialConstraints() {
+MultiCutSolver::setInitialConstraints() {
 
 	LOG_DEBUG(multicutlog) << "setting initial constraints..." << std::endl;
 
@@ -365,7 +360,7 @@ MultiCut::setInitialConstraints() {
 }
 
 int
-MultiCut::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathIds) {
+MultiCutSolver::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathIds) {
 
 	int numConstraintsAdded = 0;
 
@@ -412,7 +407,7 @@ MultiCut::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathI
 }
 
 void
-MultiCut::findCut() {
+MultiCutSolver::findCut() {
 
 	// re-set constraints to inform solver about potential changes
 	_solver->setConstraints(_constraints);
@@ -444,7 +439,7 @@ MultiCut::findCut() {
 }
 
 bool
-MultiCut::findViolatedConstraints() {
+MultiCutSolver::findViolatedConstraints() {
 
     int treePathConstraintAdded =0;
     int constraintsAdded = 0;
@@ -619,7 +614,7 @@ MultiCut::findViolatedConstraints() {
 }
 
 void
-MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
+MultiCutSolver::propagateLabel(Crag::SubsetNode n, int label) {
 
 	if (label == -1)
 		label = _labels[_crag.toRag(n)];
@@ -631,7 +626,7 @@ MultiCut::propagateLabel(Crag::SubsetNode n, int label) {
 }
 
 void
-MultiCut::drawBoundary(
+MultiCutSolver::drawBoundary(
 		const CragVolumes&           volumes,
 		Crag::Node                   n,
 		vigra::MultiArray<3, float>& components,

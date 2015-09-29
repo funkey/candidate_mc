@@ -3,7 +3,7 @@
 
 #include <set>
 #include <inference/Costs.h>
-#include <inference/MultiCut.h>
+#include <inference/MultiCutSolver.h>
 
 /**
  * A loss function that factorizes into additive contributions of the CRAG nodes 
@@ -28,7 +28,7 @@ public:
 	 * 0 and 1. For that, the loss is minimized and maximized on the given CRAG, 
 	 * with the given multi-cut parameters.
 	 */
-	void normalize(const Crag& crag, const MultiCut::Parameters& parameters);
+	void normalize(const Crag& crag, const MultiCutSolver::Parameters& parameters);
 
 	double constant;
 

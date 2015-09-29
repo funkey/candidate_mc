@@ -20,7 +20,7 @@
 #include <crag/DownSampler.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
 #include <features/FeatureExtractor.h>
-#include <inference/MultiCut.h>
+#include <inference/MultiCutSolver.h>
 
 util::ProgramOption optionFeatureWeights(
 		util::_long_name        = "featureWeights",
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
 		}
 
-		MultiCut multicut(crag);
+		MultiCutSolver multicut(crag);
 
 		multicut.setCosts(costs);
 		{

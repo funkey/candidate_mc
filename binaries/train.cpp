@@ -93,7 +93,6 @@ util::ProgramOption optionDryRun(
 		util::_description_text = "Compute and store the best-effort loss, the best-effort, and the training loss; but "
 		                          "don't perform training.");
 
-
 int main(int argc, char** argv) {
 
 	try {
@@ -119,6 +118,10 @@ int main(int argc, char** argv) {
 		std::unique_ptr<BestEffort> bestEffort;
 		std::unique_ptr<Loss>       bestEffortLoss;
 		std::unique_ptr<Loss>       trainingLoss;
+
+		Solver::Parameters solverParameters;
+		if (optionPretrain)
+			solverParameters.noConstraints = true;
 
 		if (optionBestEffortFromProjectFile) {
 
@@ -208,11 +211,9 @@ int main(int argc, char** argv) {
 
 			cragStore.saveCosts(crag, *bestEffortLoss, "best-effort_loss");
 
-			return 0;
-
 			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
 
-			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag, volumes, *bestEffortLoss));
+			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag, volumes, *bestEffortLoss, solverParameters));
 		}
 
 		if (optionLoss.as<std::string>() == "hamming") {
@@ -261,14 +262,10 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		MultiCut::Parameters multiCutParameters;
-		if (optionPretrain)
-			multiCutParameters.noConstraints = true;
-
 		if (optionNormalizeLoss) {
 
 			LOG_USER(logger::out) << "normalizing loss..." << std::endl;
-			trainingLoss->normalize(crag, multiCutParameters);
+			trainingLoss->normalize(crag, solverParameters);
 		}
 
 		LOG_USER(logger::out) << "storing training loss" << std::endl;
@@ -288,7 +285,7 @@ int main(int argc, char** argv) {
 				edgeFeatures,
 				*trainingLoss,
 				*bestEffort,
-				multiCutParameters);
+				solverParameters);
 
 		// create initial set of weights for the given features
 		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());

@@ -27,16 +27,16 @@ Loss::propagateLeafLoss(const Crag& crag) {
 }
 
 void
-Loss::normalize(const Crag& crag, const MultiCut::Parameters& params) {
+Loss::normalize(const Crag& crag, const MultiCutSolver::Parameters& params) {
 
 	double min, max;
 
 	{
 		LOG_DEBUG(losslog) << "searching for minimal loss value..." << std::endl;
 
-		MultiCut::Parameters minParams(params);
+		MultiCutSolver::Parameters minParams(params);
 		minParams.minimize = true;
-		MultiCut multicut(crag, minParams);
+		MultiCutSolver multicut(crag, minParams);
 		multicut.setCosts(*this);
 		multicut.solve();
 		min = multicut.getValue();
@@ -46,9 +46,9 @@ Loss::normalize(const Crag& crag, const MultiCut::Parameters& params) {
 	{
 		LOG_DEBUG(losslog) << "searching for maximal loss value..." << std::endl;
 
-		MultiCut::Parameters maxParams(params);
+		MultiCutSolver::Parameters maxParams(params);
 		maxParams.minimize = false;
-		MultiCut multicut(crag, maxParams);
+		MultiCutSolver multicut(crag, maxParams);
 		multicut.setCosts(*this);
 		multicut.solve();
 		max = multicut.getValue();

@@ -2,7 +2,7 @@
 #define CANDIDATE_MC_LEARNING_ORACLE_H__
 
 #include <crag/Crag.h>
-#include <inference/MultiCut.h>
+#include <inference/CragSolverFactory.h>
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
 #include <util/assert.h>
@@ -18,13 +18,13 @@ class Oracle {
 public:
 
 	Oracle(
-			const Crag&                  crag,
-			const CragVolumes&           volumes,
-			const NodeFeatures&          nodeFeatures,
-			const EdgeFeatures&          edgeFeatures,
-			const Loss&                  loss,
-			const BestEffort&            bestEffort,
-			MultiCut::Parameters         parameters = MultiCut::Parameters()) :
+			const Crag&         crag,
+			const CragVolumes&  volumes,
+			const NodeFeatures& nodeFeatures,
+			const EdgeFeatures& edgeFeatures,
+			const Loss&         loss,
+			const BestEffort&   bestEffort,
+			Solver::Parameters  parameters = Solver::Parameters()) :
 		_crag(crag),
 		_volumes(volumes),
 		_nodeFeatures(nodeFeatures),
@@ -32,8 +32,8 @@ public:
 		_loss(loss),
 		_bestEffort(bestEffort),
 		_costs(_crag),
-		_mostViolatedMulticut(crag, parameters),
-		_currentBestMulticut(crag, parameters),
+		_mostViolatedSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
+		_currentBestSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
 		_iteration(0) {}
 
 	void operator()(
@@ -91,8 +91,8 @@ private:
 	// best-effort part of _constant
 	double _B_c;
 
-	MultiCut _mostViolatedMulticut;
-	MultiCut _currentBestMulticut;
+	std::unique_ptr<Solver> _mostViolatedSolver;
+	std::unique_ptr<Solver> _currentBestSolver;
 
 	int _iteration;
 };

@@ -2,7 +2,8 @@
 #define CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
 
 #include <crag/Crag.h>
-#include <inference/MultiCut.h>
+#include <crag/CragVolumes.h>
+#include <inference/Solver.h>
 
 struct BestEffort {
 
@@ -16,10 +17,10 @@ struct BestEffort {
 	 * costs.
 	 */
 	BestEffort(
-			const Crag&                 crag,
-			const CragVolumes&          volumes,
-			const Costs&                costs,
-			const MultiCut::Parameters& params = MultiCut::Parameters());
+			const Crag&               crag,
+			const CragVolumes&        volumes,
+			const Costs&              costs,
+			const Solver::Parameters& params = Solver::Parameters());
 
 	Crag::NodeMap<bool> node;
 	Crag::EdgeMap<bool> edge;
