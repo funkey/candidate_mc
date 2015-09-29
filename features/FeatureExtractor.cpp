@@ -180,13 +180,13 @@ FeatureExtractor::extractNodeFeatures(
 		extractNodeStatisticsFeatures(nodeFeatures);
 
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << nodeFeatures.dims(Crag::VolumeNode)
+			<< "extracted " << nodeFeatures.dims(Crag::VolumeNode)
 			<< " features per volume node" << std::endl;
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << nodeFeatures.dims(Crag::SliceNode)
+			<< "extracted " << nodeFeatures.dims(Crag::SliceNode)
 			<< " features per slice node" << std::endl;
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << nodeFeatures.dims(Crag::AssignmentNode)
+			<< "extracted " << nodeFeatures.dims(Crag::AssignmentNode)
 			<< " features per assignment node" << std::endl;
 
 	_numOriginalVolumeNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
@@ -285,10 +285,10 @@ FeatureExtractor::extractEdgeFeatures(
 		extractEdgeSegmentationFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
+			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
 			<< " features per adjacency edge" << std::endl;
 	LOG_USER(featureextractorlog)
-			<< std::endl << "extracted " << edgeFeatures.dims(Crag::NoAssignmentEdge)
+			<< "extracted " << edgeFeatures.dims(Crag::NoAssignmentEdge)
 			<< " features per no-assignment edge" << std::endl;
 
 	///////////////////
@@ -678,6 +678,8 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 			}
 		}
 	}
+
+	LOG_USER(featureextractorlog) << std::endl;
 }
 
 void
