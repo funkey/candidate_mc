@@ -429,36 +429,42 @@ Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
 void
 Hdf5CragStore::saveFeatureWeights(const FeatureWeights& weights) {
 
+	_hdfFile.cd("/crag");
 	writeWeights(weights, "feature_weights");
 }
 
 void
 Hdf5CragStore::retrieveFeatureWeights(FeatureWeights& weights) {
 
+	_hdfFile.cd("/crag");
 	readWeights(weights, "feature_weights");
 }
 
 void
 Hdf5CragStore::saveFeaturesMin(const FeatureWeights& min) {
 
+	_hdfFile.cd("/crag");
 	writeWeights(min, "features_min");
 }
 
 void
 Hdf5CragStore::retrieveFeaturesMin(FeatureWeights& min) {
 
+	_hdfFile.cd("/crag");
 	readWeights(min, "features_min");
 }
 
 void
 Hdf5CragStore::saveFeaturesMax(const FeatureWeights& max) {
 
+	_hdfFile.cd("/crag");
 	writeWeights(max, "features_max");
 }
 
 void
 Hdf5CragStore::retrieveFeaturesMax(FeatureWeights& max) {
 
+	_hdfFile.cd("/crag");
 	readWeights(max, "features_max");
 }
 
@@ -555,7 +561,6 @@ Hdf5CragStore::writeGraphVolume(const GraphVolume& graphVolume) {
 void
 Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 
-	_hdfFile.root();
 	_hdfFile.cd_mk(name);
 
 	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
