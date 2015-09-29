@@ -480,7 +480,7 @@ Hdf5CragStore::saveCosts(const Crag& crag, const Costs& costs, std::string name)
 
 		edgeCosts.push_back(crag.id(e.u()));
 		edgeCosts.push_back(crag.id(e.v()));
-		edgeCosts.push_back(crag.type(e));
+		edgeCosts.push_back(costs.edge[e]);
 	}
 	_hdfFile.write(
 			name + "_edges",
