@@ -30,12 +30,6 @@ util::ProgramOption optionProjectFile(
 		util::_description_text = "The treemc project file.",
 		util::_default_value    = "project.hdf");
 
-util::ProgramOption optionFeatureWeights(
-		util::_long_name        = "featureWeights",
-		util::_short_name       = "w",
-		util::_description_text = "A file to store the learnt feature weights.",
-		util::_default_value    = "feature_weights.txt");
-
 util::ProgramOption optionBestEffortLoss(
 		util::_long_name        = "bestEffortLoss",
 		util::_description_text = "The loss to use for finding the best-effort solution: overlap (RAND index approximation "
