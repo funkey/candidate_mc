@@ -8,6 +8,7 @@
 #include <imageprocessing/ExplicitVolume.h>
 #include <gui/CragView.h>
 #include <gui/MeshViewController.h>
+#include <gui/CostsView.h>
 #include <gui/FeaturesView.h>
 #include <sg_gui/RotateView.h>
 #include <sg_gui/ZoomView.h>
@@ -114,10 +115,24 @@ int main(int argc, char** argv) {
 			LOG_USER(logger::out) << "could not find features" << std::endl;
 		}
 
+		// get costs
+
+		Costs bestEffortLoss(crag);
+
+		try {
+
+			cragStore.retrieveCosts(crag, bestEffortLoss, "best-effort_loss");
+
+		} catch (std::exception& e) {
+
+			LOG_USER(logger::out) << "could not find costs" << std::endl;
+		}
+
 		// visualize
 
 		auto cragView       = std::make_shared<CragView>();
 		auto meshController = std::make_shared<MeshViewController>(crag, volumes, supervoxels);
+		auto costsView      = std::make_shared<CostsView>(crag, bestEffortLoss, "best-effort loss");
 		auto featuresView   = std::make_shared<FeaturesView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);
@@ -127,6 +142,7 @@ int main(int argc, char** argv) {
 		zoomView->add(rotateView);
 		rotateView->add(cragView);
 		rotateView->add(meshController);
+		rotateView->add(costsView);
 		rotateView->add(featuresView);
 
 		cragView->setRawVolume(intensities);
