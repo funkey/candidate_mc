@@ -26,6 +26,10 @@ util::ProgramOption optionShowLabels(
 		util::_long_name        = "showLabels",
 		util::_description_text = "Instead of showing the CRAG leaf nodes, show the labels (i.e., a segmentation) stored in the project file.");
 
+util::ProgramOption optionShowGroundTruth(
+		util::_long_name        = "showGroundTruth",
+		util::_description_text = "Instead of showing the CRAG leaf nodes, show the ground truth labels.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -70,34 +74,52 @@ int main(int argc, char** argv) {
 		supervoxels->setOffset(intensities->getOffset());
 		supervoxels->data() = 0;
 
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+			if (!crag.isLeafNode(n))
+				continue;
+
+			const CragVolume& volume = *volumes[n];
+			util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+
+			for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+			for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+			for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+
+				if (volume.data()(x, y, z))
+					(*supervoxels)(
+							offset.x() + x,
+							offset.y() + y,
+							offset.z() + z)
+									= crag.id(n);
+			}
+		}
+
+		auto labels = supervoxels;
+
 		if (optionShowLabels) {
 
-			ExplicitVolume<int> labels;
-			volumeStore.retrieveLabels(labels);
-			supervoxels->data() = labels.data();
+			labels = std::make_shared<ExplicitVolume<float>>();
+
+			LOG_USER(logger::out) << "showing solution labels" << std::endl;
+
+			ExplicitVolume<int> tmp;
+			volumeStore.retrieveLabels(tmp);
+			*labels = tmp;
+
+		} else if (optionShowGroundTruth) {
+
+			labels = std::make_shared<ExplicitVolume<float>>();
+
+			LOG_USER(logger::out) << "showing ground truth labels" << std::endl;
+
+			ExplicitVolume<int> tmp;
+			volumeStore.retrieveGroundTruth(tmp);
+			*labels = tmp;
 
 		} else {
 
-			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
-
-				if (!crag.isLeafNode(n))
-					continue;
-
-				const CragVolume& volume = *volumes[n];
-				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
-
-				for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
-				for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
-				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
-
-					if (volume.data()(x, y, z))
-						(*supervoxels)(
-								offset.x() + x,
-								offset.y() + y,
-								offset.z() + z)
-										= crag.id(n);
-				}
-			}
+			LOG_USER(logger::out) << "showing leaf node labels" << std::endl;
 		}
 
 		// get features
@@ -146,7 +168,7 @@ int main(int argc, char** argv) {
 		rotateView->add(featuresView);
 
 		cragView->setRawVolume(intensities);
-		cragView->setLabelsVolume(supervoxels);
+		cragView->setLabelsVolume(labels);
 
 		window->processEvents();
 
