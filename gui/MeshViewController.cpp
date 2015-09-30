@@ -140,11 +140,11 @@ MeshViewController::nextVolume() {
 	if (_current == Crag::Invalid)
 		return;
 
-	if (_crag.outArcs(_current).size() == 0)
+	Crag::CragNode parent = parentOf(_current);
+
+	if (parent == Crag::Invalid)
 		return;
 
-	Crag::CragNode parent = parentOf(_current);
-	
 	_path.push_back(_current);
 
 	showSingleMesh(parent);

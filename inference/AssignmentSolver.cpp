@@ -5,6 +5,7 @@
 #include <util/ProgramOptions.h>
 #include <util/box.hpp>
 #include <util/assert.h>
+#include <util/helpers.hpp>
 #include "AssignmentSolver.h"
 
 #include <vigra/multi_impex.hxx>
@@ -108,7 +109,7 @@ AssignmentSolver::setVariables() {
 void
 AssignmentSolver::setConstraints() {
 
-	LOG_DEBUG(assignmentlog) << "setting initial constraints..." << std::endl;
+	LOG_DEBUG(assignmentlog) << "setting constraints..." << std::endl;
 
 	// tree-path constraints: from all nodes along a path in the CRAG subset 
 	// tree, at most one can be chosen
@@ -118,7 +119,13 @@ AssignmentSolver::setConstraints() {
 	// for each root (excluding assignment nodes)
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		if (!_crag.isRootNode(n) || _crag.type(n) == Crag::AssignmentNode)
+		// count the parents (AssignmentNodes are not parents)
+		int numParents = 0;
+		for (Crag::CragArc a : _crag.outArcs(n))
+			if (_crag.type(a.target()) != Crag::AssignmentNode)
+				numParents++;
+
+		if (numParents > 0 || _crag.type(n) == Crag::AssignmentNode)
 			continue;
 
 		std::vector<int> pathIds;
@@ -155,12 +162,18 @@ AssignmentSolver::setConstraints() {
 
 				// z offset from n to other
 				float zDiff =
-						_volumes[other]->getBoundingBox().min().z() -
-						_volumes[n]->getBoundingBox().min().z();
+						_volumes[other]->getBoundingBox().center().z() -
+						_volumes[n]->getBoundingBox().center().z();
+
+				LOG_ALL(assignmentlog) << "bb n    : " << _volumes[n]->getBoundingBox() << std::endl;
+				LOG_ALL(assignmentlog) << "bb other: " << _volumes[other]->getBoundingBox() << std::endl;
+				LOG_ALL(assignmentlog) << _crag.id(n) << " vs. " << _crag.id(other) << " dir " << direction << " zdiff " << zDiff << std::endl;
 
 				// if not in the right direction, skip this edge
 				if (zDiff*direction < 0)
 					continue;
+
+				LOG_ALL(assignmentlog) << "direction lines up" << std::endl;
 
 				// sum of edges in this direction...
 				explanationConstraint.setCoefficient(
@@ -180,6 +193,8 @@ AssignmentSolver::setConstraints() {
 			// ...should be exactly zero
 			explanationConstraint.setRelation(Equal);
 			explanationConstraint.setValue(0.0);
+
+			LOG_ALL(assignmentlog) << explanationConstraint << std::endl;
 
 			_constraints.add(explanationConstraint);
 			numExplanationConstraints++;
@@ -208,6 +223,8 @@ AssignmentSolver::setConstraints() {
 			identityConstraint.setCoefficient(edgeIdToVar(_crag.id(e)), -1);
 			identityConstraint.setRelation(Equal);
 			identityConstraint.setValue(0);
+
+			LOG_ALL(assignmentlog) << identityConstraint << std::endl;
 
 			_constraints.add(identityConstraint);
 			numAssignmentConstraints++;
@@ -238,7 +255,9 @@ AssignmentSolver::collectTreePathConstraints(Crag::CragNode n, std::vector<int>&
 		numChildren++;
 	}
 
-	if (numChildren == 0) {
+	if (numChildren == 0 && pathIds.size() > 1) {
+
+		LOG_ALL(assignmentlog) << "adding tree-path constraints for " << pathIds << std::endl;
 
 		LinearConstraint treePathConstraint;
 

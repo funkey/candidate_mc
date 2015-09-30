@@ -73,6 +73,8 @@ CragStackCombiner::combine(
 		Crag::CragNode n = targetCrag.addNode(Crag::NoAssignmentNode);
 		_noAssignmentNodes.push_back(n);
 
+		LOG_ALL(cragstackcombinerlog) << "added no-assignment node with id " << targetCrag.id(n) << std::endl;
+
 		// set a dummy 1x1x1 volume
 		std::shared_ptr<CragVolume> dummy = std::make_shared<CragVolume>(1, 1, 1);
 		dummy->data() = 1;
@@ -81,6 +83,8 @@ CragStackCombiner::combine(
 				sourcesVolumes[0]->getBoundingBox().min().y(),
 				sourcesVolumes[0]->getBoundingBox().min().z() + (z - 0.5)*res.z());
 		dummy->setResolution(res);
+
+		LOG_ALL(cragstackcombinerlog) << "bb of no-assignment node is " << dummy->getBoundingBox() << std::endl;
 
 		targetVolumes.setVolume(n, dummy);
 	}
@@ -91,7 +95,7 @@ CragStackCombiner::combine(
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
 
 		if (z == 1)
-			_prevNodeMap = copyNodes(z, *sourcesCrags[0], *sourcesVolumes[0], targetCrag, targetVolumes);
+			_prevNodeMap = copyNodes(0, *sourcesCrags[0], *sourcesVolumes[0], targetCrag, targetVolumes);
 		else
 			_prevNodeMap = _nextNodeMap;
 
