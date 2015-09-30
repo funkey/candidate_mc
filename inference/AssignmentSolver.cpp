@@ -276,23 +276,23 @@ AssignmentSolver::findAssignments() {
 	// get selected candidates
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		_selected[n] = (_solution[nodeIdToVar(_crag.id(n))] > 0.5);
+		_cragSolution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
 
 		LOG_ALL(assignmentlog)
 				<< _crag.id(n) << ": "
-				<< _selected[n]
+				<< _cragSolution.selected(n)
 				<< std::endl;
 	}
 
 	// get merged edges
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
-		_merged[e] = (_solution[edgeIdToVar(_crag.id(e))] > 0.5);
+		_cragSolution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
 
 		LOG_ALL(assignmentlog)
 				<< "(" << _crag.id(_crag.u(e))
 				<< "," << _crag.id(_crag.v(e))
-				<< "): " << _merged[e]
+				<< "): " << _cragSolution.selected(e)
 				<< std::endl;
 	}
 }

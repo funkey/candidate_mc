@@ -28,12 +28,11 @@ MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
 	_numNodes(0),
 	_numEdges(0),
 	_solver(0),
-	_parameters(parameters) {
+	_parameters(parameters),
+	_labels(crag) {
 
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-		_numNodes++;
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
-		_numEdges++;
+	_numNodes = _crag.nodes().size();
+	_numEdges = _crag.edges().size();
 
 	SolverFactory factory;
 	_solver = factory.createLinearSolverBackend();
@@ -53,12 +52,12 @@ MultiCutSolver::~MultiCutSolver() {
 void
 MultiCutSolver::setCosts(const Costs& costs) {
 
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+	for (Crag::CragNode n : _crag.nodes())
 		_objective.setCoefficient(
 				nodeIdToVar(_crag.id(n)),
 				costs.node[n]);
 
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
+	for (Crag::CragEdge e : _crag.edges())
 		_objective.setCoefficient(
 				edgeIdToVar(_crag.id(e)),
 				costs.edge[e]);
@@ -86,11 +85,11 @@ MultiCutSolver::solve() {
 
 			int numSelected = 0;
 			int numMerged = 0;
-			for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-				if (_selected[n])
+			for (Crag::CragNode n : _crag.nodes())
+				if (_cragSolution.selected(n))
 					numSelected++;
-			for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-				if (_merged[e])
+			for (Crag::CragEdge e : _crag.edges())
+				if (_cragSolution.selected(e))
 					numMerged++;
 
 			LOG_USER(multicutlog)
@@ -111,7 +110,7 @@ MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& fil
 
 	util::box<float, 3>   cragBB = volumes.getBoundingBox();
 	util::point<float, 3> resolution;
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		if (!_crag.isLeafNode(n))
 			continue;
@@ -136,7 +135,7 @@ MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& fil
 	else
 		components = 0;
 
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		if (boundary) {
 
@@ -147,7 +146,7 @@ MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& fil
 		} else {
 
 			// otherwise, draw only selected nodes
-			if (!_selected[n])
+			if (!_cragSolution.selected(n))
 				continue;
 		}
 
@@ -177,13 +176,13 @@ MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& fil
 	if (boundary) {
 
 		// gray boundary for all leaf nodes
-		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-			if (Crag::SubsetInArcIt(_crag, _crag.toSubset(n)) == lemon::INVALID)
+		for (Crag::CragNode n : _crag.nodes())
+			if (_crag.isLeafNode(n))
 				drawBoundary(volumes, n, components, 0.5);
 
 		// black boundary for all selected nodes
-		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-			if (_selected[n])
+		for (Crag::CragNode n : _crag.nodes())
+			if (_cragSolution.selected(n))
 				drawBoundary(volumes, n, components, 0);
 	}
 
@@ -228,7 +227,7 @@ MultiCutSolver::setVariables() {
 	unsigned int nextVar = _numNodes;
 
 	// adjacency edges are mapped in order of appearance
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
 		_edgeIdToVarMap[_crag.id(e)] = nextVar;
 		nextVar++;
@@ -246,20 +245,14 @@ MultiCutSolver::setInitialConstraints() {
 	int numTreePathConstraints = 0;
 
 	// for each root
-	for (Crag::SubsetType::NodeIt n(_crag); n != lemon::INVALID; ++n) {
-
-		int numParents = 0;
-		for (Crag::SubsetOutArcIt p(_crag, n); p != lemon::INVALID; ++p)
-			numParents++;
-
-		if (numParents == 0) {
+	for (Crag::CragNode n : _crag.nodes())
+		if (_crag.isRootNode(n)) {
 
 			std::vector<int> pathIds;
 			int added = collectTreePathConstraints(n, pathIds);
 
 			numTreePathConstraints += added;
 		}
-	}
 
 	LOG_USER(multicutlog)
 			<< "added " << numTreePathConstraints
@@ -271,14 +264,14 @@ MultiCutSolver::setInitialConstraints() {
 	int numRejectionConstraints = 0;
 
 	// for each node
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		LinearConstraint rejectionConstraint;
 
 		int numIncEdges = 0;
 
 		// for each adjacent edge
-		for (Crag::IncEdgeIt e(_crag, n); e != lemon::INVALID; ++e) {
+		for (Crag::CragEdge e : _crag.adjEdges(n)) {
 
 			rejectionConstraint.setCoefficient(
 					edgeIdToVar(_crag.id(e)),
@@ -309,25 +302,33 @@ MultiCutSolver::setInitialConstraints() {
 
 	int numForceParentConstraints = 0;
 
-	for (Crag::SubsetNodeIt n(_crag.getSubsetGraph()); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
 		std::vector<Crag::Edge> childEdges;
 
 		// collect all child adjacency edges
-		for (Crag::SubsetInArcIt childEdge(_crag.getSubsetGraph(), n); childEdge != lemon::INVALID; ++childEdge) {
 
-			Crag::Node child = _crag.toRag(_crag.getSubsetGraph().source(childEdge));
+		// for each child of n
+		for (Crag::CragArc childEdge : _crag.inArcs(n)) {
 
-			for (Crag::IncEdgeIt childAdjacencyEdge(_crag, child); childAdjacencyEdge != lemon::INVALID; ++childAdjacencyEdge) {
+			Crag::CragNode child = childEdge.source();
 
-				Crag::Node neighbor = _crag.getAdjacencyGraph().oppositeNode(child, childAdjacencyEdge);
+			// for each adjacent neighbor of child
+			for (Crag::CragEdge childAdjacencyEdge : _crag.adjEdges(child)) {
+
+				Crag::CragNode neighbor = childAdjacencyEdge.opposite(child);
+
+				// only unique pairs
 				if (neighbor < child)
 					continue;
 
-				// are both nodes of the node children of n?
-				Crag::SubsetArc parentArc = Crag::SubsetOutArcIt(_crag.getSubsetGraph(), _crag.toSubset(neighbor));
-				Crag::SubsetNode parentNeighbor = _crag.getSubsetGraph().target(parentArc);
+				// does neighbor have a parent?
+				if (_crag.isRootNode(neighbor))
+					continue;
 
+				// is the parent of neighbor n?
+				Crag::CragArc parentArc = *_crag.outArcs(neighbor).begin();
+				Crag::CragNode parentNeighbor = parentArc.target();
 				if (parentNeighbor == n)
 					childEdges.push_back(childAdjacencyEdge);
 			}
@@ -358,18 +359,18 @@ MultiCutSolver::setInitialConstraints() {
 }
 
 int
-MultiCutSolver::collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathIds) {
+MultiCutSolver::collectTreePathConstraints(Crag::CragNode n, std::vector<int>& pathIds) {
 
 	int numConstraintsAdded = 0;
 
-	pathIds.push_back(_crag.getSubsetGraph().id(n));
+	pathIds.push_back(_crag.id(n));
 
 	int numChildren = 0;
-	for (Crag::SubsetInArcIt c(_crag, n); c != lemon::INVALID; ++c) {
+	for (Crag::CragArc c : _crag.inArcs(n)) {
 
 		numConstraintsAdded +=
 				collectTreePathConstraints(
-						_crag.getSubsetGraph().oppositeNode(n, c),
+						c.source(),
 						pathIds);
 		numChildren++;
 	}
@@ -416,25 +417,25 @@ MultiCutSolver::findCut() {
 	LOG_USER(multicutlog) << "searching for optimal cut..." << std::endl;
 
 	// get selected candidates
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : _crag.nodes()) {
 
-		_selected[n] = (_solution[nodeIdToVar(_crag.id(n))] > 0.5);
+		_cragSolution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
 
 		LOG_ALL(multicutlog)
 				<< _crag.id(n) << ": "
-				<< _selected[n]
+				<< _cragSolution.selected(n)
 				<< std::endl;
 	}
 
 	// get merged edges
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
-		_merged[e] = (_solution[edgeIdToVar(_crag.id(e))] > 0.5);
+		_cragSolution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
 
 		LOG_ALL(multicutlog)
 				<< "(" << _crag.id(_crag.u(e))
 				<< "," << _crag.id(_crag.v(e))
-				<< "): " << _merged[e]
+				<< "): " << _cragSolution.selected(e)
 				<< std::endl;
 	}
 }
@@ -460,8 +461,8 @@ MultiCutSolver::findViolatedConstraints() {
 	for (unsigned int i = 0; i < _numNodes; i++)
 		cutGraph.addNode();
 
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e)
-		if (_merged[e])
+	for (Crag::CragEdge e : _crag.edges())
+		if (_cragSolution.selected(e))
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
 
 	// find connected components in cut graph
@@ -477,23 +478,23 @@ MultiCutSolver::findViolatedConstraints() {
     }
 
 	// label rejected nodes with -1
-	for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
-		if (!_selected[n])
+	for (Crag::CragNode n : _crag.nodes())
+		if (!_cragSolution.selected(n))
 			_labels[n] = -1;
 
 	// for each not selected edge with nodes in the same connected component, 
 	// find the shortest path along connected nodes connecting them
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
 		// not selected
-		if (_merged[e])
+		if (_cragSolution.selected(e))
 			continue;
 
-		Crag::Node s = _crag.u(e);
-		Crag::Node t = _crag.v(e);
+		Crag::CragNode s = e.u();
+		Crag::CragNode t = e.v();
 
 		// in same component
-		if (_labels[s] != _labels[t] || !_selected[s])
+		if (_labels[s] != _labels[t] || !_cragSolution.selected(s))
 			continue;
 
 		LOG_DEBUG(multicutlog)
@@ -526,7 +527,7 @@ MultiCutSolver::findViolatedConstraints() {
 		int lenPath = 0;
 
 		// walk along the path between u and v
-		Crag::Node cur = t;
+		Crag::CragNode cur = t;
 		LOG_DEBUG(multicutlog)
 				<< "nodes " << _crag.id(s)
 				<< " and " << _crag.id(t)
@@ -538,24 +539,24 @@ MultiCutSolver::findViolatedConstraints() {
 					<< _crag.id(cur)
 					<< " ";
 
-			Crag::Node pre = dijkstra.predNode(cur);
+			Crag::Node pre(dijkstra.predNode(cur));
 
 			// here we have to iterate over all adjacent edges in order to 
 			// find (cur, pre) in CRAG, since there is no 1:1 mapping 
 			// between edges in cutGraph and _crag
-			Crag::IncEdgeIt pathEdge(_crag, cur);
-			for (; pathEdge!= lemon::INVALID; ++pathEdge)
-				if (_crag.getAdjacencyGraph().oppositeNode(cur, pathEdge) == pre)
+			Crag::CragIncEdgeIterator pathEdge = _crag.adjEdges(cur).begin();
+			for (; pathEdge != _crag.adjEdges(cur).end(); ++pathEdge)
+				if ((*pathEdge).opposite(cur) == pre)
 					break;
 
-			if (pathEdge == lemon::INVALID)
+			if (pathEdge == _crag.adjEdges(cur).end())
 				UTIL_THROW_EXCEPTION(
 						Exception,
 						"could not find path edge in CRAG");
 
-			if (!_merged[pathEdge])
+			if (!_cragSolution.selected(*pathEdge))
 				LOG_ERROR(multicutlog)
-						<< "edge " << edgeIdToVar(_crag.id(pathEdge))
+						<< "edge " << edgeIdToVar(_crag.id(*pathEdge))
 						<< " is not selected, but found by dijkstra"
 						<< std::endl;
 				//UTIL_THROW_EXCEPTION(
@@ -563,10 +564,10 @@ MultiCutSolver::findViolatedConstraints() {
 						//"edge " << edgeIdToVar(_crag.id(pathEdge)) << " is not selected, but found by dijkstra");
 
 			cycleConstraint.setCoefficient(
-					edgeIdToVar(_crag.id(pathEdge)),
+					edgeIdToVar(_crag.id(*pathEdge)),
 					1.0);
 			LOG_DEBUG(multicutlog)
-					<< "(edge " << edgeIdToVar(_crag.id(pathEdge)) << ") ";
+					<< "(edge " << edgeIdToVar(_crag.id(*pathEdge)) << ") ";
 
 			lenPath++;
 			cur = pre;
@@ -601,29 +602,23 @@ MultiCutSolver::findViolatedConstraints() {
     }
 
 	// propagate node labels to subsets
-	for (Crag::SubsetNodeIt n(_crag); n != lemon::INVALID; ++n) {
-
-		int numParents = 0;
-		for (Crag::SubsetOutArcIt e(_crag, n); e != lemon::INVALID; ++e)
-			numParents++;
-
-		if (numParents == 0)
+	for (Crag::CragNode n : _crag.nodes())
+		if (_crag.isRootNode(n))
 			propagateLabel(n, -1);
-	}
 
 	return (constraintsAdded + treePathConstraintAdded > 0);
 }
 
 void
-MultiCutSolver::propagateLabel(Crag::SubsetNode n, int label) {
+MultiCutSolver::propagateLabel(Crag::CragNode n, int label) {
 
 	if (label == -1)
-		label = _labels[_crag.toRag(n)];
+		label = _labels[n];
 	else
-		_labels[_crag.toRag(n)] = label;
+		_labels[n] = label;
 
-	for (Crag::SubsetInArcIt e(_crag, n); e != lemon::INVALID; ++e)
-		propagateLabel(_crag.getSubsetGraph().oppositeNode(n, e), label);
+	for (Crag::CragArc e : _crag.inArcs(n))
+		propagateLabel(e.source(), label);
 }
 
 void

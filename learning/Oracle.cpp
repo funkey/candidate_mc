@@ -45,10 +45,10 @@ Oracle::operator()(
 
 	double mostViolatedEnergy = 0;
 	for (Crag::CragNode n : _crag.nodes())
-		if (_mostViolatedSolver->getSelectedRegions()[n])
+		if (_mostViolatedSolver->getSolution().selected(n))
 			mostViolatedEnergy += nodeCost(n, weights);
 	for (Crag::CragEdge e : _crag.edges())
-		if (_mostViolatedSolver->getMergedEdges()[e])
+		if (_mostViolatedSolver->getSolution().selected(e))
 			mostViolatedEnergy += edgeCost(e, weights);
 
 	double loss   = value - _B_c + mostViolatedEnergy;
@@ -177,7 +177,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		int sign = _bestEffort.node[n] - _mostViolatedSolver->getSelectedRegions()[n];
+		int sign = _bestEffort.node[n] - _mostViolatedSolver->getSolution().selected(n);
 
 		const std::vector<double>& f = _nodeFeatures[n];
 		std::vector<double>&       g = gradient[_crag.type(n)];
@@ -187,7 +187,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		int sign = _bestEffort.edge[e] - _mostViolatedSolver->getMergedEdges()[e];
+		int sign = _bestEffort.edge[e] - _mostViolatedSolver->getSolution().selected(e);
 
 		const std::vector<double>& f = _edgeFeatures[e];
 		std::vector<double>&       g = gradient[_crag.type(e)];

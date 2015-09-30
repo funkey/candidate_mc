@@ -118,10 +118,10 @@ public:
 
 		RagType::Node _node;
 
+	public:
+
 		CragNode(RagType::Node n)
 			: _node(n) {}
-
-	public:
 
 		/**
 		 * Create an uninitialized node.

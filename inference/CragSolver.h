@@ -3,6 +3,7 @@
 
 #include <crag/Crag.h>
 #include "Costs.h"
+#include "CragSolution.h"
 
 /**
  * Interface for CRAG solvers.
@@ -58,9 +59,7 @@ public:
 	};
 
 	CragSolver(const Crag& crag) :
-		_merged(crag),
-		_selected(crag),
-		_labels(crag) {}
+		_cragSolution(crag) {}
 
 	/**
 	 * Set the costs (or reward, if negative) of accepting a node or an edge.
@@ -70,26 +69,10 @@ public:
 	virtual Status solve() = 0;
 
 	/**
-	 * Get the current solution in terms of edges that have been selected to 
-	 * merge regions. If solve() did not return SolutionFound, the solution 
-	 * might be suboptimal and/or inconsistent.
+	 * Get the current solution of the solver. If solve() did not return 
+	 * SolutionFound, the solution might be suboptimal.
 	 */
-	const Crag::EdgeMap<bool>& getMergedEdges() const { return _merged; }
-
-	/**
-	 * Get the current solution in terms of selected regions.If solve() did not 
-	 * return SolutionFound, the solution might be suboptimal.
-	 */
-	const Crag::NodeMap<bool>& getSelectedRegions() const { return _selected; }
-
-	/**
-	 * Get the current solution in terms of a connected component labelling: 
-	 * Every region will be labelled with an id representing the connected 
-	 * component it belongs to. This label will also be set for subregions of 
-	 * selected regions. If solve() did not return SolutionFound, the solution 
-	 * might be suboptimal.
-	 */
-	const Crag::NodeMap<int>& getLabels() const { return _labels; }
+	const CragSolution& getSolution() { return _cragSolution; }
 
 	/**
 	 * Get the value of the current solution.
@@ -98,9 +81,7 @@ public:
 
 protected:
 
-	Crag::EdgeMap<bool> _merged;
-	Crag::NodeMap<bool> _selected;
-	Crag::NodeMap<int>  _labels;
+	CragSolution _cragSolution;
 };
 
 #endif // CANDIDATE_MC_INFERENCE_SOLVER_H__

@@ -51,13 +51,13 @@ private:
 
 	void setInitialConstraints();
 
-	int collectTreePathConstraints(Crag::SubsetNode n, std::vector<int>& pathIds);
+	int collectTreePathConstraints(Crag::CragNode n, std::vector<int>& pathIds);
 
 	void findCut();
 
 	bool findViolatedConstraints();
 
-	void propagateLabel(Crag::SubsetNode n, int label);
+	void propagateLabel(Crag::CragNode n, int label);
 
 	void drawBoundary(
 			const CragVolumes&           volumes,
@@ -82,6 +82,8 @@ private:
 	Parameters _parameters;
 
     std::vector<LinearConstraint> _allTreePathConstraints;
+
+	Crag::NodeMap<int> _labels;
 };
 
 #endif // CANDIDATE_MC_SOLVER_MULTI_CUT_H__
