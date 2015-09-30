@@ -129,34 +129,7 @@ int main(int argc, char** argv) {
 
 			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag));
 
-			vigra::HDF5File project(
-					optionProjectFile.as<std::string>(),
-					vigra::HDF5File::OpenMode::ReadWrite);
-			project.cd("best_effort");
-			vigra::ArrayVector<int> beNodes;
-			vigra::MultiArray<2, int> beEdges;
-			project.readAndResize("nodes", beNodes);
-			project.readAndResize("edges", beEdges);
-
-			std::set<int> nodes;
-			for (int n : beNodes)
-				nodes.insert(n);
-
-			std::set<std::pair<int, int>> edges;
-			for (int i = 0; i < beEdges.shape(1); i++)
-				edges.insert(
-						std::make_pair(
-							std::min(beEdges(i, 0), beEdges(i, 1)),
-							std::max(beEdges(i, 0), beEdges(i, 1))));
-
-			for (Crag::CragNode n : crag.nodes())
-				bestEffort->setSelected(n, nodes.count(crag.id(n)));
-
-			for (Crag::CragEdge e : crag.edges())
-				bestEffort->setSelected(e, edges.count(
-						std::make_pair(
-								std::min(crag.id(e.u()), crag.id(e.v())),
-								std::max(crag.id(e.u()), crag.id(e.v())))));
+			cragStore.retrieveSolution(crag, *bestEffort, "best-effort");
 
 		} else {
 
@@ -214,6 +187,10 @@ int main(int argc, char** argv) {
 			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
 
 			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag, volumes, *bestEffortLoss, solverParameters));
+
+			LOG_USER(logger::out) << "storing best-effort solution" << std::endl;
+
+			cragStore.saveSolution(crag, *bestEffort, "best-effort");
 		}
 
 		if (optionLoss.as<std::string>() == "hamming") {
@@ -314,5 +291,4 @@ int main(int argc, char** argv) {
 		handleException(e, std::cerr);
 	}
 }
-
 
