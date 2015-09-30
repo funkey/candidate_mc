@@ -58,6 +58,8 @@ public:
 		MaxIterationsReached
 	};
 
+	virtual ~CragSolver() {}
+
 	/**
 	 * Set the costs (or reward, if negative) of accepting a node or an edge.
 	 */

@@ -29,7 +29,7 @@ public:
 	double getValue() override { return _solution.getValue(); }
 
 private:
-    typedef vigra::TinyVector<unsigned int, 3> TinyVector3UInt;
+
 	// a property map returning 1 for every entry
 	struct One {
 

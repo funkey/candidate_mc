@@ -1,9 +1,9 @@
 define_module(merge_tree               BINARY SOURCES merge_tree.cpp              LINKS mergetree util)
-define_module(create_project           BINARY SOURCES create_project.cpp          LINKS crag imageprocessing io)
+define_module(create_project           BINARY SOURCES create_project.cpp          LINKS crag inference imageprocessing io)
 define_module(extract_features         BINARY SOURCES extract_features.cpp        LINKS crag features learning io util)
 define_module(train                    BINARY SOURCES train.cpp                   LINKS learning crag io util)
 define_module(solve                    BINARY SOURCES solve.cpp                   LINKS crag inference io util)
-define_module(crag_viewer              BINARY SOURCES crag_viewer.cpp             LINKS crag gui io)
+define_module(crag_viewer              BINARY SOURCES crag_viewer.cpp             LINKS crag inference gui io)
 
 if (BUILD_TESTS)
   add_subdirectory(tests)
