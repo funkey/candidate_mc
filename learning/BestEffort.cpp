@@ -2,14 +2,14 @@
 #include "BestEffort.h"
 
 BestEffort::BestEffort(
-		const Crag&               crag,
-		const CragVolumes&        volumes,
-		const Costs&              costs,
-		const Solver::Parameters& params) :
+		const Crag&                   crag,
+		const CragVolumes&            volumes,
+		const Costs&                  costs,
+		const CragSolver::Parameters& params) :
 	node(crag),
 	edge(crag) {
 
-	std::unique_ptr<Solver> solver(CragSolverFactory::createSolver(crag, volumes, params));
+	std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes, params));
 	solver->setCosts(costs);
 	solver->solve();
 	//solver->storeSolution(volumes, "best-effort.tif");

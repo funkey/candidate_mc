@@ -16,7 +16,7 @@ AssignmentSolver::AssignmentSolver(
 		const Crag& crag,
 		const CragVolumes& volumes,
 		const Parameters& parameters) :
-	Solver(crag),
+	CragSolver(crag),
 	_crag(crag),
 	_volumes(volumes),
 	_numNodes(crag.nodes().size()),

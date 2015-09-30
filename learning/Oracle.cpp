@@ -21,7 +21,7 @@ Oracle::operator()(
 
 	updateCosts(weights);
 
-	Solver::Status status = _mostViolatedSolver->solve();
+	CragSolver::Status status = _mostViolatedSolver->solve();
 
 	//if (optionStoreEachMostViolated) {
 
@@ -30,7 +30,7 @@ Oracle::operator()(
 		//_mostViolatedSolver->storeSolution(_volumes, filename.str(), true);
 	//}
 
-	if (status != Solver::SolutionFound)
+	if (status != CragSolver::SolutionFound)
 		UTIL_THROW_EXCEPTION(
 				Exception,
 				"solution not found");

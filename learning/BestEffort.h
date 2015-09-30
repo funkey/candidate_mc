@@ -3,7 +3,7 @@
 
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
-#include <inference/Solver.h>
+#include <inference/CragSolver.h>
 
 struct BestEffort {
 
@@ -17,10 +17,10 @@ struct BestEffort {
 	 * costs.
 	 */
 	BestEffort(
-			const Crag&               crag,
-			const CragVolumes&        volumes,
-			const Costs&              costs,
-			const Solver::Parameters& params = Solver::Parameters());
+			const Crag&                   crag,
+			const CragVolumes&            volumes,
+			const Costs&                  costs,
+			const CragSolver::Parameters& params = CragSolver::Parameters());
 
 	Crag::NodeMap<bool> node;
 	Crag::EdgeMap<bool> edge;

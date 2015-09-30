@@ -18,13 +18,13 @@ class Oracle {
 public:
 
 	Oracle(
-			const Crag&         crag,
-			const CragVolumes&  volumes,
-			const NodeFeatures& nodeFeatures,
-			const EdgeFeatures& edgeFeatures,
-			const Loss&         loss,
-			const BestEffort&   bestEffort,
-			Solver::Parameters  parameters = Solver::Parameters()) :
+			const Crag&             crag,
+			const CragVolumes&      volumes,
+			const NodeFeatures&     nodeFeatures,
+			const EdgeFeatures&     edgeFeatures,
+			const Loss&             loss,
+			const BestEffort&       bestEffort,
+			CragSolver::Parameters  parameters = CragSolver::Parameters()) :
 		_crag(crag),
 		_volumes(volumes),
 		_nodeFeatures(nodeFeatures),
@@ -91,8 +91,8 @@ private:
 	// best-effort part of _constant
 	double _B_c;
 
-	std::unique_ptr<Solver> _mostViolatedSolver;
-	std::unique_ptr<Solver> _currentBestSolver;
+	std::unique_ptr<CragSolver> _mostViolatedSolver;
+	std::unique_ptr<CragSolver> _currentBestSolver;
 
 	int _iteration;
 };

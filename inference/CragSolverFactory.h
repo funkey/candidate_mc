@@ -8,10 +8,10 @@ class CragSolverFactory {
 
 public:
 
-	static Solver* createSolver(
+	static CragSolver* createSolver(
 			const Crag& crag,
 			const CragVolumes& volumes,
-			Solver::Parameters parameters);
+			CragSolver::Parameters parameters);
 };
 
 #endif // CANDIDATE_MC_INFERENCE_CRAG_SOLVER_FACTORY_H__

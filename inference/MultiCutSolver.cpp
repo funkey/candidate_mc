@@ -23,7 +23,7 @@ util::ProgramOption optionLazyTreePathConstraints(
         util::_default_value    = false);
 
 MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
-	Solver(crag),
+	CragSolver(crag),
 	_crag(crag),
 	_numNodes(0),
 	_numEdges(0),

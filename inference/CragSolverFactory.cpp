@@ -6,11 +6,11 @@ util::ProgramOption optionAssignmentSolver(
 		util::_description_text = "Use the assignment solver to get a solution. This is for CRAGs that model an "
 		                          "assignment problem.");
 
-Solver*
+CragSolver*
 CragSolverFactory::createSolver(
 		const Crag& crag,
 		const CragVolumes& volumes,
-		Solver::Parameters parameters) {
+		CragSolver::Parameters parameters) {
 
 	if (optionAssignmentSolver) {
 

@@ -5,9 +5,9 @@
 #include <crag/CragVolumes.h>
 #include <solver/LinearSolverBackend.h>
 #include "Costs.h"
-#include "Solver.h"
+#include "CragSolver.h"
 
-class AssignmentSolver : public Solver {
+class AssignmentSolver : public CragSolver {
 
 public:
 

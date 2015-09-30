@@ -7,7 +7,7 @@
 /**
  * Interface for CRAG solvers.
  */
-class Solver {
+class CragSolver {
 
 public:
 
@@ -57,7 +57,7 @@ public:
 		MaxIterationsReached
 	};
 
-	Solver(const Crag& crag) :
+	CragSolver(const Crag& crag) :
 		_merged(crag),
 		_selected(crag),
 		_labels(crag) {}

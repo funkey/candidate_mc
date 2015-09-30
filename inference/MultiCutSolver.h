@@ -6,9 +6,9 @@
 #include <solver/LinearSolverBackend.h>
 #include <vigra/tinyvector.hxx>
 #include "Costs.h"
-#include "Solver.h"
+#include "CragSolver.h"
 
-class MultiCutSolver : public Solver {
+class MultiCutSolver : public CragSolver {
 
 public:
 

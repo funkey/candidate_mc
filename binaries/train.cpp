@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 		std::unique_ptr<Loss>       bestEffortLoss;
 		std::unique_ptr<Loss>       trainingLoss;
 
-		Solver::Parameters solverParameters;
+		CragSolver::Parameters solverParameters;
 		if (optionPretrain)
 			solverParameters.noConstraints = true;
 
