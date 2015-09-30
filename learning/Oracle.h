@@ -32,6 +32,7 @@ public:
 		_loss(loss),
 		_bestEffort(bestEffort),
 		_costs(_crag),
+		_mostViolatedSolution(_crag),
 		_mostViolatedSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
 		_currentBestSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
 		_iteration(0) {}
@@ -90,6 +91,8 @@ private:
 
 	// best-effort part of _constant
 	double _B_c;
+
+	CragSolution _mostViolatedSolution;
 
 	std::unique_ptr<CragSolver> _mostViolatedSolver;
 	std::unique_ptr<CragSolver> _currentBestSolver;

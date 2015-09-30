@@ -56,7 +56,7 @@ bool
 HammingLoss::isBestEffort(Crag::CragNode n, const Crag& crag, const BestEffort& bestEffort) {
 
 	if (!_balance)
-		return bestEffort.node[n];
+		return bestEffort.selected(n);
 
 	// if balanced, non-leaf nodes are not considered part of best-effort
 	if (!crag.isLeafNode(n))
@@ -65,7 +65,7 @@ HammingLoss::isBestEffort(Crag::CragNode n, const Crag& crag, const BestEffort& 
 	// is any of the parents best-effort?
 	while (true) {
 
-		if (bestEffort.node[n])
+		if (bestEffort.selected(n))
 			return true;
 
 		if (crag.isRootNode(n))
@@ -79,7 +79,7 @@ bool
 HammingLoss::isBestEffort(Crag::CragEdge e, const Crag& crag, const BestEffort& bestEffort) {
 
 	if (!_balance)
-		return bestEffort.edge[e];
+		return bestEffort.selected(e);
 
 	// if balanced, non-leaf edges are not considered part of best-effort
 	if (!crag.isLeafEdge(e))
@@ -92,11 +92,11 @@ HammingLoss::isBestEffort(Crag::CragEdge e, const Crag& crag, const BestEffort& 
 	for (Crag::CragNode u : uPath)
 		for (Crag::CragNode v : vPath) {
 
-			if (u == v && bestEffort.node[u])
+			if (u == v && bestEffort.selected(u))
 				return true;
 
 			for (Crag::CragEdge e : crag.adjEdges(u))
-				if (crag.oppositeNode(u, e) == v && bestEffort.edge[e])
+				if (crag.oppositeNode(u, e) == v && bestEffort.selected(e))
 					return true;
 		}
 

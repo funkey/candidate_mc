@@ -4,26 +4,25 @@
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <inference/CragSolver.h>
+#include "CragSolution.h"
 
-struct BestEffort {
+class BestEffort : public CragSolution {
+
+public:
 
 	/**
-	 * Crate a new uninitialized best effort.
+	 * Crate a new uninitialized best-effort solution.
 	 */
-	BestEffort(const Crag& crag) : node(crag), edge(crag) {}
+	BestEffort(const Crag& crag) : CragSolution(crag) {}
 
 	/**
-	 * Create a best-effort by solving the multicut problem with the given 
-	 * costs.
+	 * Create a best-effort solution by solving the CRAG with the given costs.
 	 */
 	BestEffort(
 			const Crag&                   crag,
 			const CragVolumes&            volumes,
 			const Costs&                  costs,
 			const CragSolver::Parameters& params = CragSolver::Parameters());
-
-	Crag::NodeMap<bool> node;
-	Crag::EdgeMap<bool> edge;
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__

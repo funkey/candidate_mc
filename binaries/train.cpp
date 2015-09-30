@@ -149,14 +149,14 @@ int main(int argc, char** argv) {
 							std::min(beEdges(i, 0), beEdges(i, 1)),
 							std::max(beEdges(i, 0), beEdges(i, 1))));
 
-			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n)
-				bestEffort->node[n] = nodes.count(crag.id(n));
+			for (Crag::CragNode n : crag.nodes())
+				bestEffort->setSelected(n, nodes.count(crag.id(n)));
 
-			for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
-				bestEffort->edge[e] = edges.count(
+			for (Crag::CragEdge e : crag.edges())
+				bestEffort->setSelected(e, edges.count(
 						std::make_pair(
-								std::min(crag.id(crag.u(e)), crag.id(crag.v(e))),
-								std::max(crag.id(crag.u(e)), crag.id(crag.v(e)))));
+								std::min(crag.id(e.u()), crag.id(e.v())),
+								std::max(crag.id(e.u()), crag.id(e.v())))));
 
 		} else {
 

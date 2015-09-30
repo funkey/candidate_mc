@@ -4,7 +4,6 @@
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <solver/LinearSolverBackend.h>
-#include "Costs.h"
 #include "CragSolver.h"
 
 class AssignmentSolver : public CragSolver {
@@ -21,7 +20,7 @@ public:
 	 */
 	void setCosts(const Costs& costs) override;
 
-	Status solve() override;
+	Status solve(CragSolution& solution) override;
 
 	/**
 	 * Get the value of the current solution.
@@ -40,7 +39,7 @@ private:
 
 	int collectTreePathConstraints(Crag::CragNode n, std::vector<int>& pathIds);
 
-	void findAssignments();
+	void findAssignments(CragSolution& solution);
 
 	void propagateLabel(Crag::SubsetNode n, int label);
 

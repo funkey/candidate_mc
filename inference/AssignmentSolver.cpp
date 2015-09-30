@@ -16,7 +16,6 @@ AssignmentSolver::AssignmentSolver(
 		const Crag& crag,
 		const CragVolumes& volumes,
 		const Parameters& parameters) :
-	CragSolver(crag),
 	_crag(crag),
 	_volumes(volumes),
 	_numNodes(crag.nodes().size()),
@@ -69,11 +68,11 @@ AssignmentSolver::setCosts(const Costs& costs) {
 }
 
 AssignmentSolver::Status
-AssignmentSolver::solve() {
+AssignmentSolver::solve(CragSolution& solution) {
 
 	_solver->setObjective(_objective);
 
-	findAssignments();
+	findAssignments(solution);
 
 	return SolutionFound;
 }
@@ -265,7 +264,7 @@ AssignmentSolver::collectTreePathConstraints(Crag::CragNode n, std::vector<int>&
 }
 
 void
-AssignmentSolver::findAssignments() {
+AssignmentSolver::findAssignments(CragSolution& solution) {
 
 	LOG_USER(assignmentlog) << "searching for optimal assignments..." << std::endl;
 
@@ -276,23 +275,23 @@ AssignmentSolver::findAssignments() {
 	// get selected candidates
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		_cragSolution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
+		solution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
 
 		LOG_ALL(assignmentlog)
 				<< _crag.id(n) << ": "
-				<< _cragSolution.selected(n)
+				<< solution.selected(n)
 				<< std::endl;
 	}
 
 	// get merged edges
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		_cragSolution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
+		solution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
 
 		LOG_ALL(assignmentlog)
 				<< "(" << _crag.id(_crag.u(e))
 				<< "," << _crag.id(_crag.v(e))
-				<< "): " << _cragSolution.selected(e)
+				<< "): " << solution.selected(e)
 				<< std::endl;
 	}
 }

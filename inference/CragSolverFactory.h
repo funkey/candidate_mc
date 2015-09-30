@@ -11,7 +11,7 @@ public:
 	static CragSolver* createSolver(
 			const Crag& crag,
 			const CragVolumes& volumes,
-			CragSolver::Parameters parameters);
+			CragSolver::Parameters parameters = CragSolver::Parameters());
 };
 
 #endif // CANDIDATE_MC_INFERENCE_CRAG_SOLVER_FACTORY_H__

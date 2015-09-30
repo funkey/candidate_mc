@@ -7,9 +7,6 @@
 #include <util/box.hpp>
 #include "MultiCutSolver.h"
 
-#include <vigra/multi_impex.hxx>
-#include <vigra/functorexpression.hxx>
-
 logger::LogChannel multicutlog("multicutlog", "[MultiCutSolver] ");
 
 util::ProgramOption optionForceParentCandidate(
@@ -23,7 +20,6 @@ util::ProgramOption optionLazyTreePathConstraints(
         util::_default_value    = false);
 
 MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
-	CragSolver(crag),
 	_crag(crag),
 	_numNodes(0),
 	_numEdges(0),
@@ -64,7 +60,7 @@ MultiCutSolver::setCosts(const Costs& costs) {
 }
 
 MultiCutSolver::Status
-MultiCutSolver::solve() {
+MultiCutSolver::solve(CragSolution& solution) {
 
 	_solver->setObjective(_objective);
 
@@ -74,9 +70,9 @@ MultiCutSolver::solve() {
 				<< "------------------------ iteration "
 				<< i << std::endl;
 
-		findCut();
+		findCut(solution);
 
-		if (!findViolatedConstraints()) {
+		if (!findViolatedConstraints(solution)) {
 
 			LOG_USER(multicutlog)
 					<< "optimal solution with value "
@@ -86,10 +82,10 @@ MultiCutSolver::solve() {
 			int numSelected = 0;
 			int numMerged = 0;
 			for (Crag::CragNode n : _crag.nodes())
-				if (_cragSolution.selected(n))
+				if (solution.selected(n))
 					numSelected++;
 			for (Crag::CragEdge e : _crag.edges())
-				if (_cragSolution.selected(e))
+				if (solution.selected(e))
 					numMerged++;
 
 			LOG_USER(multicutlog)
@@ -103,107 +99,6 @@ MultiCutSolver::solve() {
 
 	LOG_USER(multicutlog) << "maximum number of iterations reached" << std::endl;
 	return MaxIterationsReached;
-}
-
-void
-MultiCutSolver::storeSolution(const CragVolumes& volumes, const std::string& filename, bool boundary) {
-
-	util::box<float, 3>   cragBB = volumes.getBoundingBox();
-	util::point<float, 3> resolution;
-	for (Crag::CragNode n : _crag.nodes()) {
-
-		if (!_crag.isLeafNode(n))
-			continue;
-		resolution = volumes[n]->getResolution();
-		break;
-	}
-
-	LOG_ALL(multicutlog) << "CRAG bounding box is " << cragBB << std::endl;
-	LOG_ALL(multicutlog) << "CRAG resolution from volumes is " << resolution << std::endl;
-
-	// create a vigra multi-array large enough to hold all volumes
-	vigra::MultiArray<3, float> components(
-			vigra::Shape3(
-				cragBB.width() /resolution.x(),
-				cragBB.height()/resolution.y(),
-				cragBB.depth() /resolution.z()),
-			std::numeric_limits<int>::max());
-
-	// background for areas without candidates
-	if (boundary)
-		components = 0.25;
-	else
-		components = 0;
-
-	for (Crag::CragNode n : _crag.nodes()) {
-
-		if (boundary) {
-
-			// draw only leaf nodes if we want to visualize the boundary
-			if (!_crag.isLeafNode(n))
-				continue;
-
-		} else {
-
-			// otherwise, draw only selected nodes
-			if (!_cragSolution.selected(n))
-				continue;
-		}
-
-		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
-		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();
-
-
-		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
-		util::point<unsigned int, 3> end   = begin +
-				util::point<unsigned int, 3>(
-						volumeDiscreteBB.width(),
-						volumeDiscreteBB.height(),
-						volumeDiscreteBB.depth());
-
-		// fill id of connected component
-		vigra::combineTwoMultiArrays(
-			volumes[n]->data(),
-			components.subarray(TinyVector3UInt(&begin[0]),TinyVector3UInt(&end[0])),
-			components.subarray(TinyVector3UInt(&begin[0]),TinyVector3UInt(&end[0])),
-			vigra::functor::ifThenElse(
-					vigra::functor::Arg1() == vigra::functor::Param(1),
-					vigra::functor::Param(_labels[n] + 1),
-					vigra::functor::Arg2()
-		));
-	}
-
-	if (boundary) {
-
-		// gray boundary for all leaf nodes
-		for (Crag::CragNode n : _crag.nodes())
-			if (_crag.isLeafNode(n))
-				drawBoundary(volumes, n, components, 0.5);
-
-		// black boundary for all selected nodes
-		for (Crag::CragNode n : _crag.nodes())
-			if (_cragSolution.selected(n))
-				drawBoundary(volumes, n, components, 0);
-	}
-
-	if (components.shape(2) > 1) {
-
-		boost::filesystem::create_directory(filename);
-		for (unsigned int z = 0; z < components.shape(2); z++) {
-
-			std::stringstream ss;
-			ss << std::setw(4) << std::setfill('0') << z;
-			vigra::exportImage(
-					components.bind<2>(z),
-					vigra::ImageExportInfo((filename + "/" + ss.str() + ".tif").c_str()));
-		}
-
-	} else {
-
-		vigra::exportImage(
-				components.bind<2>(0),
-				vigra::ImageExportInfo(filename.c_str()));
-	}
 }
 
 void
@@ -406,7 +301,7 @@ MultiCutSolver::collectTreePathConstraints(Crag::CragNode n, std::vector<int>& p
 }
 
 void
-MultiCutSolver::findCut() {
+MultiCutSolver::findCut(CragSolution& solution) {
 
 	// re-set constraints to inform solver about potential changes
 	_solver->setConstraints(_constraints);
@@ -419,29 +314,29 @@ MultiCutSolver::findCut() {
 	// get selected candidates
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		_cragSolution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
+		solution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
 
 		LOG_ALL(multicutlog)
 				<< _crag.id(n) << ": "
-				<< _cragSolution.selected(n)
+				<< solution.selected(n)
 				<< std::endl;
 	}
 
 	// get merged edges
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		_cragSolution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
+		solution.setSelected(e, (_solution[edgeIdToVar(_crag.id(e))] > 0.5));
 
 		LOG_ALL(multicutlog)
 				<< "(" << _crag.id(_crag.u(e))
 				<< "," << _crag.id(_crag.v(e))
-				<< "): " << _cragSolution.selected(e)
+				<< "): " << solution.selected(e)
 				<< std::endl;
 	}
 }
 
 bool
-MultiCutSolver::findViolatedConstraints() {
+MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 
     int treePathConstraintAdded =0;
     int constraintsAdded = 0;
@@ -462,7 +357,7 @@ MultiCutSolver::findViolatedConstraints() {
 		cutGraph.addNode();
 
 	for (Crag::CragEdge e : _crag.edges())
-		if (_cragSolution.selected(e))
+		if (solution.selected(e))
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
 
 	// find connected components in cut graph
@@ -479,7 +374,7 @@ MultiCutSolver::findViolatedConstraints() {
 
 	// label rejected nodes with -1
 	for (Crag::CragNode n : _crag.nodes())
-		if (!_cragSolution.selected(n))
+		if (!solution.selected(n))
 			_labels[n] = -1;
 
 	// for each not selected edge with nodes in the same connected component, 
@@ -487,14 +382,14 @@ MultiCutSolver::findViolatedConstraints() {
 	for (Crag::CragEdge e : _crag.edges()) {
 
 		// not selected
-		if (_cragSolution.selected(e))
+		if (solution.selected(e))
 			continue;
 
 		Crag::CragNode s = e.u();
 		Crag::CragNode t = e.v();
 
 		// in same component
-		if (_labels[s] != _labels[t] || !_cragSolution.selected(s))
+		if (_labels[s] != _labels[t] || !solution.selected(s))
 			continue;
 
 		LOG_DEBUG(multicutlog)
@@ -554,7 +449,7 @@ MultiCutSolver::findViolatedConstraints() {
 						Exception,
 						"could not find path edge in CRAG");
 
-			if (!_cragSolution.selected(*pathEdge))
+			if (!solution.selected(*pathEdge))
 				LOG_ERROR(multicutlog)
 						<< "edge " << edgeIdToVar(_crag.id(*pathEdge))
 						<< " is not selected, but found by dijkstra"
@@ -619,59 +514,5 @@ MultiCutSolver::propagateLabel(Crag::CragNode n, int label) {
 
 	for (Crag::CragArc e : _crag.inArcs(n))
 		propagateLabel(e.source(), label);
-}
-
-void
-MultiCutSolver::drawBoundary(
-		const CragVolumes&           volumes,
-		Crag::Node                   n,
-		vigra::MultiArray<3, float>& components,
-		float                        value) {
-
-	const CragVolume& volume = *volumes[n];
-	const util::box<unsigned int, 3>& volumeDiscreteBB = volume.getDiscreteBoundingBox();
-	const util::point<float, 3>&      volumeOffset     = volume.getOffset();
-	util::point<unsigned int, 3>      begin            = (volumeOffset - volumes.getBoundingBox().min())/volume.getResolution();
-
-	bool hasZ = (volumeDiscreteBB.depth() > 1);
-
-	// draw boundary
-	for (unsigned int z = 0; z < volumeDiscreteBB.depth();  z++)
-	for (unsigned int y = 0; y < volumeDiscreteBB.height(); y++)
-	for (unsigned int x = 0; x < volumeDiscreteBB.width();  x++) {
-
-		// only inside voxels
-		if (!volume.data()(x, y, z))
-			continue;
-
-		if ((hasZ && (z == 0 || z == volumeDiscreteBB.depth()  - 1)) ||
-			y == 0 || y == volumeDiscreteBB.height() - 1 ||
-			x == 0 || x == volumeDiscreteBB.width()  - 1) {
-
-			components(
-					begin.x() + x,
-					begin.y() + y,
-					begin.z() + z) = value;
-			continue;
-		}
-
-		bool done = false;
-		for (int dz = (hasZ ? -1 : 0); dz <= (hasZ ? 1 : 0) && !done; dz++)
-		for (int dy = -1; dy <= 1 && !done; dy++)
-		for (int dx = -1; dx <= 1 && !done; dx++) {
-
-			if (std::abs(dx) + std::abs(dy) + std::abs(dz) > 1)
-				continue;
-
-			if (!volume.data()(x + dx, y + dy, z + dz)) {
-
-				components(
-						begin.x() + x,
-						begin.y() + y,
-						begin.z() + z) = value;
-				done = true;
-			}
-		}
-	}
 }
 

@@ -21,14 +21,7 @@ Oracle::operator()(
 
 	updateCosts(weights);
 
-	CragSolver::Status status = _mostViolatedSolver->solve();
-
-	//if (optionStoreEachMostViolated) {
-
-		//std::stringstream filename;
-		//filename << "most-violated_" << std::setw(6) << std::setfill('0') << _iteration << ".tif";
-		//_mostViolatedSolver->storeSolution(_volumes, filename.str(), true);
-	//}
+	CragSolver::Status status = _mostViolatedSolver->solve(_mostViolatedSolution);
 
 	if (status != CragSolver::SolutionFound)
 		UTIL_THROW_EXCEPTION(
@@ -45,10 +38,10 @@ Oracle::operator()(
 
 	double mostViolatedEnergy = 0;
 	for (Crag::CragNode n : _crag.nodes())
-		if (_mostViolatedSolver->getSolution().selected(n))
+		if (_mostViolatedSolution.selected(n))
 			mostViolatedEnergy += nodeCost(n, weights);
 	for (Crag::CragEdge e : _crag.edges())
-		if (_mostViolatedSolver->getSolution().selected(e))
+		if (_mostViolatedSolution.selected(e))
 			mostViolatedEnergy += edgeCost(e, weights);
 
 	double loss   = value - _B_c + mostViolatedEnergy;
@@ -140,10 +133,10 @@ Oracle::updateCosts(const FeatureWeights& weights) {
 	// B_c
 	_B_c = 0;
 	for (Crag::CragNode n : _crag.nodes())
-		if (_bestEffort.node[n])
+		if (_bestEffort.selected(n))
 			_B_c += nodeCost(n, weights);
 	for (Crag::CragEdge e : _crag.edges())
-		if (_bestEffort.edge[e])
+		if (_bestEffort.selected(e))
 			_B_c += edgeCost(e, weights);
 	_constant += _B_c;
 
@@ -177,7 +170,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		int sign = _bestEffort.node[n] - _mostViolatedSolver->getSolution().selected(n);
+		int sign = _bestEffort.selected(n) - _mostViolatedSolution.selected(n);
 
 		const std::vector<double>& f = _nodeFeatures[n];
 		std::vector<double>&       g = gradient[_crag.type(n)];
@@ -187,7 +180,7 @@ Oracle::accumulateGradient(FeatureWeights& gradient) {
 
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		int sign = _bestEffort.edge[e] - _mostViolatedSolver->getSolution().selected(e);
+		int sign = _bestEffort.selected(e) - _mostViolatedSolution.selected(e);
 
 		const std::vector<double>& f = _edgeFeatures[e];
 		std::vector<double>&       g = gradient[_crag.type(e)];

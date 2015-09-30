@@ -51,7 +51,7 @@ TopologicalLoss::TopologicalLoss(
 TopologicalLoss::NodeCosts
 TopologicalLoss::traverseAboveBestEffort(const Crag& crag, Crag::CragNode n, const BestEffort& bestEffort) {
 
-	bool isBestEffort = bestEffort.node[n];
+	bool isBestEffort = bestEffort.selected(n);
 
 	LOG_DEBUG(topologicallosslog) << "entering node " << crag.id(n) << std::endl;
 	LOG_DEBUG(topologicallosslog) << "\tis best effort: " << isBestEffort << std::endl;

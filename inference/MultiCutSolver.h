@@ -21,17 +21,12 @@ public:
 	 */
 	void setCosts(const Costs& costs) override;
 
-	Status solve() override;
+	Status solve(CragSolution& solution) override;
 
 	/**
 	 * Get the value of the current solution.
 	 */
 	double getValue() override { return _solution.getValue(); }
-
-	/**
-	 * Store the solution as label image in the given image file.
-	 */
-	void storeSolution(const CragVolumes& volumes, const std::string& filename, bool drawBoundary = false);
 
 private:
     typedef vigra::TinyVector<unsigned int, 3> TinyVector3UInt;
@@ -53,17 +48,11 @@ private:
 
 	int collectTreePathConstraints(Crag::CragNode n, std::vector<int>& pathIds);
 
-	void findCut();
+	void findCut(CragSolution& solution);
 
-	bool findViolatedConstraints();
+	bool findViolatedConstraints(CragSolution& solution);
 
 	void propagateLabel(Crag::CragNode n, int label);
-
-	void drawBoundary(
-			const CragVolumes&           volumes,
-			Crag::Node                   n,
-			vigra::MultiArray<3, float>& components,
-			float                        value);
 
 	inline unsigned int nodeIdToVar(int nodeId) { return nodeId; }
 	inline unsigned int edgeIdToVar(int edgeId) { return _edgeIdToVarMap[edgeId]; }

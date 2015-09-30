@@ -106,13 +106,13 @@ int main(int argc, char** argv) {
 			BestEffort bestEffort(crag, volumes, overlapLoss);
 
 			for (Crag::CragNode n : crag.nodes())
-				if (bestEffort.node[n])
+				if (bestEffort.selected(n))
 					nodeFeatures.append(n, 1);
 				else
 					nodeFeatures.append(n, 0);
 
 			for (Crag::CragEdge e : crag.edges())
-				if (bestEffort.edge[e])
+				if (bestEffort.selected(e))
 					edgeFeatures.append(e, 1);
 				else
 					edgeFeatures.append(e, 0);

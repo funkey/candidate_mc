@@ -35,10 +35,11 @@ Loss::normalize(const Crag& crag, const MultiCutSolver::Parameters& params) {
 		LOG_DEBUG(losslog) << "searching for minimal loss value..." << std::endl;
 
 		MultiCutSolver::Parameters minParams(params);
+		CragSolution solution(crag);
 		minParams.minimize = true;
 		MultiCutSolver multicut(crag, minParams);
 		multicut.setCosts(*this);
-		multicut.solve();
+		multicut.solve(solution);
 		min = multicut.getValue();
 
 		LOG_DEBUG(losslog) << "minimal value is " << min << std::endl;
@@ -47,10 +48,11 @@ Loss::normalize(const Crag& crag, const MultiCutSolver::Parameters& params) {
 		LOG_DEBUG(losslog) << "searching for maximal loss value..." << std::endl;
 
 		MultiCutSolver::Parameters maxParams(params);
+		CragSolution solution(crag);
 		maxParams.minimize = false;
 		MultiCutSolver multicut(crag, maxParams);
 		multicut.setCosts(*this);
-		multicut.solve();
+		multicut.solve(solution);
 		max = multicut.getValue();
 
 		LOG_DEBUG(losslog) << "maximal value is " << max << std::endl;

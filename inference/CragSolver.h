@@ -58,30 +58,21 @@ public:
 		MaxIterationsReached
 	};
 
-	CragSolver(const Crag& crag) :
-		_cragSolution(crag) {}
-
 	/**
 	 * Set the costs (or reward, if negative) of accepting a node or an edge.
 	 */
 	virtual void setCosts(const Costs& costs) = 0;
 
-	virtual Status solve() = 0;
-
 	/**
-	 * Get the current solution of the solver. If solve() did not return 
+	 * Get the current solution of the solver. If solve() does not return 
 	 * SolutionFound, the solution might be suboptimal.
 	 */
-	const CragSolution& getSolution() { return _cragSolution; }
+	virtual Status solve(CragSolution& solution) = 0;
 
 	/**
 	 * Get the value of the current solution.
 	 */
 	virtual double getValue() = 0;
-
-protected:
-
-	CragSolution _cragSolution;
 };
 
 #endif // CANDIDATE_MC_INFERENCE_SOLVER_H__

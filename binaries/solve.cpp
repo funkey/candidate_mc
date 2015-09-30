@@ -13,14 +13,9 @@
 #include <util/helpers.hpp>
 #include <util/timing.h>
 #include <util/assert.h>
-#include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
-#include <io/vectors.h>
-#include <io/volumes.h>
-#include <crag/DownSampler.h>
-#include <crag/PlanarAdjacencyAnnotator.h>
 #include <features/FeatureExtractor.h>
-#include <inference/MultiCutSolver.h>
+#include <inference/CragSolverFactory.h>
 
 util::ProgramOption optionFeatureWeights(
 		util::_long_name        = "featureWeights",
@@ -104,15 +99,18 @@ int main(int argc, char** argv) {
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
 		}
 
-		MultiCutSolver multicut(crag);
+		CragSolution solution(crag);
+		std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes));
 
-		multicut.setCosts(costs);
+		solver->setCosts(costs);
 		{
 			UTIL_TIME_SCOPE("solve candidate multi-cut");
-			multicut.solve();
+			solver->solve(solution);
 		}
-		multicut.storeSolution(volumes, "solution.tif");
-		multicut.storeSolution(volumes, "solution_boundary.tif", true);
+
+		// FIXME: only for 2D problems
+		//SolutionImageWriter::write(crag, volumes, solution, "solution.tif");
+		//SolutionImageWriter::write(crag, volumes, solution, "solution_boundary.tif", true);
 
 	} catch (Exception& e) {
 

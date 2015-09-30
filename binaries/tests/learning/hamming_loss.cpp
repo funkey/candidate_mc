@@ -53,14 +53,14 @@ void hamming_loss() {
 	{
 		BestEffort bestEffort(crag);
 
-		bestEffort.node[a] = true;
-		bestEffort.node[b] = true;
-		bestEffort.node[c] = true;
-		bestEffort.node[d] = true;
+		bestEffort.setSelected(a, true);
+		bestEffort.setSelected(b, true);
+		bestEffort.setSelected(c, true);
+		bestEffort.setSelected(d, true);
 
-		bestEffort.edge[ab] = true;
-		bestEffort.edge[bc] = true;
-		bestEffort.edge[cd] = true;
+		bestEffort.setSelected(ab, true);
+		bestEffort.setSelected(bc, true);
+		bestEffort.setSelected(cd, true);
 
 		HammingLoss hamming(crag, bestEffort, true /* balance */);
 
@@ -84,7 +84,7 @@ void hamming_loss() {
 	{
 		BestEffort bestEffort(crag);
 
-		bestEffort.node[g] = true;
+		bestEffort.setSelected(g, true);
 
 		HammingLoss hamming(crag, bestEffort, true /* balance */);
 
@@ -108,8 +108,8 @@ void hamming_loss() {
 	{
 		BestEffort bestEffort(crag);
 
-		bestEffort.node[e] = true;
-		bestEffort.node[f] = true;
+		bestEffort.setSelected(e, true);
+		bestEffort.setSelected(f, true);
 
 		HammingLoss hamming(crag, bestEffort, true /* balance */);
 
@@ -133,11 +133,11 @@ void hamming_loss() {
 	{
 		BestEffort bestEffort(crag);
 
-		bestEffort.node[e] = true;
-		bestEffort.node[c] = true;
-		bestEffort.node[d] = true;
+		bestEffort.setSelected(e, true);
+		bestEffort.setSelected(c, true);
+		bestEffort.setSelected(d, true);
 
-		bestEffort.edge[cd] = true;
+		bestEffort.setSelected(cd, true);
 
 		HammingLoss hamming(crag, bestEffort, true /* balance */);
 
