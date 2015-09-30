@@ -35,6 +35,9 @@ CragView::setVolumeMeshes(std::shared_ptr<sg_gui::Meshes> meshes) {
 void
 CragView::setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 
+	// shift the meshes to be centered on the 2D images
+	_meshView->setOffset(util::point<float, 3>(0, 0, -volume->getResolution().z()/2));
+
 	_rawView->setVolume(volume);
 }
 

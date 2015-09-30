@@ -3,6 +3,7 @@
 
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
+#include <inference/CragSolution.h>
 #include <scopegraph/Agent.h>
 #include <sg_gui/VolumeView.h>
 #include <sg_gui/MeshView.h>
@@ -64,6 +65,8 @@ public:
 
 	void loadMeshes(const std::vector<Crag::CragNode>& nodes);
 
+	void setSolution(std::shared_ptr<CragSolution> solution);
+
 	void onSignal(sg_gui::VolumePointSelected& signal);
 
 	void onSignal(sg_gui::MouseDown& signal);
@@ -88,6 +91,8 @@ private:
 
 	void removeMesh(Crag::CragNode n);
 
+	Crag::CragNode parentOf(Crag::CragNode n);
+
 	const Crag& _crag;
 
 	const CragVolumes& _volumes;
@@ -105,6 +110,8 @@ private:
 	std::vector<Crag::CragNode> _neighbors;
 
 	int _currentNeighbor;
+
+	std::shared_ptr<CragSolution> _solution;
 };
 
 #endif // CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__

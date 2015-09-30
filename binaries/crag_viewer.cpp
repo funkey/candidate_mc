@@ -30,6 +30,11 @@ util::ProgramOption optionShowGroundTruth(
 		util::_long_name        = "showGroundTruth",
 		util::_description_text = "Instead of showing the CRAG leaf nodes, show the ground truth labels.");
 
+util::ProgramOption optionShowSolution(
+		util::_long_name        = "showSolution",
+		util::_description_text = "Instead of showing the original CRAG candidates when double-clicking on the volue, "
+		                          "show connected components of the solution with the given name.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -44,8 +49,8 @@ int main(int argc, char** argv) {
 
 		// get crag and volumes
 
-		Crag        crag;
-		CragVolumes volumes(crag);
+		Crag         crag;
+		CragVolumes  volumes(crag);
 
 		try {
 
@@ -97,6 +102,8 @@ int main(int argc, char** argv) {
 
 		auto labels = supervoxels;
 
+		std::shared_ptr<CragSolution> solution;
+
 		if (optionShowLabels) {
 
 			labels = std::make_shared<ExplicitVolume<float>>();
@@ -116,6 +123,40 @@ int main(int argc, char** argv) {
 			ExplicitVolume<int> tmp;
 			volumeStore.retrieveGroundTruth(tmp);
 			*labels = tmp;
+
+		} else if (optionShowSolution) {
+
+			solution = std::make_shared<CragSolution>(crag);
+			cragStore.retrieveSolution(crag, *solution, optionShowSolution.as<std::string>());
+
+			labels =
+					std::make_shared<ExplicitVolume<float>>(
+							intensities->width(),
+							intensities->height(),
+							intensities->depth());
+			labels->setResolution(intensities->getResolution());
+			labels->setOffset(intensities->getOffset());
+
+			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+				if (!solution->selected(n))
+					continue;
+
+				const CragVolume& volume = *volumes[n];
+				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+
+				for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+				for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+
+					if (volume.data()(x, y, z))
+						(*labels)(
+								offset.x() + x,
+								offset.y() + y,
+								offset.z() + z)
+										= solution->label(n);
+				}
+			}
 
 		} else {
 
@@ -159,6 +200,9 @@ int main(int argc, char** argv) {
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);
 		auto window         = std::make_shared<sg_gui::Window>("CRAG viewer");
+
+		if (solution)
+			meshController->setSolution(solution);
 
 		window->add(zoomView);
 		zoomView->add(rotateView);

@@ -10,7 +10,7 @@ CragSolution::findConnectedComponents() const {
 		labelGraph.addNode();
 
 	for (Crag::CragEdge e : _crag.edges())
-		if (_selectedEdges[e])
+		if (_selectedEdges[e] && _crag.type(e) != Crag::NoAssignmentEdge)
 			labelGraph.addEdge(e.u(), e.v());
 
 	// find connected components in cut graph

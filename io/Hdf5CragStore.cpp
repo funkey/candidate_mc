@@ -526,7 +526,7 @@ Hdf5CragStore::saveSolution(
 	_hdfFile.cd_mk("solutions");
 	_hdfFile.cd_mk(name);
 
-	Crag::NodeMap<bool> selectedNodes(crag);
+	Crag::NodeMap<int> selectedNodes(crag);
 	for (Crag::CragNode n : crag.nodes())
 		selectedNodes[n] = solution.selected(n);
 	Hdf5GraphWriter::writeNodeMap(crag, selectedNodes, "nodes");
@@ -540,9 +540,10 @@ Hdf5CragStore::saveSolution(
 			selectedEdges.push_back(crag.id(e.v()));
 		}
 	}
-	_hdfFile.write(
-			"edges",
-			vigra::ArrayVectorView<int>(selectedEdges.size(), const_cast<int*>(&selectedEdges[0])));
+	if (selectedEdges.size() > 0)
+		_hdfFile.write(
+				"edges",
+				vigra::ArrayVectorView<int>(selectedEdges.size(), const_cast<int*>(&selectedEdges[0])));
 }
 
 void
@@ -555,17 +556,20 @@ Hdf5CragStore::retrieveSolution(
 	_hdfFile.cd("solutions");
 	_hdfFile.cd(name);
 
-	Crag::NodeMap<bool> selectedNodes(crag);
+	Crag::NodeMap<int> selectedNodes(crag);
 	Hdf5GraphReader::readNodeMap(crag, selectedNodes, "nodes");
 	for (Crag::CragNode n : crag.nodes())
 		solution.setSelected(n, selectedNodes[n]);
 
+	for (Crag::CragEdge e : crag.edges())
+		solution.setSelected(e, false);
+
+	if (!_hdfFile.existsDataset("edges"))
+		return;
 	vigra::ArrayVector<int> selectedEdges;
 	_hdfFile.readAndResize(
 			"edges",
 			selectedEdges);
-	for (Crag::CragEdge e : crag.edges())
-		solution.setSelected(e, false);
 	for (unsigned int i = 0; i < selectedEdges.size(); i += 2) {
 
 		Crag::CragNode u = crag.nodeFromId(selectedEdges[i]);

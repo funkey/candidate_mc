@@ -30,6 +30,12 @@ MeshViewController::loadMeshes(const std::vector<Crag::CragNode>& nodes) {
 }
 
 void
+MeshViewController::setSolution(std::shared_ptr<CragSolution> solution) {
+
+	_solution = solution;
+}
+
+void
 MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 	unsigned int x, y, z;
@@ -43,6 +49,33 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 	if (n == Crag::Invalid)
 		return;
+
+	LOG_DEBUG(meshviewcontrollerlog) << "selected node " << _crag.id(n) << std::endl;
+
+	// n is a leaf node. If we want to show a solution, we have to find the 
+	// candidate above (or equal to) n that is part of the solution and show 
+	// that.
+
+	if (_solution) {
+
+		LOG_DEBUG(meshviewcontrollerlog) << "asking for solution node" << std::endl;
+
+		while (!_solution->selected(n)) {
+
+			LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(n) << " is not part of solution" << std::endl;
+
+			n = parentOf(n);
+			if (n == Crag::Invalid) {
+
+				LOG_DEBUG(meshviewcontrollerlog) << "no more parents" << std::endl;
+				return;
+			}
+
+			LOG_DEBUG(meshviewcontrollerlog) << "probing parent node " << _crag.id(n) << std::endl;
+		}
+
+		LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(n) << " is part of solution" << std::endl;
+	}
 
 	if (_meshes->contains(_crag.id(n))) {
 
@@ -110,7 +143,7 @@ MeshViewController::nextVolume() {
 	if (_crag.outArcs(_current).size() == 0)
 		return;
 
-	Crag::CragNode parent = (*_crag.outArcs(_current).begin()).target();
+	Crag::CragNode parent = parentOf(_current);
 	
 	_path.push_back(_current);
 
@@ -169,7 +202,26 @@ MeshViewController::showSingleMesh(Crag::CragNode n) {
 
 	_current = n;
 	_meshes->clear();
-	addMesh(n);
+
+	if (_solution) {
+
+		// find all other nodes that are in a connected component with n and 
+		// show all of them
+		int label = _solution->label(n);
+
+		LOG_DEBUG(meshviewcontrollerlog) << "label of selected node is " << label << std::endl;
+
+		for (Crag::CragNode m : _crag.nodes())
+			if (_solution->label(m) == label) {
+
+				LOG_DEBUG(meshviewcontrollerlog) << "adding node " << _crag.id(m) << " as well" << std::endl;
+				addMesh(m);
+			}
+
+	} else {
+
+		addMesh(n);
+	}
 
 	_neighbors.clear();
 	for (Crag::CragEdge e : _crag.adjEdges(_current))
@@ -202,9 +254,17 @@ MeshViewController::showNeighbor(Crag::CragNode n) {
 void
 MeshViewController::addMesh(Crag::CragNode n) {
 
+	int id = _crag.id(n);
+	int color;
+
+	if (_solution)
+		color = _solution->label(n);
+	else
+		color = _crag.id(n);
+
 	if (_meshCache.count(n)) {
 
-		_meshes->add(_crag.id(n), _meshCache[n]);
+		_meshes->add(id, _meshCache[n], color);
 		return;
 	}
 
@@ -220,7 +280,7 @@ MeshViewController::addMesh(Crag::CragNode n) {
 			optionCubeSize,
 			optionCubeSize,
 			optionCubeSize);
-	_meshes->add(_crag.id(n), mesh);
+	_meshes->add(id, mesh, color);
 
 	_meshCache[n] = mesh;
 }
@@ -229,4 +289,20 @@ void
 MeshViewController::removeMesh(Crag::CragNode n) {
 
 	_meshes->remove(_crag.id(n));
+}
+
+Crag::CragNode
+MeshViewController::parentOf(Crag::CragNode n) {
+
+	// Find the parent of node n, but don't accept assignment nodes (they are 
+	// not really parents).
+
+	if (_crag.outArcs(n).size() == 0)
+		return Crag::Invalid;
+
+	for (Crag::CragArc a : _crag.outArcs(n))
+		if (_crag.type(a.target()) != Crag::AssignmentNode)
+			return a.target();
+
+	return Crag::Invalid;
 }
