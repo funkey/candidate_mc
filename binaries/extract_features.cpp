@@ -58,15 +58,6 @@ int main(int argc, char** argv) {
 		cragStore.retrieveCrag(crag);
 		cragStore.retrieveVolumes(volumes);
 
-		std::vector<std::vector<std::set<Crag::Node>>> sampleSegmentations;
-		std::vector<std::string> segmentationNames = cragStore.getSegmentationNames();
-		for (std::string name : segmentationNames) {
-
-			std::vector<std::set<Crag::Node>> segmentation;
-			cragStore.retrieveSegmentation(crag, segmentation, name);
-			sampleSegmentations.push_back(segmentation);
-		}
-
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 		ExplicitVolume<float> raw;
 		ExplicitVolume<float> boundaries;
@@ -87,7 +78,6 @@ int main(int argc, char** argv) {
 			}
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
-			featureExtractor.setSampleSegmentations(sampleSegmentations);
 			featureExtractor.extract(nodeFeatures, edgeFeatures, min, max);
 
 			if (!optionMinMaxFromProject) {

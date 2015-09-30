@@ -8,6 +8,7 @@
 #include <features/EdgeFeatures.h>
 #include <features/Skeletons.h>
 #include <inference/Costs.h>
+#include <inference/CragSolution.h>
 
 /**
  * Interface definition for crag stores.
@@ -107,25 +108,25 @@ public:
 	virtual void retrieveCosts(const Crag& crag, Costs& costs, std::string name) = 0;
 
 	/**
-	 * Store a segmentation, represented by sets of leaf nodes.
+	 * Store a solution with a given name.
 	 */
-	virtual void saveSegmentation(
-			const Crag&                              crag,
-			const std::vector<std::set<Crag::Node>>& segmentation,
-			std::string                              name) = 0;
+	virtual void saveSolution(
+			const Crag&         crag,
+			const CragSolution& solution,
+			std::string         name) = 0;
 
 	/**
-	 * Retrieve a segmentation, represented by sets of leaf nodes.
+	 * Retrieve the solution with the given name.
 	 */
-	virtual void retrieveSegmentation(
-			const Crag&                        crag,
-			std::vector<std::set<Crag::Node>>& segmentation,
-			std::string                        name) = 0;
+	virtual void retrieveSolution(
+			const Crag&   crag,
+			CragSolution& solution,
+			std::string   name) = 0;
 
 	/**
-	 * Get a list of the names of all stored segmentations.
+	 * Get a list of the names of all stored solutions.
 	 */
-	virtual std::vector<std::string> getSegmentationNames() = 0;
+	virtual std::vector<std::string> getSolutionNames() = 0;
 };
 
 #endif // TREE_MC_IO_CRAG_STORE_H__

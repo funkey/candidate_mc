@@ -68,13 +68,6 @@ util::ProgramOption optionEdgeAccumulatedeFeatures(
 	util::_default_value    = true
 );
 
-util::ProgramOption optionEdgeSegmentationFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "segmentationFeatures",
-	util::_description_text = "Compute a feature for each adjacency edge that reflects how many times the incident candidates ended "
-							  "up in the same segment. For that, a list of segmentations has to be provided. Disabled by default."
-);
-
 // FEATURE NORMALIZATION AND POST-PROCESSING
 
 util::ProgramOption optionAddPairwiseFeatureProducts(
@@ -280,9 +273,6 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
-
-	if (optionEdgeSegmentationFeatures)
-		extractEdgeSegmentationFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
@@ -680,33 +670,6 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 	}
 
 	LOG_USER(featureextractorlog) << std::endl;
-}
-
-void
-FeatureExtractor::extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures) {
-
-	if (_segmentations.size() > 0) {
-
-		UTIL_TIME_SCOPE("extract edge segmentation features");
-
-		for (Crag::CragEdge e : _crag.edges()) {
-
-			if (_crag.type(e) != Crag::AdjacencyEdge)
-				continue;
-
-			Crag::Node u = e.u();
-			Crag::Node v = e.v();
-
-			// count how many times u and v were connected in all segmentations
-			int connected = 0;
-			for (auto& segmentation : _segmentations)
-				for (auto& segment : segmentation)
-					if (segment.count(u) && segment.count(v))
-						connected++;
-
-			edgeFeatures.append(e, connected);
-		}
-	}
 }
 
 void

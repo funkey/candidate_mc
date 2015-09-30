@@ -113,17 +113,6 @@ util::ProgramOption optionMinCandidateSize(
 		util::_description_text = "The minimal size for a candidate to keep it during downsampling (see downSampleCrag).",
 		util::_default_value    = 100);
 
-util::ProgramOption optionAppendSegmentationOnly(
-		util::_long_name        = "appendSegmentationOnly",
-		util::_description_text = "Instead of creating a new project, convert the extracted CRAG into a segmentation and store it "
-		                          "in the given project file. This assumes that the CRAG in the given project file uses the same "
-		                          "leave nodes. A segmentation is created by grouping all leaf nodes under each root node together. "
-		                          "Use it together with options maxMerges and maxMergeScore.");
-
-util::ProgramOption optionSegmentationName(
-		util::_long_name        = "segmentationName",
-		util::_description_text = "The name under which to store the segmentation (see option appendSegmentationOnly).");
-
 std::set<Crag::Node>
 collectLeafNodes(const Crag& crag, Crag::Node n) {
 
@@ -249,27 +238,6 @@ int main(int argc, char** argv) {
 					<< "have to be given to create a CRAG" << std::endl;
 
 			return 1;
-		}
-
-		if (optionAppendSegmentationOnly) {
-
-			// we do that before downsampling, since we want to make sure we 
-			// still have all the leaf nodes
-
-			std::vector<std::set<Crag::Node>> segmentation;
-			for (Crag::NodeIt n(*crag); n != lemon::INVALID; ++n) {
-
-				if (crag->isRootNode(n))
-					segmentation.push_back(collectLeafNodes(*crag, n));
-			}
-
-			Hdf5CragStore store(optionProjectFile.as<std::string>());
-			store.saveSegmentation(*crag, segmentation, optionSegmentationName);
-
-			LOG_USER(logger::out)
-					<< "appended segmentation with " << segmentation.size()
-					<< " segments to project file" << std::endl;
-			return 0;
 		}
 
 		if (optionDownsampleCrag && !alreadyDownsampled) {

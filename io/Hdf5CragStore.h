@@ -122,25 +122,26 @@ public:
 	void retrieveCosts(const Crag& crag, Costs& costs, std::string name);
 
 	/**
-	 * Store a segmentation, represented by sets of leaf nodes.
+	 * Store a solution with a given name.
 	 */
-	void saveSegmentation(
-			const Crag&                              crag,
-			const std::vector<std::set<Crag::Node>>& segmentation,
-			std::string                              name) override;
+	void saveSolution(
+			const Crag&         crag,
+			const CragSolution& solution,
+			std::string         name);
 
 	/**
-	 * Retrieve a segmentation, represented by sets of leaf nodes.
+	 * Retrieve the solution with the given name.
 	 */
-	void retrieveSegmentation(
-			const Crag&                        crag,
-			std::vector<std::set<Crag::Node>>& segmentation,
-			std::string                        name) override;
+	void retrieveSolution(
+			const Crag&   crag,
+			CragSolution& solution,
+			std::string   name);
+
 
 	/**
 	 * Get a list of the names of all stored segmentations.
 	 */
-	std::vector<std::string> getSegmentationNames() override;
+	std::vector<std::string> getSolutionNames() override;
 
 private:
 

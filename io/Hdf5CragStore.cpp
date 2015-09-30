@@ -517,63 +517,77 @@ Hdf5CragStore::retrieveCosts(const Crag& crag, Costs& costs, std::string name) {
 }
 
 void
-Hdf5CragStore::saveSegmentation(
-		const Crag&                              crag,
-		const std::vector<std::set<Crag::Node>>& segmentation,
-		std::string                              name) {
+Hdf5CragStore::saveSolution(
+		const Crag&         crag,
+		const CragSolution& solution,
+		std::string         name) {
 
 	_hdfFile.root();
-	_hdfFile.cd_mk("segmentations");
+	_hdfFile.cd_mk("solutions");
 	_hdfFile.cd_mk(name);
 
-	for (unsigned int i = 0; i < segmentation.size(); i++) {
+	Crag::NodeMap<bool> selectedNodes(crag);
+	for (Crag::CragNode n : crag.nodes())
+		selectedNodes[n] = solution.selected(n);
+	Hdf5GraphWriter::writeNodeMap(crag, selectedNodes, "nodes");
 
-		std::string segmentName = "segment_";
-		segmentName += boost::lexical_cast<std::string>(i);
+	std::vector<int> selectedEdges;
+	for (Crag::CragEdge e : crag.edges()) {
 
-		vigra::ArrayVector<int> nodes;
-		for (Crag::Node node : segmentation[i])
-			nodes.push_back(crag.id(node));
-		_hdfFile.write(
-				segmentName,
-				nodes);
+		if (solution.selected(e)) {
+
+			selectedEdges.push_back(crag.id(e.u()));
+			selectedEdges.push_back(crag.id(e.v()));
+		}
 	}
+	_hdfFile.write(
+			"edges",
+			vigra::ArrayVectorView<int>(selectedEdges.size(), const_cast<int*>(&selectedEdges[0])));
 }
 
 void
-Hdf5CragStore::retrieveSegmentation(
-		const Crag&                        crag,
-		std::vector<std::set<Crag::Node>>& segmentation,
-		std::string                        name) {
+Hdf5CragStore::retrieveSolution(
+		const Crag&   crag,
+		CragSolution& solution,
+		std::string   name) {
 
 	_hdfFile.root();
-	_hdfFile.cd("segmentations");
+	_hdfFile.cd("solutions");
 	_hdfFile.cd(name);
 
-	std::vector<std::string> segmentNames = _hdfFile.ls();
+	Crag::NodeMap<bool> selectedNodes(crag);
+	Hdf5GraphReader::readNodeMap(crag, selectedNodes, "nodes");
+	for (Crag::CragNode n : crag.nodes())
+		solution.setSelected(n, selectedNodes[n]);
 
-	for (std::string segmentName : segmentNames) {
+	vigra::ArrayVector<int> selectedEdges;
+	_hdfFile.readAndResize(
+			"edges",
+			selectedEdges);
+	for (Crag::CragEdge e : crag.edges())
+		solution.setSelected(e, false);
+	for (unsigned int i = 0; i < selectedEdges.size(); i += 2) {
 
-		vigra::ArrayVector<int> ids;
-		_hdfFile.readAndResize(
-				segmentName,
-				ids);
+		Crag::CragNode u = crag.nodeFromId(selectedEdges[i]);
+		Crag::CragNode v = crag.nodeFromId(selectedEdges[i+1]);
 
-		std::set<Crag::Node> nodes;
-		for (int id : ids)
-			nodes.insert(crag.nodeFromId(id));
+		// find edge in CRAG
+		for (Crag::CragEdge e : crag.adjEdges(u))
+			if (e.opposite(u) == v) {
 
-		segmentation.push_back(nodes);
+				solution.setSelected(e, true);
+				break;
+			}
 	}
 }
 
 std::vector<std::string>
-Hdf5CragStore::getSegmentationNames() {
+Hdf5CragStore::getSolutionNames() {
 
 	try {
 
 		_hdfFile.root();
-		_hdfFile.cd("segmentations");
+		_hdfFile.cd("solutions");
 
 		return _hdfFile.ls();
 
