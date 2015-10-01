@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
 			if (!solution) {
 
 				solution = std::make_shared<CragSolution>(crag);
-				cragStore.retrieveSolution(crag, *solution, optionOverlay.as<std::string>());
+				cragStore.retrieveSolution(crag, *solution, optionCandidates.as<std::string>());
 			}
 
 			showSolution = true;
