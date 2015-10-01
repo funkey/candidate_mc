@@ -22,18 +22,24 @@ util::ProgramOption optionProjectFile(
 		util::_description_text = "The project file to read the CRAG from.",
 		util::_default_value    = "project.hdf");
 
-util::ProgramOption optionShowLabels(
-		util::_long_name        = "showLabels",
-		util::_description_text = "Instead of showing the CRAG leaf nodes, show the labels (i.e., a segmentation) stored in the project file.");
+util::ProgramOption optionOverlay(
+		util::_long_name        = "overlay",
+		util::_description_text = "The type of labels to show as overlay on the volume. 'leaf' shows the CRAG leaf nodes, "
+		                          "any other string connected components of a solution with that name in the project file. "
+		                          "Default is 'leaf'.",
+		util::_default_value    = "leaf");
 
-util::ProgramOption optionShowGroundTruth(
-		util::_long_name        = "showGroundTruth",
-		util::_description_text = "Instead of showing the CRAG leaf nodes, show the ground truth labels.");
+util::ProgramOption optionCandidates(
+		util::_long_name        = "candidates",
+		util::_description_text = "The candidates to show as meshes when double-clicking on the volume. 'crag' shows the candidates of the CRAG, "
+		                          "any other string connected components of a solution with that name in the project file. "
+		                          "Default is 'crag'.",
+		util::_default_value    = "crag");
 
-util::ProgramOption optionShowSolution(
-		util::_long_name        = "showSolution",
-		util::_description_text = "Instead of showing the original CRAG candidates when double-clicking on the volue, "
-		                          "show connected components of the solution with the given name.");
+util::ProgramOption optionShowCosts(
+		util::_long_name        = "showCosts",
+		util::_description_text = "For each selected candidate, show the costs with the given name (default: 'costs', the inference costs).",
+		util::_default_value    = "costs");
 
 int main(int argc, char** argv) {
 
@@ -100,42 +106,39 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		auto labels = supervoxels;
+		std::shared_ptr<ExplicitVolume<float>> overlay;
+		std::shared_ptr<CragSolution>          solution;
 
-		std::shared_ptr<CragSolution> solution;
+		if (optionOverlay.as<std::string>() == "leaf") {
 
-		if (optionShowLabels) {
+			LOG_USER(logger::out) << "showing CRAG leaf node labels in overlay" << std::endl;
 
-			labels = std::make_shared<ExplicitVolume<float>>();
+			overlay = supervoxels;
 
-			LOG_USER(logger::out) << "showing solution labels" << std::endl;
+		} else if (optionOverlay.as<std::string>() == "ground-truth") {
 
-			ExplicitVolume<int> tmp;
-			volumeStore.retrieveLabels(tmp);
-			*labels = tmp;
+			overlay = std::make_shared<ExplicitVolume<float>>();
 
-		} else if (optionShowGroundTruth) {
-
-			labels = std::make_shared<ExplicitVolume<float>>();
-
-			LOG_USER(logger::out) << "showing ground truth labels" << std::endl;
+			LOG_USER(logger::out) << "showing ground truth labels in overlay" << std::endl;
 
 			ExplicitVolume<int> tmp;
 			volumeStore.retrieveGroundTruth(tmp);
-			*labels = tmp;
+			*overlay = tmp;
 
-		} else if (optionShowSolution) {
+		} else {
+
+			LOG_USER(logger::out) << "showing " << optionOverlay.as<std::string>() << " labels in overlay" << std::endl;
 
 			solution = std::make_shared<CragSolution>(crag);
-			cragStore.retrieveSolution(crag, *solution, optionShowSolution.as<std::string>());
+			cragStore.retrieveSolution(crag, *solution, optionOverlay.as<std::string>());
 
-			labels =
+			overlay =
 					std::make_shared<ExplicitVolume<float>>(
 							intensities->width(),
 							intensities->height(),
 							intensities->depth());
-			labels->setResolution(intensities->getResolution());
-			labels->setOffset(intensities->getOffset());
+			overlay->setResolution(intensities->getResolution());
+			overlay->setOffset(intensities->getOffset());
 
 			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
@@ -150,17 +153,25 @@ int main(int argc, char** argv) {
 				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
 
 					if (volume.data()(x, y, z))
-						(*labels)(
+						(*overlay)(
 								offset.x() + x,
 								offset.y() + y,
 								offset.z() + z)
-										= solution->label(n);
+										= solution->label(n) + 1;
 				}
 			}
+		}
 
-		} else {
+		bool showSolution = false;
+		if (optionCandidates.as<std::string>() != "crag") {
 
-			LOG_USER(logger::out) << "showing leaf node labels" << std::endl;
+			if (!solution) {
+
+				solution = std::make_shared<CragSolution>(crag);
+				cragStore.retrieveSolution(crag, *solution, optionOverlay.as<std::string>());
+			}
+
+			showSolution = true;
 		}
 
 		// get features
@@ -180,11 +191,11 @@ int main(int argc, char** argv) {
 
 		// get costs
 
-		Costs bestEffortLoss(crag);
+		Costs costs(crag);
 
 		try {
 
-			cragStore.retrieveCosts(crag, bestEffortLoss, "best-effort_loss");
+			cragStore.retrieveCosts(crag, costs, optionShowCosts);
 
 		} catch (std::exception& e) {
 
@@ -195,13 +206,13 @@ int main(int argc, char** argv) {
 
 		auto cragView       = std::make_shared<CragView>();
 		auto meshController = std::make_shared<MeshViewController>(crag, volumes, supervoxels);
-		auto costsView      = std::make_shared<CostsView>(crag, bestEffortLoss, "best-effort loss");
+		auto costsView      = std::make_shared<CostsView>(crag, costs, optionShowCosts);
 		auto featuresView   = std::make_shared<FeaturesView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);
 		auto window         = std::make_shared<sg_gui::Window>("CRAG viewer");
 
-		if (solution)
+		if (showSolution)
 			meshController->setSolution(solution);
 
 		window->add(zoomView);
@@ -212,7 +223,7 @@ int main(int argc, char** argv) {
 		rotateView->add(featuresView);
 
 		cragView->setRawVolume(intensities);
-		cragView->setLabelsVolume(labels);
+		cragView->setLabelsVolume(overlay);
 
 		window->processEvents();
 

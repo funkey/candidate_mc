@@ -242,6 +242,7 @@ MeshViewController::showNeighbor(Crag::CragNode n) {
 	addMesh(n);
 
 	send<sg_gui::SetMeshes>(_meshes);
+	send<SetCandidate>(n);
 
 	for (Crag::CragEdge e : _crag.adjEdges(_current))
 		if (e.opposite(_current) == _neighbors[_currentNeighbor]) {
@@ -258,7 +259,7 @@ MeshViewController::addMesh(Crag::CragNode n) {
 	int color;
 
 	if (_solution)
-		color = _solution->label(n);
+		color = _solution->label(n) + 1;
 	else
 		color = _crag.id(n);
 
