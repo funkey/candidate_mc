@@ -1,7 +1,7 @@
 #ifndef CANDIDATE_MC_LEARNING_BUNDLE_OPTIMIZER_HXX
 #define CANDIDATE_MC_LEARNING_BUNDLE_OPTIMIZER_HXX
 
-#include <io/vectors.h>
+#include <io/CragStore.h>
 #include <util/assert.h>
 #include <util/helpers.hpp>
 #include <util/Logger.h>
@@ -68,7 +68,7 @@ public:
 		EpsStrategy epsStrategy;
 	};
 
-	BundleOptimizer(const Parameters& parameter = Parameters());
+	BundleOptimizer(std::shared_ptr<CragStore> store, const Parameters& parameter = Parameters());
 
 	~BundleOptimizer();
 
@@ -99,6 +99,8 @@ private:
 	template <typename Weights>
 	double dot(const Weights& a, const Weights& b);
 
+	std::shared_ptr<CragStore> _store;
+
 	Parameters _parameter;
 
 	BundleCollector _bundleCollector;
@@ -106,7 +108,8 @@ private:
 	QuadraticSolverBackend* _solver;
 };
 
-BundleOptimizer::BundleOptimizer(const Parameters& parameter) :
+BundleOptimizer::BundleOptimizer(std::shared_ptr<CragStore> store, const Parameters& parameter) :
+	_store(store),
 	_parameter(parameter),
 	_solver(0) {}
 
@@ -151,9 +154,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 		t++;
 
-        std::vector<double> w_tm1 = w;
-
-		LOG_ALL(bundleoptimizerlog) << "current w is " << w_tm1 << std::endl;
+		LOG_ALL(bundleoptimizerlog) << "current w is " << w << std::endl;
 
 		// value of L at current w
 		double L_w_tm1 = 0.0;
@@ -162,7 +163,6 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
         std::vector<double> a_t(w.size());
 
 		// get current value and gradient
-		weights.importFromVector(w_tm1);
 		oracle(weights, L_w_tm1, gradient);
 		a_t = gradient.exportToVector();
 
@@ -170,12 +170,12 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 		LOG_ALL(bundleoptimizerlog) << "      ∂L(w)/∂            is: " << a_t << std::endl;
 
 		// update smallest observed value of regularized L
-		minValue = std::min(minValue, L_w_tm1 + _parameter.lambda*0.5*dot(w_tm1, w_tm1));
+		minValue = std::min(minValue, L_w_tm1 + _parameter.lambda*0.5*dot(w, w));
 
 		LOG_DEBUG(bundleoptimizerlog) << " min_i L(w_i) + ½λ|w_i|² is: " << minValue << std::endl;
 
 		// compute hyperplane offset
-		double b_t = L_w_tm1 - dot(w_tm1, a_t);
+		double b_t = L_w_tm1 - dot(w, a_t);
 
 		//LOG_ALL(bundleoptimizerlog) << "adding hyperplane " << a_t << "*w + " << b_t << std::endl;
 
@@ -187,6 +187,10 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 		// update w and get minimal value
 		findMinLowerBound(w, minLower);
+
+		// update weights data structure
+		weights.importFromVector(w);
+		_store->saveFeatureWeights(weights);
 
 		LOG_DEBUG(bundleoptimizerlog) << " min_w ℒ(w)   + ½λ|w|²   is: " << minLower << std::endl;
 		//LOG_ALL(bundleoptimizerlog) << " w* of ℒ(w)   + ½λ|w|²   is: "  << w << std::endl;
@@ -201,8 +205,6 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 		lastMinLower = minLower;
 
 		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << eps_t << std::endl;
-
-		storeVector(w, std::string("feature_weights_") + boost::lexical_cast<std::string>(t) + ".txt");
 
 		// converged?
 		if (eps_t <= _parameter.min_eps)

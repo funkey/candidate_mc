@@ -100,20 +100,20 @@ int main(int argc, char** argv) {
 		util::ProgramOptions::init(argc, argv);
 		logger::LogManager::init();
 
-		Hdf5CragStore   cragStore(optionProjectFile.as<std::string>());
+		std::shared_ptr<CragStore> cragStore = std::make_shared<Hdf5CragStore>(optionProjectFile.as<std::string>());
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
 		Crag crag;
 		CragVolumes volumes(crag);
-		cragStore.retrieveCrag(crag);
-		cragStore.retrieveVolumes(volumes);
+		cragStore->retrieveCrag(crag);
+		cragStore->retrieveVolumes(volumes);
 
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
 		LOG_USER(logger::out) << "reading features" << std::endl;
-		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
-		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
+		cragStore->retrieveNodeFeatures(crag, nodeFeatures);
+		cragStore->retrieveEdgeFeatures(crag, edgeFeatures);
 
 		std::unique_ptr<BestEffort> bestEffort;
 		std::unique_ptr<Loss>       bestEffortLoss;
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
 
 			bestEffort = std::unique_ptr<BestEffort>(new BestEffort(crag));
 
-			cragStore.retrieveSolution(crag, *bestEffort, "best-effort");
+			cragStore->retrieveSolution(crag, *bestEffort, "best-effort");
 
 		} else {
 
@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
 
 			LOG_USER(logger::out) << "storing best-effort loss" << std::endl;
 
-			cragStore.saveCosts(crag, *bestEffortLoss, "best-effort_loss");
+			cragStore->saveCosts(crag, *bestEffortLoss, "best-effort_loss");
 
 			LOG_USER(logger::out) << "finding best-effort solution" << std::endl;
 
@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
 
 			LOG_USER(logger::out) << "storing best-effort solution" << std::endl;
 
-			cragStore.saveSolution(crag, *bestEffort, "best-effort");
+			cragStore->saveSolution(crag, *bestEffort, "best-effort");
 		}
 
 		if (optionLoss.as<std::string>() == "hamming") {
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
 
 		LOG_USER(logger::out) << "storing training loss" << std::endl;
 
-		cragStore.saveCosts(crag, *trainingLoss, "training_loss");
+		cragStore->saveCosts(crag, *trainingLoss, "training_loss");
 
 		if (optionDryRun) {
 
@@ -280,11 +280,11 @@ int main(int argc, char** argv) {
 			BundleOptimizer::Parameters parameters;
 			parameters.lambda      = optionRegularizerWeight;
 			parameters.epsStrategy = BundleOptimizer::EpsFromGap;
-			BundleOptimizer optimizer(parameters);
+			BundleOptimizer optimizer(cragStore, parameters);
 			optimizer.optimize(oracle, weights);
 		}
 
-		cragStore.saveFeatureWeights(weights);
+		cragStore->saveFeatureWeights(weights);
 
 	} catch (boost::exception& e) {
 
