@@ -70,8 +70,6 @@ private:
 
 	std::pair<int, int> recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::CragNode n);
 
-	void visualizeEdgeFeatures(const EdgeFeatures& edgeFeatures);
-
 	Crag&        _crag;
 	CragVolumes& _volumes;
 
