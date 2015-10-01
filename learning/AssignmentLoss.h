@@ -18,21 +18,10 @@ public:
 
 private:
 
-	void computeSizes(
+	void computeSizesAndOverlaps(
 			const Crag& crag,
 			const CragVolumes& volumes,
 			const ExplicitVolume<int>& groundTruth);
-
-	void computeOverlaps(
-			const Crag& crag,
-			const CragVolumes& volumes,
-			const ExplicitVolume<int>& groundTruth);
-
-	// get the size of the overlap of a candidate with any ground truth region 
-	// it overlaps with
-	std::map<int, int> overlap(
-			const ExplicitVolume<bool>& region,
-			const ExplicitVolume<int>&  groundTruth);
 
 	std::map<int, int> _gtSizes;
 	Crag::NodeMap<int> _candidateSizes;
