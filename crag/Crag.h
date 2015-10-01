@@ -46,6 +46,7 @@ public:
 		 */
 		NoAssignmentNode
 	};
+	static const std::vector<NodeType> NodeTypes;
 
 	enum EdgeType {
 
@@ -67,6 +68,7 @@ public:
 		 */
 		NoAssignmentEdge
 	};
+	static const std::vector<EdgeType> EdgeTypes;
 
 	typedef lemon::ListGraph     RagType;
 	typedef lemon::ListDigraph   SubsetType;

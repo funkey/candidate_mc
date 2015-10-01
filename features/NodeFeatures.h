@@ -12,9 +12,7 @@ public:
 
 	NodeFeatures(const Crag& crag) :
 			_crag(crag),
-			_vnFeatures(crag),
-			_slFeatures(crag),
-			_asFeatures(crag) {}
+			_features(Crag::NodeTypes.size(), FeaturesType(crag)) {}
 
 	inline void append(Crag::CragNode n, double feature) {
 
@@ -38,84 +36,46 @@ public:
 
 	void normalize() {
 
-		features(Crag::VolumeNode).normalize();
-		features(Crag::SliceNode).normalize();
-		features(Crag::AssignmentNode).normalize();
+		for (auto f : _features)
+			f.normalize();
 	}
 
 	void normalize(
 			const FeatureWeights& min,
 			const FeatureWeights& max) {
 
-		features(Crag::VolumeNode).normalize(min[Crag::VolumeNode], max[Crag::VolumeNode]);
-		features(Crag::SliceNode).normalize(min[Crag::SliceNode], max[Crag::SliceNode]);
-		features(Crag::AssignmentNode).normalize(min[Crag::AssignmentNode], max[Crag::AssignmentNode]);
+		for (Crag::NodeType type : Crag::NodeTypes)
+			features(type).normalize(min[type], max[type]);
 	}
 
 	void getMin(FeatureWeights& min) {
 
-		min[Crag::VolumeNode] = features(Crag::VolumeNode).getMin();
-		min[Crag::SliceNode] = features(Crag::SliceNode).getMin();
-		min[Crag::AssignmentNode] = features(Crag::AssignmentNode).getMin();
+		for (Crag::NodeType type : Crag::NodeTypes)
+			min[type] = features(type).getMin();
 	}
 
 	void getMax(FeatureWeights& max) {
 
-		max[Crag::VolumeNode] = features(Crag::VolumeNode).getMax();
-		max[Crag::SliceNode] = features(Crag::SliceNode).getMax();
-		max[Crag::AssignmentNode] = features(Crag::AssignmentNode).getMax();
+		for (Crag::NodeType type : Crag::NodeTypes)
+			max[type] = features(type).getMax();
 	}
 
 private:
 
-	FeaturesType& features(Crag::NodeType type) {
+	inline FeaturesType& features(Crag::NodeType type) {
 
-		switch (type) {
-
-			case Crag::VolumeNode:
-				return _vnFeatures;
-			case Crag::SliceNode:
-				return _slFeatures;
-			case Crag::AssignmentNode:
-				return _asFeatures;
-			case Crag::NoAssignmentNode:
-				UTIL_THROW_EXCEPTION(
-						UsageError,
-						"nodes of type NoAssignmentNode don't have features");
-		}
-
-		UTIL_THROW_EXCEPTION(
-				UsageError,
-				"unknown node type " << type);
+		return _features[type];
 	}
 
-	const FeaturesType& features(Crag::NodeType type) const {
+	inline const FeaturesType& features(Crag::NodeType type) const {
 
-		switch (type) {
-
-			case Crag::VolumeNode:
-				return _vnFeatures;
-			case Crag::SliceNode:
-				return _slFeatures;
-			case Crag::AssignmentNode:
-				return _asFeatures;
-			case Crag::NoAssignmentNode:
-				UTIL_THROW_EXCEPTION(
-						UsageError,
-						"nodes of type NoAssignmentNode don't have features");
-		}
-
-		UTIL_THROW_EXCEPTION(
-				UsageError,
-				"unknown node type " << type);
+		return _features[type];
 	}
 
 	const Crag& _crag;
 
 	// one set of features for each node type
-	FeaturesType _vnFeatures;
-	FeaturesType _slFeatures;
-	FeaturesType _asFeatures;
+	std::vector<FeaturesType> _features;
 };
 
 #endif // CANDIDATE_MC_FEATURES_NODE_FEATURES_H__

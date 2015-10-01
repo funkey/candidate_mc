@@ -215,7 +215,7 @@ Hdf5CragStore::saveNodeFeatures(const Crag& crag, const NodeFeatures& features) 
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
 
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+	for (Crag::NodeType type : Crag::NodeTypes) {
 
 		int numNodes = 0;
 		for (Crag::CragNode n : crag.nodes())
@@ -256,7 +256,7 @@ Hdf5CragStore::retrieveNodeFeatures(const Crag& crag, NodeFeatures& features) {
 
 	vigra::MultiArray<2, double> allFeatures;
 
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+	for (Crag::NodeType type : Crag::NodeTypes) {
 
 		if (!_hdfFile.existsDataset(std::string("nodes_") + boost::lexical_cast<std::string>(type)))
 			continue;
@@ -290,7 +290,7 @@ Hdf5CragStore::saveEdgeFeatures(const Crag& crag, const EdgeFeatures& features) 
 	_hdfFile.cd_mk("crag");
 	_hdfFile.cd_mk("features");
 
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+	for (Crag::EdgeType type : Crag::EdgeTypes) {
 
 		int numEdges = 0;
 		for (Crag::CragEdge e : crag.edges())
@@ -330,7 +330,7 @@ Hdf5CragStore::retrieveEdgeFeatures(const Crag& crag, EdgeFeatures& features) {
 	_hdfFile.cd("crag");
 	_hdfFile.cd("features");
 
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+	for (Crag::EdgeType type : Crag::EdgeTypes) {
 
 		if (!_hdfFile.existsDataset(std::string("edges_") + boost::lexical_cast<std::string>(type)))
 			continue;
@@ -429,7 +429,8 @@ Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
 void
 Hdf5CragStore::saveFeatureWeights(const FeatureWeights& weights) {
 
-	_hdfFile.cd("/crag");
+	_hdfFile.root();
+	_hdfFile.cd_mk("/crag");
 	writeWeights(weights, "feature_weights");
 }
 
@@ -443,7 +444,8 @@ Hdf5CragStore::retrieveFeatureWeights(FeatureWeights& weights) {
 void
 Hdf5CragStore::saveFeaturesMin(const FeatureWeights& min) {
 
-	_hdfFile.cd("/crag");
+	_hdfFile.root();
+	_hdfFile.cd_mk("/crag");
 	writeWeights(min, "features_min");
 }
 
@@ -457,7 +459,8 @@ Hdf5CragStore::retrieveFeaturesMin(FeatureWeights& min) {
 void
 Hdf5CragStore::saveFeaturesMax(const FeatureWeights& max) {
 
-	_hdfFile.cd("/crag");
+	_hdfFile.root();
+	_hdfFile.cd_mk("/crag");
 	writeWeights(max, "features_max");
 }
 
@@ -471,7 +474,8 @@ Hdf5CragStore::retrieveFeaturesMax(FeatureWeights& max) {
 void
 Hdf5CragStore::saveCosts(const Crag& crag, const Costs& costs, std::string name) {
 
-	_hdfFile.cd("/crag");
+	_hdfFile.root();
+	_hdfFile.cd_mk("/crag");
 	_hdfFile.cd_mk("costs");
 	Hdf5GraphWriter::writeNodeMap(crag, costs.node, name + "_nodes");
 
@@ -629,7 +633,7 @@ Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 
 	_hdfFile.cd_mk(name);
 
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+	for (Crag::NodeType type : Crag::NodeTypes) {
 
 		const std::vector<double>& w = weights[type];
 
@@ -641,7 +645,7 @@ Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 				vigra::ArrayVectorView<double>(w.size(), const_cast<double*>(&w[0])));
 	}
 
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+	for (Crag::EdgeType type : Crag::EdgeTypes) {
 
 		const std::vector<double>& w = weights[type];
 
@@ -657,10 +661,9 @@ Hdf5CragStore::writeWeights(const FeatureWeights& weights, std::string name) {
 void
 Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
 
-	_hdfFile.root();
 	_hdfFile.cd(name);
 
-	for (Crag::NodeType type : {Crag::VolumeNode, Crag::SliceNode, Crag::AssignmentNode}) {
+	for (Crag::NodeType type : Crag::NodeTypes) {
 
 		if (!_hdfFile.existsDataset(std::string("node_") + boost::lexical_cast<std::string>(type)))
 			continue;
@@ -673,7 +676,7 @@ Hdf5CragStore::readWeights(FeatureWeights& weights, std::string name) {
 		std::copy(w.begin(), w.end(), weights[type].begin());
 	}
 
-	for (Crag::EdgeType type : {Crag::AdjacencyEdge, Crag::NoAssignmentEdge}) {
+	for (Crag::EdgeType type : Crag::EdgeTypes) {
 
 		if (!_hdfFile.existsDataset(std::string("edge_") + boost::lexical_cast<std::string>(type)))
 			continue;

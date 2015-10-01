@@ -120,7 +120,7 @@ public:
 		return _max;
 	}
 
-	const std::vector<double>& operator[](KeyType k) const { return _features.at(k); }
+	const std::vector<double>& operator[](KeyType k) const { return _features[k]; }
 
 protected:
 
@@ -189,7 +189,7 @@ private:
 
 	const Crag& _crag;
 
-	std::map<KeyType, std::vector<double>> _features;
+	mutable std::map<KeyType, std::vector<double>> _features;
 
 	std::vector<double> _min, _max;
 
