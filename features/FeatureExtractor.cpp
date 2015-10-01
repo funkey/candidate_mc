@@ -343,7 +343,11 @@ FeatureExtractor::extractEdgeFeatures(
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
 			<< edgeFeatures.dims(Crag::AdjacencyEdge)
-			<< " features per edge" << std::endl;
+			<< " features per adjacency edge" << std::endl;
+	LOG_USER(featureextractorlog)
+			<< "after postprocessing, we have "
+			<< edgeFeatures.dims(Crag::NoAssignmentEdge)
+			<< " features per no-assignment edge" << std::endl;
 }
 
 void

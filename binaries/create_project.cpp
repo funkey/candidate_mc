@@ -14,6 +14,7 @@
 #include <crag/CragStackCombiner.h>
 #include <crag/DownSampler.h>
 #include <crag/PlanarAdjacencyAnnotator.h>
+#include <features/FeatureWeights.h>
 #include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
@@ -70,8 +71,13 @@ util::ProgramOption optionExtractGroundTruthLabels(
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
-		util::_description_text = "The treemc project file.",
+		util::_description_text = "The candidate mc project file.",
 		util::_default_value    = "project.hdf");
+
+util::ProgramOption optionImportTrainingResult(
+		util::_long_name        = "importTrainingResult",
+		util::_description_text = "If set to a project file, will import feature weights and feature min/max from "
+		                          "this file. Use this to create a testing dataset.");
 
 util::ProgramOption optionResX(
 		util::_long_name        = "resX",
@@ -304,17 +310,17 @@ int main(int argc, char** argv) {
 
 		// Store CRAG and volumes
 
+		boost::filesystem::remove(optionProjectFile.as<std::string>());
+		Hdf5CragStore store(optionProjectFile.as<std::string>());
+
 		{
 			UTIL_TIME_SCOPE("saving CRAG");
 
-			boost::filesystem::remove(optionProjectFile.as<std::string>());
-			Hdf5CragStore store(optionProjectFile.as<std::string>());
 			store.saveCrag(*crag);
 			store.saveVolumes(*volumes);
 		}
 
 		{
-
 			UTIL_TIME_SCOPE("saving volumes");
 
 			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
@@ -355,6 +361,23 @@ int main(int argc, char** argv) {
 
 		delete crag;
 		delete volumes;
+
+		if (optionImportTrainingResult) {
+
+			Hdf5CragStore trainingStore(optionImportTrainingResult.as<std::string>());
+
+			FeatureWeights weights;
+			FeatureWeights min;
+			FeatureWeights max;
+
+			trainingStore.retrieveFeatureWeights(weights);
+			trainingStore.retrieveFeaturesMin(min);
+			trainingStore.retrieveFeaturesMax(max);
+
+			store.saveFeatureWeights(weights);
+			store.saveFeaturesMin(min);
+			store.saveFeaturesMax(max);
+		}
 
 	} catch (Exception& e) {
 
