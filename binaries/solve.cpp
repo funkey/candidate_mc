@@ -17,12 +17,6 @@
 #include <features/FeatureExtractor.h>
 #include <inference/CragSolverFactory.h>
 
-util::ProgramOption optionFeatureWeights(
-		util::_long_name        = "featureWeights",
-		util::_short_name       = "w",
-		util::_description_text = "A file containing feature weights.",
-		util::_default_value    = "feature_weights.txt");
-
 util::ProgramOption optionForegroundBias(
 		util::_long_name        = "foregroundBias",
 		util::_short_name       = "f",
@@ -38,7 +32,7 @@ util::ProgramOption optionMergeBias(
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
-		util::_description_text = "The treemc project file.");
+		util::_description_text = "The candidate mc project file.");
 
 inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
 
@@ -99,6 +93,8 @@ int main(int argc, char** argv) {
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
 		}
 
+		cragStore.saveCosts(crag, costs, "costs");
+
 		CragSolution solution(crag);
 		std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes));
 
@@ -107,6 +103,8 @@ int main(int argc, char** argv) {
 			UTIL_TIME_SCOPE("solve candidate multi-cut");
 			solver->solve(solution);
 		}
+
+		cragStore.saveSolution(crag, solution, "solution");
 
 		// FIXME: only for 2D problems
 		//SolutionImageWriter::write(crag, volumes, solution, "solution.tif");
