@@ -61,14 +61,29 @@ private:
 		void unfilterDown(sg_gui::ChangeAlpha&) {}
 
 		// disable z-write for the raw image
-		bool filterDown(sg_gui::DrawOpaque&)   { if (!_zBufferWrites) glDepthMask(GL_FALSE); return true; }
-		void unfilterDown(sg_gui::DrawOpaque&) { if (!_zBufferWrites) glDepthMask(GL_TRUE); }
+		bool filterDown(sg_gui::DrawOpaque&) {
+
+			if (!_zBufferWrites) {
+
+				glGetBooleanv(GL_DEPTH_WRITEMASK, &_prevDepthMask);
+				glDepthMask(GL_FALSE);
+			}
+
+			return true;
+		}
+
+		void unfilterDown(sg_gui::DrawOpaque&) {
+
+			if (!_zBufferWrites)
+				glDepthMask(_prevDepthMask);
+		}
 
 		void toggleZBufferWrites() { _zBufferWrites = !_zBufferWrites; }
 
 	private:
 
 		bool _zBufferWrites;
+		GLboolean _prevDepthMask;
 	};
 
 	/**

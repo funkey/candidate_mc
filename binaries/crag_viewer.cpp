@@ -22,6 +22,12 @@ util::ProgramOption optionProjectFile(
 		util::_description_text = "The project file to read the CRAG from.",
 		util::_default_value    = "project.hdf");
 
+util::ProgramOption optionIntensities(
+		util::_long_name        = "intensities",
+		util::_description_text = "Which volume to show as intensities. 'raw' shows the raw intensity volume, 'boundary' "
+		                          "the boundary prediction volume. Default is 'raw'.",
+		util::_default_value    = "raw");
+
 util::ProgramOption optionOverlay(
 		util::_long_name        = "overlay",
 		util::_description_text = "The type of labels to show as overlay on the volume. 'leaf' shows the CRAG leaf nodes, "
@@ -71,7 +77,10 @@ int main(int argc, char** argv) {
 		// get intensities and supervoxel labels
 
 		auto intensities = std::make_shared<ExplicitVolume<float>>();
-		volumeStore.retrieveIntensities(*intensities);
+		if (optionIntensities.as<std::string>() == "raw")
+			volumeStore.retrieveIntensities(*intensities);
+		else
+			volumeStore.retrieveBoundaries(*intensities);
 		intensities->normalize();
 		float min, max;
 		intensities->data().minmax(&min, &max);
