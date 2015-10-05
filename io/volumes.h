@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_IO_VOLUMES_H__
 #define CANDIDATE_MC_IO_VOLUMES_H__
 
+#include <boost/filesystem.hpp>
 #include <vigra/impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
 #include <util/Logger.h>
@@ -37,6 +38,25 @@ ExplicitVolume<T> readVolume(std::vector<std::string> filenames) {
 	}
 
 	return volume;
+}
+
+template <typename T>
+void saveVolume(const ExplicitVolume<T>& volume, std::string directory) {
+
+	boost::filesystem::create_directory(directory);
+
+	for (int z = 0; z < volume.getDiscreteBoundingBox().depth(); z++) {
+
+		std::stringstream number;
+		number << std::setw(8) << std::setfill('0');
+		number << z;
+
+		std::string filename = directory + "/slice_" + number.str() + ".tif";
+
+		vigra::exportImage(
+				volume.data().template bind<2>(z),
+				vigra::ImageExportInfo(filename.c_str()));
+	}
 }
 
 std::vector<std::string>
