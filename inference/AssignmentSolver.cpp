@@ -99,7 +99,7 @@ AssignmentSolver::setVariables() {
 	unsigned int nextVar = _numNodes;
 
 	// edges are mapped in order of appearance
-	for (Crag::EdgeIt e(_crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : _crag.edges()) {
 
 		_edgeIdToVarMap[_crag.id(e)] = nextVar;
 		nextVar++;

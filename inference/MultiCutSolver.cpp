@@ -199,7 +199,7 @@ MultiCutSolver::setInitialConstraints() {
 
 	for (Crag::CragNode n : _crag.nodes()) {
 
-		std::vector<Crag::Edge> childEdges;
+		std::vector<Crag::CragEdge> childEdges;
 
 		// collect all child adjacency edges
 
@@ -235,7 +235,7 @@ MultiCutSolver::setInitialConstraints() {
 		LinearConstraint forceParentConstraint;
 
 		// require that not all of them are turned on at the same time
-		for (Crag::Edge e : childEdges) {
+		for (Crag::CragEdge e : childEdges) {
 
 			int var = _edgeIdToVarMap[_crag.id(e)];
 			forceParentConstraint.setCoefficient(var, 1.0);

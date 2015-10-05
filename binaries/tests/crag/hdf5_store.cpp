@@ -49,7 +49,7 @@ void hdf5_store() {
 	store.retrieveCrag(crag_);
 	store.retrieveVolumes(volumes_);
 
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+	for (Crag::CragNode n : crag.nodes()) {
 
 		BOOST_CHECK_EQUAL(
 				crag.isLeafNode(n),
@@ -75,7 +75,7 @@ void hdf5_store() {
 		}
 	}
 
-	for (Crag::SubsetArcIt e(crag_); e != lemon::INVALID; ++e)
+	for (Crag::CragArc e : crag_.arcs())
 		BOOST_CHECK(
-				crag_.id(crag_.getSubsetGraph().source(e)) == crag_.id(crag_.getSubsetGraph().target(e)) - 1);
+				crag_.id(e.source()) == crag_.id(e.target()) - 1);
 }

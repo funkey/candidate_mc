@@ -179,6 +179,16 @@ public:
 
 			return CragNode(_crag.toRag(_crag.getSubsetGraph().target(_arc)));
 		}
+
+		/**
+		 * Implicit conversion operator to an arc of the lemon subset graph. 
+		 * Provided for convenience, such that this arc can be used as the key 
+		 * in a lemon arc map and for the underlying lemon graph SubsetType.
+		 */
+		operator SubsetType::Arc () const {
+
+			return _arc;
+		}
 	};
 
 	class CragEdge {
@@ -387,10 +397,9 @@ public:
 	inline Node u(Edge e) const { return _rag.u(e); }
 	inline Node v(Edge e) const { return _rag.v(e); }
 
-	inline int id(Node n)       const { return _rag.id(n); }
-	inline int id(SubsetNode n) const { return _ssg.id(n); }
-	inline int id(Edge e)       const { return _rag.id(e); }
-	inline int id(SubsetArc  a) const { return _ssg.id(a); }
+	inline int id(CragNode n) const { return _rag.id(n); }
+	inline int id(CragEdge e) const { return _rag.id(e); }
+	inline int id(CragArc  a) const { return _ssg.id(a); }
 
 	/**
 	 * Convenience function to create a node from an id.
