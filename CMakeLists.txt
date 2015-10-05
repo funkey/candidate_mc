@@ -43,6 +43,12 @@ add_subdirectory(gui)
 add_subdirectory(mergetree)
 add_subdirectory(binaries)
 
+set(BUILD_PYTHON_WRAPPER TRUE CACHE BOOL "Build the python wrapper")
+
+if (BUILD_PYTHON_WRAPPER)
+  add_subdirectory(python)
+endif()
+
 ###############
 # config file #
 ###############
