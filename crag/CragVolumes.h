@@ -29,7 +29,7 @@ public:
 		_crag(other._crag),
 		_volumes(other._crag) {
 
-		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n) {
+		for (Crag::CragNode n : _crag.nodes()) {
 
 			_volumes[n] = other._volumes[n];
 			other._volumes[n].reset();
@@ -39,7 +39,7 @@ public:
 	/**
 	 * Set the volume of a node.
 	 */
-	void setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume);
+	void setVolume(Crag::CragNode n, std::shared_ptr<CragVolume> volume);
 
 	/**
 	 * Fill empty volumes with the unions of their child volumes. If the child 
@@ -53,7 +53,7 @@ public:
 	 * Get the volume of a candidate. Don't use this operator to set volumes, 
 	 * use setVolume() instead.
 	 */
-	std::shared_ptr<CragVolume> operator[](Crag::Node n) const;
+	std::shared_ptr<CragVolume> operator[](Crag::CragNode n) const;
 
 	/**
 	 * Get the bounding box of all volumes combined.
@@ -70,7 +70,7 @@ protected:
 	util::box<float,3> computeBoundingBox() const override {
 
 		util::box<float, 3> bb;
-		for (Crag::NodeIt n(_crag); n != lemon::INVALID; ++n)
+		for (Crag::CragNode n : _crag.nodes())
 			if (_volumes[n])
 				bb += operator[](n)->getBoundingBox();
 

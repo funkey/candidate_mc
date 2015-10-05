@@ -28,7 +28,7 @@ private:
 	 * Find propagated edges for node n and below. Returns the set of 
 	 * descendants of n (including n).
 	 */
-	std::set<Crag::Node> recurseAdjacencies(Crag& crag, Crag::Node n);
+	std::set<Crag::CragNode> recurseAdjacencies(Crag& crag, Crag::CragNode n);
 
 	/**
 	 * For binary trees, remove adjacency edges between children, since the 
@@ -40,7 +40,7 @@ private:
 	/**
 	 * Is the given edge connecting children of the same node?
 	 */
-	bool isSiblingEdge(Crag& crag, Crag::Edge e);
+	bool isSiblingEdge(Crag& crag, Crag::CragEdge e);
 
 	unsigned int _numAdded;
 };

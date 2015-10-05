@@ -245,7 +245,7 @@ public:
 	/**
 	 * Add a node to the CRAG.
 	 */
-	inline CragNode addNode(NodeType type = VolumeNode) {
+	inline CragNode addNode(NodeType type) {
 
 		_ssg.addNode();
 		CragNode n = _rag.addNode();
@@ -253,46 +253,51 @@ public:
 
 		return n;
 	}
+	inline CragNode addNode() { return addNode(VolumeNode); }
 
 	/**
 	 * Remove a node an its adjacency edges and subset arcs.
 	 */
-	inline void erase(Crag::Node n) {
+	inline void erase(Crag::CragNode n) {
 
 		_ssg.erase(toSubset(n));
 		_rag.erase(n);
-	}
-	inline void erase(Crag::SubsetNode n) {
-
-		_ssg.erase(n);
-		_rag.erase(toRag(n));
 	}
 
 	/**
 	 * Remove an adjacency edge.
 	 */
-	inline void erase(Crag::Edge e) {
+	inline void erase(Crag::CragEdge e) {
 
 		_rag.erase(e);
+	}
+
+	/**
+	 * Remove a subset arc.
+	 */
+	inline void erase(Crag::CragArc a) {
+
+		_ssg.erase(a);
 	}
 
 	/**
 	 * Indicate that the candidates represented by the given two nodes are 
 	 * adjacent.
 	 */
-	inline CragEdge addAdjacencyEdge(Node u, Node v, EdgeType type = AdjacencyEdge) {
+	inline CragEdge addAdjacencyEdge(CragNode u, CragNode v, EdgeType type) {
 
 		CragEdge e(*this, _rag.addEdge(u, v));
 		_edgeTypes[e] = type;
 
 		return e;
 	}
+	inline CragEdge addAdjacencyEdge(CragNode u, CragNode v) { return addAdjacencyEdge(u, v, AdjacencyEdge); }
 
 	/**
 	 * Indicate that the candidate represented by node u is a subset of the 
 	 * candidate represented by node v.
 	 */
-	inline SubsetArc addSubsetArc(Node u, Node v) {
+	inline SubsetArc addSubsetArc(CragNode u, CragNode v) {
 
 		return _ssg.addArc(toSubset(u), toSubset(v));
 	}
@@ -368,17 +373,17 @@ public:
 	 * Get the level of a node, i.e., the size of the longest subset-tree path 
 	 * to a leaf node. Leaf nodes have a value of zero.
 	 */
-	int getLevel(Crag::Node n) const;
+	int getLevel(Crag::CragNode n) const;
 
 	/**
 	 * Return true for candidates that are leaf nodes in the subset graph.
 	 */
-	bool isLeafNode(Crag::Node n) const { return (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID); }
+	bool isLeafNode(Crag::CragNode n) const { return (SubsetInArcIt(*this, toSubset(n)) == lemon::INVALID); }
 
 	/**
 	 * Return true for candidates that are root nodes in the subset graph.
 	 */
-	bool isRootNode(Crag::Node n) const { return (SubsetOutArcIt(*this, toSubset(n)) == lemon::INVALID); }
+	bool isRootNode(Crag::CragNode n) const { return (SubsetOutArcIt(*this, toSubset(n)) == lemon::INVALID); }
 
 	/**
 	 * Return true for edges that connect two leaf nodes.

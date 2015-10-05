@@ -2,7 +2,7 @@
  * This file is meant to be included into the class definition of Crag.
  */
 
-class CragNodeIterator {
+class CragNodeIterator : std::iterator<std::input_iterator_tag, CragNode> {
 
 	const Crag& _crag;
 	RagType::NodeIt _it;
@@ -47,7 +47,7 @@ public:
 	}
 };
 
-class CragEdgeIterator {
+class CragEdgeIterator : std::iterator<std::input_iterator_tag, CragEdge> {
 
 	const Crag& _crag;
 	RagType::EdgeIt _it;
@@ -232,6 +232,9 @@ class CragNodes {
 
 public:
 
+	typedef CragNodeIterator iterator;
+	typedef const CragNodeIterator const_iterator;
+
 	CragNodeIterator begin() const {
 
 		return CragNodeIterator(_crag);
@@ -271,6 +274,9 @@ class CragEdges {
 
 public:
 
+	typedef CragEdgeIterator iterator;
+	typedef const CragEdgeIterator const_iterator;
+
 	CragEdgeIterator begin() const {
 
 		return CragEdgeIterator(_crag);
@@ -306,6 +312,9 @@ class CragArcs {
 	CragArcs(const Crag& g) : _crag(g) {}
 
 public:
+
+	typedef CragArcIterator iterator;
+	typedef const CragArcIterator const_iterator;
 
 	CragArcIterator begin() const {
 
@@ -345,6 +354,9 @@ class CragIncArcs {
 
 public:
 
+	typedef CragIncArcIterator<T> iterator;
+	typedef const CragIncArcIterator<T> const_iterator;
+
 	CragIncArcIterator<T> begin() const {
 
 		return CragIncArcIterator<T>(_crag, typename T::IteratorType(_crag.getSubsetGraph(), _crag.toSubset(_n)));
@@ -383,6 +395,9 @@ class CragIncEdges {
 	CragIncEdges(const Crag& crag, CragNode n) : _crag(crag), _n(n) {}
 
 public:
+
+	typedef CragIncEdgeIterator iterator;
+	typedef const CragIncEdgeIterator const_iterator;
 
 	CragIncEdgeIterator begin() const {
 

@@ -14,22 +14,10 @@ util::ProgramOption optionPruneChildEdges(
 void
 AdjacencyAnnotator::propagateLeafAdjacencies(Crag& crag) {
 
-	// find root nodes
-	std::vector<Crag::Node> roots;
-
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
-
-		int numParents = 0;
-		for (Crag::SubsetOutArcIt a(crag.getSubsetGraph(), crag.toSubset(n)); a != lemon::INVALID; ++a)
-			numParents++;
-
-		if (numParents == 0)
-			roots.push_back(n);
-	}
-
 	_numAdded = 0;
-	for (Crag::Node n : roots)
-		recurseAdjacencies(crag, n);
+	for (Crag::CragNode n : crag.nodes())
+		if (crag.isRootNode(n))
+			recurseAdjacencies(crag, n);
 
 	if (optionPruneChildEdges)
 		pruneChildEdges(crag);
@@ -39,33 +27,33 @@ AdjacencyAnnotator::propagateLeafAdjacencies(Crag& crag) {
 			<< std::endl;
 }
 
-std::set<Crag::Node>
-AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
+std::set<Crag::CragNode>
+AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::CragNode n) {
 
 	LOG_ALL(adjacencyannotatorlog) << "recursing into node " << crag.id(n) << std::endl;
 
 	// get all leaf subnodes
-	std::set<Crag::Node> subnodes;
-	for (Crag::SubsetInArcIt a(crag.getSubsetGraph(), crag.toSubset(n)); a != lemon::INVALID; ++a) {
+	std::set<Crag::CragNode> subnodes;
+	for (Crag::CragArc a : crag.inArcs(n)) {
 
-		std::set<Crag::Node> a_subnodes = recurseAdjacencies(crag, crag.toRag(crag.getSubsetGraph().source(a)));
+		std::set<Crag::CragNode> a_subnodes = recurseAdjacencies(crag, a.source());
 
-		for (Crag::Node s : a_subnodes)
+		for (Crag::CragNode s : a_subnodes)
 			subnodes.insert(s);
 	}
 
 	// for each leaf subnode adjacent to a non-subnode, add an adjacency edge to 
 	// the non-subnode
-	std::set<Crag::Node> neighbors;
+	std::set<Crag::CragNode> neighbors;
 
 	LOG_ALL(adjacencyannotatorlog) << "subnodes of " << crag.id(n) << " are:" << std::endl;
-	for (Crag::Node s : subnodes) {
+	for (Crag::CragNode s : subnodes) {
 
 		LOG_ALL(adjacencyannotatorlog) << "\t" << crag.id(s) << std::endl;
 
-		for (Crag::IncEdgeIt e(crag, s); e != lemon::INVALID; ++e) {
+		for (Crag::CragEdge e : crag.adjEdges(s)) {
 
-			Crag::Node neighbor = crag.getAdjacencyGraph().oppositeNode(s, e);
+			Crag::CragNode neighbor = e.opposite(s);
 
 			// not a subnode
 			if (!subnodes.count(neighbor))
@@ -73,7 +61,7 @@ AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
 		}
 	}
 
-	for (Crag::Node neighbor : neighbors) {
+	for (Crag::CragNode neighbor : neighbors) {
 
 		LOG_ALL(adjacencyannotatorlog)
 				<< "adding propagated edge between "
@@ -95,26 +83,26 @@ AdjacencyAnnotator::recurseAdjacencies(Crag& crag, Crag::Node n) {
 void
 AdjacencyAnnotator::pruneChildEdges(Crag& crag) {
 
-	std::vector<Crag::Edge> siblingEdges;
+	std::vector<Crag::CragEdge> siblingEdges;
 
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e)
+	for (Crag::CragEdge e : crag.edges())
 		if (isSiblingEdge(crag, e))
 			siblingEdges.push_back(e);
 
-	for (Crag::Edge e : siblingEdges)
+	for (Crag::CragEdge e : siblingEdges)
 		crag.erase(e);
 
 	LOG_USER(adjacencyannotatorlog) << "pruned " << siblingEdges.size() << " child adjacency edges" << std::endl;
 }
 
 bool
-AdjacencyAnnotator::isSiblingEdge(Crag& crag, Crag::Edge e) {
+AdjacencyAnnotator::isSiblingEdge(Crag& crag, Crag::CragEdge e) {
 
-	if (crag.isRootNode(crag.u(e)) || crag.isRootNode(crag.v(e)))
+	if (crag.isRootNode(e.u()) || crag.isRootNode(e.v()))
 		return false;
 
-	Crag::SubsetNode parentU = crag.getSubsetGraph().target(Crag::SubsetOutArcIt(crag, crag.toSubset(crag.u(e))));
-	Crag::SubsetNode parentV = crag.getSubsetGraph().target(Crag::SubsetOutArcIt(crag, crag.toSubset(crag.v(e))));
+	Crag::CragNode parentU = (*crag.outArcs(e.u()).begin()).target();
+	Crag::CragNode parentV = (*crag.outArcs(e.v()).begin()).target();
 
 	return (parentU == parentV);
 }

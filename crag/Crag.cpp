@@ -7,7 +7,7 @@ const std::vector<Crag::NodeType> Crag::NodeTypes = { VolumeNode, SliceNode, Ass
 const std::vector<Crag::EdgeType> Crag::EdgeTypes = { AdjacencyEdge, AssignmentEdge, NoAssignmentEdge };
 
 int
-Crag::getLevel(Crag::Node n) const {
+Crag::getLevel(Crag::CragNode n) const {
 
 	if (isLeafNode(n))
 		return 0;

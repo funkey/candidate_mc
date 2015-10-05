@@ -5,7 +5,7 @@
 logger::LogChannel cragvolumeslog("cragvolumeslog", "[CragVolumes] ");
 
 void
-CragVolumes::setVolume(Crag::Node n, std::shared_ptr<CragVolume> volume) {
+CragVolumes::setVolume(Crag::CragNode n, std::shared_ptr<CragVolume> volume) {
 
 	_volumes[n] = volume;
 	setBoundingBoxDirty();
@@ -26,7 +26,7 @@ CragVolumes::fillEmptyVolumes() {
 }
 
 std::shared_ptr<CragVolume>
-CragVolumes::operator[](Crag::Node n) const {
+CragVolumes::operator[](Crag::CragNode n) const {
 
 	if (!_volumes[n])
 		UTIL_THROW_EXCEPTION(
