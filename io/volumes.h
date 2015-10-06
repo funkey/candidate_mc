@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_IO_VOLUMES_H__
 #define CANDIDATE_MC_IO_VOLUMES_H__
 
+#include <fstream>
 #include <boost/filesystem.hpp>
 #include <vigra/impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
@@ -57,6 +58,11 @@ void saveVolume(const ExplicitVolume<T>& volume, std::string directory) {
 				volume.data().template bind<2>(z),
 				vigra::ImageExportInfo(filename.c_str()));
 	}
+
+	std::ofstream meta(directory + "/META", std::ofstream::out);
+	meta << "resX=" << volume.getResolution().x() << std::endl;
+	meta << "resY=" << volume.getResolution().y() << std::endl;
+	meta << "resZ=" << volume.getResolution().z() << std::endl;
 }
 
 std::vector<std::string>
