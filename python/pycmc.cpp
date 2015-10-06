@@ -70,8 +70,10 @@ struct iterator_traits<Crag::CragIncArcIterator<T>> {
 
 }} // namespace boost::detail
 
+#ifdef __clang__
 // std::shared_ptr support
 template<class T> T* get_pointer(std::shared_ptr<T> p){ return p.get(); }
+#endif
 
 namespace pycmc {
 
