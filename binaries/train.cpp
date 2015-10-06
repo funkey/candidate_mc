@@ -47,7 +47,8 @@ util::ProgramOption optionLoss(
 		                          "to best effort, default), overlap (RAND index approximation "
 		                          "to ground-truth), hausdorff (minimal Hausdorff distance to "
 		                          "any ground-truth region), or topological (penalizes splits, merges, "
-		                          "false positives and false negatives).",
+		                          "false positives and false negatives). Any other value will try to "
+		                          "find a loss function with this name in the training dataset.",
 		util::_default_value    = "hamming");
 
 util::ProgramOption optionNormalizeLoss(
@@ -232,11 +233,10 @@ int main(int argc, char** argv) {
 
 		} else {
 
-			LOG_ERROR(logger::out)
-					<< "unknown loss: "
-					<< optionLoss.as<std::string>()
-					<< std::endl;
-			return 1;
+			LOG_USER(logger::out) << "using custom loss " << optionLoss.as<std::string>() << std::endl;
+
+			trainingLoss = std::unique_ptr<Loss>(new Loss(crag));
+			cragStore->retrieveCosts(crag, *trainingLoss, optionLoss);
 		}
 
 		if (optionNormalizeLoss) {
