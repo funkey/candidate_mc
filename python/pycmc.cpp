@@ -7,7 +7,18 @@
 #include <crag/CragVolumes.h>
 #include <io/Hdf5CragStore.h>
 #include <io/volumes.h>
+#include <inference/Costs.h>
+#include <learning/Loss.h>
 #include "logging.h"
+
+template <typename T>
+const T& nodeMapGetter(const Crag::NodeMap<T>& map, Crag::CragNode key) { return map[key]; }
+template <typename T>
+void nodeMapSetter(Crag::NodeMap<T>& map, Crag::CragNode key, const T& value) { map[key] = value; }
+template <typename T>
+const T& edgeMapGetter(const Crag::EdgeMap<T>& map, Crag::CragEdge key) { return map[key]; }
+template <typename T>
+void edgeMapSetter(Crag::EdgeMap<T>& map, Crag::CragEdge key, const T& value) { map[key] = value; }
 
 // iterator traits specializations
 namespace boost { namespace detail {
@@ -199,6 +210,27 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getVolume", &CragVolumes::operator[])
 			;
 
+	// node and edge maps
+	boost::python::class_<Crag::NodeMap<double>, boost::noncopyable>("CragNodeMap_d", boost::python::init<const Crag&>())
+			.def("__getitem__", &nodeMapGetter<double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &nodeMapSetter<double>)
+			;
+	boost::python::class_<Crag::EdgeMap<double>, boost::noncopyable>("CragEdgeMap_d", boost::python::init<const Crag&>())
+			.def("__getitem__", &edgeMapGetter<double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &edgeMapSetter<double>)
+			;
+
+	// Costs
+	boost::python::class_<Costs, boost::noncopyable>("Costs", boost::python::init<const Crag&>())
+			.def_readonly("node", &Costs::node)
+			.def_readonly("edge", &Costs::edge)
+			;
+
+	// Loss (need to expose 'node' and 'edge' again?)
+	boost::python::class_<Loss, boost::python::bases<Costs>, boost::noncopyable>("Loss", boost::python::init<const Crag&>())
+			.def_readwrite("constant", &Loss::constant)
+			;
+
 	// CRAG stores
 	boost::python::class_<Hdf5CragStore, boost::noncopyable>("Hdf5CragStore", boost::python::init<std::string>())
 			.def("saveCrag", &Hdf5CragStore::saveCrag)
@@ -209,7 +241,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			//.def("saveFeatureWeights", &Hdf5CragStore::saveFeatureWeights)
 			//.def("saveFeaturesMin", &Hdf5CragStore::saveFeaturesMin)
 			//.def("saveFeaturesMax", &Hdf5CragStore::saveFeaturesMax)
-			//.def("saveCosts", &Hdf5CragStore::saveCosts)
+			.def("saveCosts", &Hdf5CragStore::saveCosts)
 			//.def("saveSolution", &Hdf5CragStore::saveSolution)
 			.def("retrieveCrag", &Hdf5CragStore::retrieveCrag)
 			.def("retrieveVolumes", &Hdf5CragStore::retrieveVolumes)
@@ -219,7 +251,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			//.def("retrieveFeaturesMax", &Hdf5CragStore::retrieveFeaturesMax)
 			//.def("retrieveSkeletons", &Hdf5CragStore::retrieveSkeletons)
 			//.def("retrieveFeatureWeights", &Hdf5CragStore::retrieveFeatureWeights)
-			//.def("retrieveCosts", &Hdf5CragStore::retrieveCosts)
+			.def("retrieveCosts", &Hdf5CragStore::retrieveCosts)
 			//.def("retrieveSolution", &Hdf5CragStore::retrieveSolution)
 			.def("getSolutionNames", &Hdf5CragStore::getSolutionNames)
 			;
