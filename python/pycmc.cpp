@@ -6,6 +6,7 @@
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <io/Hdf5CragStore.h>
+#include <io/Hdf5VolumeStore.h>
 #include <io/volumes.h>
 #include <inference/Costs.h>
 #include <learning/Loss.h>
@@ -196,6 +197,12 @@ BOOST_PYTHON_MODULE(pycmc) {
 					boost::python::return_internal_reference<>())
 			;
 
+	// ExplicitVolume<int>
+	boost::python::class_<ExplicitVolume<int>>("ExplicitVolume_i")
+			.def("getBoundingBox", &ExplicitVolume<int>::getBoundingBox, boost::python::return_internal_reference<>())
+			.def("cut", &ExplicitVolume<int>::cut)
+			;
+
 	// CragVolume
 	boost::python::class_<CragVolume, std::shared_ptr<CragVolume>>("CragVolume")
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
@@ -204,6 +211,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 	// volume io
 	boost::python::def("readVolume", readVolume<unsigned char>);
 	boost::python::def("saveVolume", saveVolume<unsigned char>);
+	boost::python::def("readVolume", readVolume<int>);
+	boost::python::def("saveVolume", saveVolume<int>);
 
 	// CragVolumes
 	boost::python::class_<CragVolumes, boost::noncopyable>("CragVolumes", boost::python::init<const Crag&>())
@@ -233,7 +242,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def_readwrite("constant", &Loss::constant)
 			;
 
-	// CRAG stores
+	// CRAG store
 	boost::python::class_<Hdf5CragStore, boost::noncopyable>("Hdf5CragStore", boost::python::init<std::string>())
 			.def("saveCrag", &Hdf5CragStore::saveCrag)
 			.def("saveVolumes", &Hdf5CragStore::saveVolumes)
@@ -256,6 +265,18 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("retrieveCosts", &Hdf5CragStore::retrieveCosts)
 			//.def("retrieveSolution", &Hdf5CragStore::retrieveSolution)
 			.def("getSolutionNames", &Hdf5CragStore::getSolutionNames)
+			;
+
+	// volume store
+	boost::python::class_<Hdf5VolumeStore, boost::noncopyable>("Hdf5VolumeStore", boost::python::init<std::string>())
+			.def("saveIntensities", &Hdf5VolumeStore::saveIntensities)
+			.def("saveBoundaries", &Hdf5VolumeStore::saveBoundaries)
+			.def("saveGroundTruth", &Hdf5VolumeStore::saveGroundTruth)
+			.def("saveLabels", &Hdf5VolumeStore::saveLabels)
+			.def("retrieveIntensities", &Hdf5VolumeStore::retrieveIntensities)
+			.def("retrieveBoundaries", &Hdf5VolumeStore::retrieveBoundaries)
+			.def("retrieveGroundTruth", &Hdf5VolumeStore::retrieveGroundTruth)
+			.def("retrieveLabels", &Hdf5VolumeStore::retrieveLabels)
 			;
 }
 
