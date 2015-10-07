@@ -28,9 +28,10 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 		edgeTypes.push_back(crag.id(e.v()));
 		edgeTypes.push_back(crag.type(e));
 	}
-	_hdfFile.write(
-			"edge_types",
-			vigra::ArrayVectorView<int>(edgeTypes.size(), const_cast<int*>(&edgeTypes[0])));
+	if (edgeTypes.size() > 0)
+		_hdfFile.write(
+				"edge_types",
+				vigra::ArrayVectorView<int>(edgeTypes.size(), const_cast<int*>(&edgeTypes[0])));
 
 	_hdfFile.cd("/crag");
 	_hdfFile.cd_mk("grid_graph");
@@ -112,25 +113,28 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 	_hdfFile.cd("/crag");
 	Hdf5GraphReader::readNodeMap(crag, crag.nodeTypes(), "node_types", Hdf5GraphReader::DefaultConverter<int, Crag::NodeType>());
 
-	vigra::ArrayVector<int> edgeTypes;
-	_hdfFile.readAndResize(
-			"edge_types",
-			edgeTypes);
+	if (_hdfFile.existsDataset("edge_types")) {
 
-	for (unsigned int i = 0; i < edgeTypes.size();) {
+		vigra::ArrayVector<int> edgeTypes;
+		_hdfFile.readAndResize(
+				"edge_types",
+				edgeTypes);
 
-		Crag::Node u = crag.nodeFromId(edgeTypes[i]);
-		Crag::Node v = crag.nodeFromId(edgeTypes[i+1]);
-		Crag::EdgeType type = static_cast<Crag::EdgeType>(edgeTypes[i+2]);
-		i += 3;
+		for (unsigned int i = 0; i < edgeTypes.size();) {
 
-		// find edge in CRAG and set type
-		for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
-			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+			Crag::Node u = crag.nodeFromId(edgeTypes[i]);
+			Crag::Node v = crag.nodeFromId(edgeTypes[i+1]);
+			Crag::EdgeType type = static_cast<Crag::EdgeType>(edgeTypes[i+2]);
+			i += 3;
 
-				crag.edgeTypes()[e] = type;
-				break;
-			}
+			// find edge in CRAG and set type
+			for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
+				if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+
+					crag.edgeTypes()[e] = type;
+					break;
+				}
+		}
 	}
 
 	try {
