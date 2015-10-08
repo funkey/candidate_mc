@@ -490,9 +490,10 @@ Hdf5CragStore::saveCosts(const Crag& crag, const Costs& costs, std::string name)
 		edgeCosts.push_back(crag.id(e.v()));
 		edgeCosts.push_back(costs.edge[e]);
 	}
-	_hdfFile.write(
-			name + "_edges",
-			vigra::ArrayVectorView<double>(edgeCosts.size(), const_cast<double*>(&edgeCosts[0])));
+	if (edgeCosts.size() > 0)
+		_hdfFile.write(
+				name + "_edges",
+				vigra::ArrayVectorView<double>(edgeCosts.size(), const_cast<double*>(&edgeCosts[0])));
 }
 
 void
@@ -502,25 +503,28 @@ Hdf5CragStore::retrieveCosts(const Crag& crag, Costs& costs, std::string name) {
 	_hdfFile.cd("costs");
 	Hdf5GraphReader::readNodeMap(crag, costs.node, name + "_nodes");
 
-	vigra::ArrayVector<double> edgeCosts;
-	_hdfFile.readAndResize(
-			name + "_edges",
-			edgeCosts);
+	if (_hdfFile.existsDataset(name + "_edges")) {
 
-	for (unsigned int i = 0; i < edgeCosts.size();) {
+		vigra::ArrayVector<double> edgeCosts;
+		_hdfFile.readAndResize(
+				name + "_edges",
+				edgeCosts);
 
-		Crag::Node u = crag.nodeFromId(edgeCosts[i]);
-		Crag::Node v = crag.nodeFromId(edgeCosts[i+1]);
-		double cost = edgeCosts[i+2];
-		i += 3;
+		for (unsigned int i = 0; i < edgeCosts.size();) {
 
-		// find edge in CRAG and set costs
-		for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
-			if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+			Crag::Node u = crag.nodeFromId(edgeCosts[i]);
+			Crag::Node v = crag.nodeFromId(edgeCosts[i+1]);
+			double cost = edgeCosts[i+2];
+			i += 3;
 
-				costs.edge[e] = cost;
-				break;
-			}
+			// find edge in CRAG and set costs
+			for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
+				if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+
+					costs.edge[e] = cost;
+					break;
+				}
+		}
 	}
 }
 
