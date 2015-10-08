@@ -36,7 +36,7 @@ public:
 
 	void normalize() {
 
-		for (auto f : _features)
+		for (auto& f : _features)
 			f.normalize();
 	}
 
