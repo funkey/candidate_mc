@@ -20,6 +20,12 @@ template <typename T>
 const T& edgeMapGetter(const Crag::EdgeMap<T>& map, Crag::CragEdge key) { return map[key]; }
 template <typename T>
 void edgeMapSetter(Crag::EdgeMap<T>& map, Crag::CragEdge key, const T& value) { map[key] = value; }
+template <typename T>
+const T& explicitVolumeGetter(const ExplicitVolume<T>& volume, util::point<int, 3> pos) { return volume[pos]; }
+template <typename T>
+const T& pointGetter(const util::point<T, 3>& p, int i) { return p[i]; }
+template <typename T>
+void pointSetter(util::point<T, 3>& p, int i, const T& value) { p[i] = value; }
 
 // iterator traits specializations
 namespace boost { namespace detail {
@@ -187,25 +193,70 @@ BOOST_PYTHON_MODULE(pycmc) {
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
 			.def("z", static_cast<const float&(util::point<float, 3>::*)() const>(&util::point<float, 3>::z),
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__getitem__", &pointGetter<float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &pointSetter<float>)
 			;
 
-	// util::box<float, 3> (aka bounding boxes)
+	// util::point<int, 3>
+	boost::python::class_<util::point<int, 3>>("point_i3")
+			.def("x", static_cast<const int&(util::point<int, 3>::*)() const>(&util::point<int, 3>::x),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("y", static_cast<const int&(util::point<int, 3>::*)() const>(&util::point<int, 3>::y),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("z", static_cast<const int&(util::point<int, 3>::*)() const>(&util::point<int, 3>::z),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__getitem__", &pointGetter<int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &pointSetter<int>)
+			;
+
+	// util::box<T, 3> (aka bounding boxes)
 	boost::python::class_<util::box<float, 3>>("box_f3")
 			.def("min", static_cast<util::point<float, 3>&(util::box<float, 3>::*)()>(&util::box<float, 3>::min),
 					boost::python::return_internal_reference<>())
 			.def("max", static_cast<util::point<float, 3>&(util::box<float, 3>::*)()>(&util::box<float, 3>::max),
 					boost::python::return_internal_reference<>())
+			.def("width", &util::box<float, 3>::width)
+			.def("height", &util::box<float, 3>::height)
+			.def("depth", &util::box<float, 3>::depth)
+			.def("contains", &util::box<float, 3>::template contains<float, 3>)
+			;
+	boost::python::class_<util::box<int, 3>>("box_i3")
+			.def("min", static_cast<util::point<int, 3>&(util::box<int, 3>::*)()>(&util::box<int, 3>::min),
+					boost::python::return_internal_reference<>())
+			.def("max", static_cast<util::point<int, 3>&(util::box<int, 3>::*)()>(&util::box<int, 3>::max),
+					boost::python::return_internal_reference<>())
+			.def("width", &util::box<int, 3>::width)
+			.def("height", &util::box<int, 3>::height)
+			.def("depth", &util::box<int, 3>::depth)
+			.def("contains", &util::box<int, 3>::template contains<int, 3>)
+			;
+	boost::python::class_<util::box<unsigned int, 3>>("box_ui3")
+			.def("min", static_cast<util::point<unsigned int, 3>&(util::box<unsigned int, 3>::*)()>(&util::box<unsigned int, 3>::min),
+					boost::python::return_internal_reference<>())
+			.def("max", static_cast<util::point<unsigned int, 3>&(util::box<unsigned int, 3>::*)()>(&util::box<unsigned int, 3>::max),
+					boost::python::return_internal_reference<>())
+			.def("width", &util::box<unsigned int, 3>::width)
+			.def("height", &util::box<unsigned int, 3>::height)
+			.def("depth", &util::box<unsigned int, 3>::depth)
+			.def("contains", &util::box<unsigned int, 3>::template contains<unsigned int, 3>)
+			.def("contains", &util::box<unsigned int, 3>::template contains<int, 3>)
 			;
 
 	// ExplicitVolume<int>
 	boost::python::class_<ExplicitVolume<int>>("ExplicitVolume_i")
 			.def("getBoundingBox", &ExplicitVolume<int>::getBoundingBox, boost::python::return_internal_reference<>())
+			.def("getDiscreteBoundingBox", &ExplicitVolume<int>::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
+			.def("getResolution", &ExplicitVolume<int>::getResolution, boost::python::return_internal_reference<>())
 			.def("cut", &ExplicitVolume<int>::cut)
+			.def("__getitem__", &explicitVolumeGetter<int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
 	// CragVolume
 	boost::python::class_<CragVolume, std::shared_ptr<CragVolume>>("CragVolume")
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
+			.def("getDiscreteBoundingBox", &CragVolume::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
+			.def("getResolution", &CragVolume::getResolution, boost::python::return_internal_reference<>())
+			.def("__getitem__", &explicitVolumeGetter<unsigned char>, boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
 	// volume io
