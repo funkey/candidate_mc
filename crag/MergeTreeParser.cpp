@@ -100,8 +100,8 @@ MergeTreeParser::MergeTreeVisitor::finalizeComponent(
 
 	LOG_ALL(mergetreeparserlog) << "add it to crag" << std::endl;
 
-	// create a node
-	Crag::CragNode node = _crag.addNode();
+	// create a node (all nodes from a 2D merge-tree are slice nodes)
+	Crag::CragNode node = _crag.addNode(Crag::SliceNode);
 	_extents[node] = std::make_pair(begin, end);
 
 	// connect it to children
