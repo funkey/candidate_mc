@@ -12,7 +12,7 @@ Dependencies
 ------------
 
   * CMake, Git, Mercurial, GCC
-  * libboost-all-dev (make sure libboost-timer-dev is included)
+  * libboost-all-dev (make sure libboost-timer-dev and libboost-python-dev are included)
   * liblapack-dev
   * libfftw3-dev
   * libx11-dev
@@ -25,10 +25,10 @@ Dependencies
   * libpng12-dev
   * libtiff4-dev
   * libhdf5-serial-dev
-  * Gurobi
+  * Gurobi (optional)
 
     Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
-  
+
   * XQuartz (only on OS X, http://xquartz.macosforge.org/)
 
 Configure:
