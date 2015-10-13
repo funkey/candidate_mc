@@ -14,7 +14,7 @@
 #include <io/Hdf5VolumeStore.h>
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
-#include <learning/OverlapLoss.h>
+#include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
 util::ProgramOption optionProjectFile(
@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
 			ExplicitVolume<int> groundTruth;
 			volumeStore.retrieveGroundTruth(groundTruth);
 
-			OverlapLoss overlapLoss(crag, volumes, groundTruth);
-			BestEffort bestEffort(crag, volumes, overlapLoss);
+			RandLoss randLoss(crag, volumes, groundTruth);
+			BestEffort bestEffort(crag, volumes, randLoss);
 
 			for (Crag::CragNode n : crag.nodes())
 				if (bestEffort.selected(n))

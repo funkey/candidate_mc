@@ -23,7 +23,7 @@
 #include <learning/HammingLoss.h>
 #include <learning/HausdorffLoss.h>
 #include <learning/Oracle.h>
-#include <learning/OverlapLoss.h>
+#include <learning/RandLoss.h>
 #include <learning/TopologicalLoss.h>
 
 util::ProgramOption optionProjectFile(
@@ -34,9 +34,9 @@ util::ProgramOption optionProjectFile(
 
 util::ProgramOption optionBestEffortLoss(
 		util::_long_name        = "bestEffortLoss",
-		util::_description_text = "The loss to use for finding the best-effort solution: overlap (RAND index approximation "
+		util::_description_text = "The loss to use for finding the best-effort solution: rand (RAND index approximation "
 		                          "to ground-truth, default) or hausdorff (minimal Hausdorff distance to any ground-truth region).",
-		util::_default_value    = "overlap");
+		util::_default_value    = "rand");
 
 util::ProgramOption optionBestEffortFromProjectFile(
 		util::_long_name        = "bestEffortFromProjectFile",
@@ -45,7 +45,7 @@ util::ProgramOption optionBestEffortFromProjectFile(
 util::ProgramOption optionLoss(
 		util::_long_name        = "loss",
 		util::_description_text = "The loss to use for training: hamming (Hamming distance "
-		                          "to best effort, default), overlap (RAND index approximation "
+		                          "to best effort, default), rand (RAND index approximation "
 		                          "to ground-truth), hausdorff (minimal Hausdorff distance to "
 		                          "any ground-truth region), or topological (penalizes splits, merges, "
 		                          "false positives and false negatives). Any other value will try to "
@@ -144,11 +144,11 @@ int main(int argc, char** argv) {
 
 			LOG_USER(logger::out) << "reading ground-truth" << std::endl;
 
-			if (optionBestEffortLoss.as<std::string>() == "overlap") {
+			if (optionBestEffortLoss.as<std::string>() == "rand") {
 
-				LOG_USER(logger::out) << "using overlap loss for best-effort" << std::endl;
+				LOG_USER(logger::out) << "using RAND loss for best-effort" << std::endl;
 
-				bestEffortLoss = std::unique_ptr<OverlapLoss>(new OverlapLoss(crag, volumes, groundTruth));
+				bestEffortLoss = std::unique_ptr<RandLoss>(new RandLoss(crag, volumes, groundTruth));
 
 			} else if (optionBestEffortLoss.as<std::string>() == "hausdorff") {
 
@@ -214,13 +214,13 @@ int main(int argc, char** argv) {
 
 			trainingLoss = std::unique_ptr<HammingLoss>(new HammingLoss(crag, *bestEffort));
 
-		} else if (optionLoss.as<std::string>() == "overlap") {
+		} else if (optionLoss.as<std::string>() == "rand") {
 
-			LOG_USER(logger::out) << "using overlap loss" << std::endl;
+			LOG_USER(logger::out) << "using RAND loss" << std::endl;
 
 			LOG_USER(logger::out) << "reading ground-truth" << std::endl;
 
-			trainingLoss = std::unique_ptr<OverlapLoss>(new OverlapLoss(crag, volumes, groundTruth));
+			trainingLoss = std::unique_ptr<RandLoss>(new RandLoss(crag, volumes, groundTruth));
 
 		} else if (optionLoss.as<std::string>() == "hausdorff") {
 
