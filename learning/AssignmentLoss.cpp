@@ -84,12 +84,6 @@ AssignmentLoss::computeSizesAndOverlaps(
 		const CragVolumes& volumes,
 		const ExplicitVolume<int>& groundTruth) {
 
-	// ground truth sizes
-	_gtSizes.clear();
-	for (int l : groundTruth.data())
-		if (l > 0)
-			_gtSizes[l]++;
-
 	// candidate sizes and overlap with ground truth regions
 	for (Crag::CragNode n : crag.nodes()) {
 

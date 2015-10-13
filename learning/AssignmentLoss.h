@@ -23,7 +23,6 @@ private:
 			const CragVolumes& volumes,
 			const ExplicitVolume<int>& groundTruth);
 
-	std::map<int, int> _gtSizes;
 	Crag::NodeMap<int> _candidateSizes;
 
 	Crag::NodeMap<std::map<int, int>> _overlaps;
