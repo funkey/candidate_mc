@@ -1,8 +1,17 @@
 #include "OverlapLoss.h"
 #include <util/Logger.h>
 #include <util/assert.h>
+#include <util/ProgramOptions.h>
 
 logger::LogChannel overlaplosslog("overlaplosslog", "[OverlapLoss] ");
+
+util::ProgramOption optionSetDifferenceWeight(
+		util::_module           = "loss.overlap",
+		util::_long_name        = "setDifferenceWeight",
+		util::_description_text = "The influence of voxels that are neither in the candidate nor in the ground-truth "
+		                          "region to the loss. The loss is <set difference>*<set difference weight> - <overlap>. "
+		                          "Default is 1.",
+		util::_default_value    = 1.0);
 
 OverlapLoss::OverlapLoss(
 		const Crag&                crag,
@@ -14,17 +23,20 @@ OverlapLoss::OverlapLoss(
 
 	computeSizesAndOverlaps(crag, volumes, groundTruth);
 
-	// For each candidate i, get the minimal
+	// For each candidate i, get the gt region j with maximal overlap and set
 	//
-	//   score = min_j difference_i_to_j - overlap_i_and_j
+	//   score = difference_i_to_j*w - overlap_i_and_j
 	//
-	// over all ground truth regions j as costs.
+	// where
 	//
 	//   differnce_i_to_j = size_of_i + size_of_j - 2*overlap_i_and_j
 	//
 	// are all pixels in i and not in j and vice versa. Hence,
 	//
-	//   score = size_of_i + min_j size_of_j - 3 * overlap_i_and_j
+	//   score =
+	//        size_of_i*w + size_of_j*w - (2*w + 1)*overlap_i_and_j
+
+	double w = optionSetDifferenceWeight.as<double>();
 
 	for (Crag::CragNode i : crag.nodes()) {
 
@@ -59,7 +71,7 @@ OverlapLoss::OverlapLoss(
 			}
 		}
 
-		node[i] = size_i + bestGtSize - 3*maxOverlap;
+		node[i] = size_i*w + bestGtSize*w - (2*w + 1)*maxOverlap;
 	}
 
 	// edges don't have a loss
