@@ -10,6 +10,7 @@
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
 #include <util/exceptions.h>
+#include <util/timing.h>
 #include <io/CragImport.h>
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
@@ -294,6 +295,8 @@ int main(int argc, char** argv) {
 
 		// create initial set of weights for the given features
 		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());
+
+		UTIL_TIME_SCOPE("training");
 
 		if (optionGradientOptimizer) {
 
