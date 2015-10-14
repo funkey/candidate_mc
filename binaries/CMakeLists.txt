@@ -1,4 +1,5 @@
 define_module(merge_tree               BINARY SOURCES merge_tree.cpp              LINKS mergetree util)
+define_module(combine_images           BINARY SOURCES combine_images.cpp          LINKS vigra util)
 define_module(cmc_create_project       BINARY SOURCES cmc_create_project.cpp      LINKS crag inference imageprocessing io)
 define_module(cmc_extract_features     BINARY SOURCES cmc_extract_features.cpp    LINKS crag features learning io util)
 define_module(cmc_train                BINARY SOURCES cmc_train.cpp               LINKS learning crag io util)
