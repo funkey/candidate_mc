@@ -14,6 +14,8 @@
 #include <util/timing.h>
 #include <util/assert.h>
 #include <io/Hdf5CragStore.h>
+#include <io/Hdf5VolumeStore.h>
+#include <io/SolutionImageWriter.h>
 #include <features/FeatureExtractor.h>
 #include <inference/CragSolverFactory.h>
 
@@ -33,6 +35,10 @@ util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
 		util::_description_text = "The candidate mc project file.");
+
+util::ProgramOption optionExportSolution(
+		util::_long_name        = "exportSolution",
+		util::_description_text = "Create a volume export for the solution.");
 
 inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
 
@@ -106,9 +112,17 @@ int main(int argc, char** argv) {
 
 		cragStore.saveSolution(crag, solution, "solution");
 
-		// FIXME: only for 2D problems
-		//SolutionImageWriter::write(crag, volumes, solution, "solution.tif");
-		//SolutionImageWriter::write(crag, volumes, solution, "solution_boundary.tif", true);
+		if (optionExportSolution) {
+
+			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
+			ExplicitVolume<float> intensities;
+			volumeStore.retrieveIntensities(intensities);
+
+			SolutionImageWriter imageWriter;
+			imageWriter.setExportArea(intensities.getBoundingBox());
+			imageWriter.write(crag, volumes, solution, "solution");
+			imageWriter.write(crag, volumes, solution, "solution_boundary", true);
+		}
 
 	} catch (Exception& e) {
 

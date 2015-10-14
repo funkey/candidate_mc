@@ -14,6 +14,7 @@
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <io/vectors.h>
+#include <io/SolutionImageWriter.h>
 #include <learning/BestEffort.h>
 #include <learning/BundleOptimizer.h>
 #include <learning/AssignmentLoss.h>
@@ -94,6 +95,10 @@ util::ProgramOption optionDryRun(
 		util::_description_text = "Compute and store the best-effort loss, the best-effort, and the training loss; but "
 		                          "don't perform training.");
 
+util::ProgramOption optionExportBestEffort(
+		util::_long_name        = "exportBestEffort",
+		util::_description_text = "Create a volume export for the best-effort solution.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -103,6 +108,9 @@ int main(int argc, char** argv) {
 
 		std::shared_ptr<CragStore> cragStore = std::make_shared<Hdf5CragStore>(optionProjectFile.as<std::string>());
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
+
+		ExplicitVolume<int> groundTruth;
+		volumeStore.retrieveGroundTruth(groundTruth);
 
 		Crag crag;
 		CragVolumes volumes(crag);
@@ -135,8 +143,6 @@ int main(int argc, char** argv) {
 		} else {
 
 			LOG_USER(logger::out) << "reading ground-truth" << std::endl;
-			ExplicitVolume<int> groundTruth;
-			volumeStore.retrieveGroundTruth(groundTruth);
 
 			if (optionBestEffortLoss.as<std::string>() == "overlap") {
 
@@ -194,6 +200,14 @@ int main(int argc, char** argv) {
 			cragStore->saveSolution(crag, *bestEffort, "best-effort");
 		}
 
+		if (optionExportBestEffort) {
+
+			SolutionImageWriter imageWriter;
+			imageWriter.setExportArea(groundTruth.getBoundingBox());
+			imageWriter.write(crag, volumes, *bestEffort, "best-effort");
+			imageWriter.write(crag, volumes, *bestEffort, "best-effort_boundary", true);
+		}
+
 		if (optionLoss.as<std::string>() == "hamming") {
 
 			LOG_USER(logger::out) << "using Hamming loss" << std::endl;
@@ -205,17 +219,12 @@ int main(int argc, char** argv) {
 			LOG_USER(logger::out) << "using overlap loss" << std::endl;
 
 			LOG_USER(logger::out) << "reading ground-truth" << std::endl;
-			ExplicitVolume<int> groundTruth;
-			volumeStore.retrieveGroundTruth(groundTruth);
 
 			trainingLoss = std::unique_ptr<OverlapLoss>(new OverlapLoss(crag, volumes, groundTruth));
 
 		} else if (optionLoss.as<std::string>() == "hausdorff") {
 
 			LOG_USER(logger::out) << "using hausdorff loss" << std::endl;
-
-			ExplicitVolume<int> groundTruth;
-			volumeStore.retrieveGroundTruth(groundTruth);
 
 			// get ground truth volumes
 			Crag        gtCrag;

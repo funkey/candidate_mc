@@ -8,10 +8,11 @@ SolutionImageWriter::write(
 		const Crag& crag,
 		const CragVolumes& volumes,
 		const CragSolution& solution,
-		const std::string& filename,
+		const std::string& basename,
 		bool boundary) {
 
-	util::box<float, 3>   cragBB = volumes.getBoundingBox();
+	if (_volumesBB.isZero())
+		_volumesBB = volumes.getBoundingBox();
 	util::point<float, 3> resolution;
 	for (Crag::CragNode n : crag.nodes()) {
 
@@ -24,9 +25,9 @@ SolutionImageWriter::write(
 	// create a vigra multi-array large enough to hold all volumes
 	vigra::MultiArray<3, float> components(
 			vigra::Shape3(
-				cragBB.width() /resolution.x(),
-				cragBB.height()/resolution.y(),
-				cragBB.depth() /resolution.z()),
+				_volumesBB.width() /resolution.x(),
+				_volumesBB.height()/resolution.y(),
+				_volumesBB.depth() /resolution.z()),
 			std::numeric_limits<int>::max());
 
 	// background for areas without candidates
@@ -37,26 +38,14 @@ SolutionImageWriter::write(
 
 	for (Crag::CragNode n : crag.nodes()) {
 
-		if (boundary) {
-
-			// draw only leaf nodes if we want to visualize the boundary
-			// FIXME: this will only work if leaf nodes are labelled as well 
-			// (which they are not currently)
-			if (!crag.isLeafNode(n))
-				continue;
-
-		} else {
-
-			// otherwise, draw only selected nodes
-			if (!solution.selected(n))
-				continue;
-		}
+		// draw only selected nodes
+		if (!solution.selected(n))
+			continue;
 
 		const util::point<float, 3>&      volumeOffset     = volumes[n]->getOffset();
 		const util::box<unsigned int, 3>& volumeDiscreteBB = volumes[n]->getDiscreteBoundingBox();
 
-
-		util::point<unsigned int, 3> begin = (volumeOffset - cragBB.min())/resolution;
+		util::point<unsigned int, 3> begin = (volumeOffset - _volumesBB.min())/resolution;
 		util::point<unsigned int, 3> end   = begin +
 				util::point<unsigned int, 3>(
 						volumeDiscreteBB.width(),
@@ -90,21 +79,21 @@ SolutionImageWriter::write(
 
 	if (components.shape(2) > 1) {
 
-		boost::filesystem::create_directory(filename);
+		boost::filesystem::create_directory(basename);
 		for (unsigned int z = 0; z < components.shape(2); z++) {
 
 			std::stringstream ss;
 			ss << std::setw(4) << std::setfill('0') << z;
 			vigra::exportImage(
 					components.bind<2>(z),
-					vigra::ImageExportInfo((filename + "/" + ss.str() + ".tif").c_str()));
+					vigra::ImageExportInfo((basename + "/" + ss.str() + ".tif").c_str()));
 		}
 
 	} else {
 
 		vigra::exportImage(
 				components.bind<2>(0),
-				vigra::ImageExportInfo(filename.c_str()));
+				vigra::ImageExportInfo((basename + ".tif").c_str()));
 	}
 }
 
@@ -118,7 +107,7 @@ SolutionImageWriter::drawBoundary(
 	const CragVolume& volume = *volumes[n];
 	const util::box<unsigned int, 3>& volumeDiscreteBB = volume.getDiscreteBoundingBox();
 	const util::point<float, 3>&      volumeOffset     = volume.getOffset();
-	util::point<unsigned int, 3>      begin            = (volumeOffset - volumes.getBoundingBox().min())/volume.getResolution();
+	util::point<unsigned int, 3>      begin            = (volumeOffset - _volumesBB.min())/volume.getResolution();
 
 	bool hasZ = (volumeDiscreteBB.depth() > 1);
 

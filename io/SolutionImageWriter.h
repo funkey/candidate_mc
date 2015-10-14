@@ -10,6 +10,17 @@ class SolutionImageWriter {
 public:
 
 	/**
+	 * Set a region of interest to be exported. This region can be larger than 
+	 * the bounding box of all volumes, and in particular can be the bounding 
+	 * box of the intensity volume to create an image of the same size with the 
+	 * candidate volumes properly located in it.
+	 *
+	 * If not set, the bounding box of the volumes is used (which might be 
+	 * smaller than the bounding box of the intensity volume).
+	 */
+	void setExportArea(const util::box<float, 3>& bb) { _volumesBB = bb; }
+
+	/**
 	 * Store the solution as label image in the given image file.
 	 */
 	void write(
@@ -28,6 +39,8 @@ private:
 			Crag::Node                   n,
 			vigra::MultiArray<3, float>& components,
 			float                        value);
+
+	util::box<float, 3> _volumesBB;
 };
 
 #endif // CANDIDATE_MC_IO_SOLUTION_IMAGE_WRITER_H__
