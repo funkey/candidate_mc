@@ -120,8 +120,8 @@ int main(int argc, char** argv) {
 
 			SolutionImageWriter imageWriter;
 			imageWriter.setExportArea(intensities.getBoundingBox());
-			imageWriter.write(crag, volumes, solution, "solution");
-			imageWriter.write(crag, volumes, solution, "solution_boundary", true);
+			imageWriter.write(crag, volumes, solution, optionExportSolution.as<std::string>());
+			imageWriter.write(crag, volumes, solution, optionExportSolution.as<std::string>() + "_boundary", true);
 		}
 
 	} catch (Exception& e) {
