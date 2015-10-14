@@ -36,6 +36,16 @@ CragVolumes::operator[](Crag::CragNode n) const {
 	return _volumes[n];
 }
 
+bool
+CragVolumes::is2D() const {
+
+	for (Crag::CragNode n : _crag.nodes())
+		if (_crag.type(n) != Crag::SliceNode)
+			return false;
+
+	return true;
+}
+
 void
 CragVolumes::recFill(Crag::CragNode n) {
 

@@ -65,6 +65,11 @@ public:
 	 */
 	const Crag& getCrag() const { return _crag; }
 
+	/**
+	 * Return true if all the volumes are 2D slices.
+	 */
+	bool is2D() const;
+
 protected:
 
 	util::box<float,3> computeBoundingBox() const override {
