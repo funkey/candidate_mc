@@ -21,6 +21,7 @@
 #include <mergetree/MedianEdgeIntensity.h>
 #include <mergetree/SmallFirst.h>
 #include <mergetree/MultiplyMinRegionSize.h>
+#include <mergetree/MultiplySizeDifference.h>
 #include <mergetree/RandomPerturbation.h>
 
 util::ProgramOption optionSourceImage(
@@ -78,6 +79,10 @@ util::ProgramOption optionSliceSize(
 util::ProgramOption optionMergeSmallRegionsFirst(
 		util::_long_name        = "mergeSmallRegionsFirst",
 		util::_description_text = "Merge small regions first. For parameters, see smallRegionThreshold1, smallRegionThreshold2, and intensityThreshold.");
+
+util::ProgramOption optionMultiplySizeDifference(
+		util::_long_name        = "multiplySizeDifference",
+		util::_description_text = "Multiply the edge scores with the difference of size of the involved regions.");
 
 util::ProgramOption optionRandomPerturbation(
 		util::_long_name        = "randomPerturbation",
@@ -269,6 +274,24 @@ int main(int optionc, char** optionv) {
 			if (optionRandomPerturbation) {
 
 				RandomPerturbation<SmallFirst<MedianEdgeIntensity> > rp(scoringFunction);
+				merging.createMergeTree(rp);
+
+			} else {
+
+				merging.createMergeTree(scoringFunction);
+			}
+
+		} else if (optionMultiplySizeDifference) {
+
+			MultiplySizeDifference<MedianEdgeIntensity> scoringFunction(
+					merging.getRag(),
+					image,
+					initialRegions,
+					mei);
+
+			if (optionRandomPerturbation) {
+
+				RandomPerturbation<MultiplySizeDifference<MedianEdgeIntensity> > rp(scoringFunction);
 				merging.createMergeTree(rp);
 
 			} else {
