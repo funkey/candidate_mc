@@ -148,7 +148,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 	unsigned int t = 0;
 
-	while (true) {
+	while (_parameter.steps == 0 || t < _parameter.steps) {
 
 		LOG_USER(bundleoptimizerlog) << std::endl << "----------------- iteration " << t << std::endl;
 
@@ -210,6 +210,9 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 		if (eps_t <= _parameter.min_eps)
 			break;
 	}
+
+	if (t == _parameter.steps)
+		ReachedSteps;
 
 	return ReachedMinGap;
 }
