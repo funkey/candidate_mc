@@ -145,6 +145,8 @@ collectLeafNodes(const Crag& crag, Crag::Node n) {
 
 int main(int argc, char** argv) {
 
+	UTIL_TIME_SCOPE("main");
+
 	try {
 
 		util::ProgramOptions::init(argc, argv);

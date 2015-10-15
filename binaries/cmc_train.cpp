@@ -79,6 +79,11 @@ util::ProgramOption optionPretrain(
 		util::_description_text = "Train on a much simpler version of the original problem to get an "
 		                          "SVM-like training of the feature weights.");
 
+util::ProgramOption optionNumSteps(
+		util::_long_name        = "numSteps",
+		util::_description_text = "The number of steps to perform during training. Defaults to 0, which means no limit.",
+		util::_default_value    = 0);
+
 util::ProgramOption optionGradientOptimizer(
 		util::_long_name        = "gradientOptimizer",
 		util::_description_text = "Use a simple gradient descent to minimize the training objective.");
@@ -104,6 +109,8 @@ util::ProgramOption optionExportBestEffort(
 		util::_description_text = "Create a volume export for the best-effort solution.");
 
 int main(int argc, char** argv) {
+
+	UTIL_TIME_SCOPE("main");
 
 	try {
 
@@ -311,6 +318,7 @@ int main(int argc, char** argv) {
 			BundleOptimizer::Parameters parameters;
 			parameters.lambda      = optionRegularizerWeight;
 			parameters.epsStrategy = BundleOptimizer::EpsFromGap;
+			parameters.steps       = optionNumSteps;
 			BundleOptimizer optimizer(cragStore, parameters);
 			optimizer.optimize(oracle, weights);
 		}

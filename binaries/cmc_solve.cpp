@@ -61,6 +61,8 @@ inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
 
 int main(int argc, char** argv) {
 
+	UTIL_TIME_SCOPE("main");
+
 	try {
 
 		util::ProgramOptions::init(argc, argv);

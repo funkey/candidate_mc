@@ -46,6 +46,8 @@ util::ProgramOption optionNoSkeletons(
 
 int main(int argc, char** argv) {
 
+	UTIL_TIME_SCOPE("main");
+
 	try {
 
 		util::ProgramOptions::init(argc, argv);
