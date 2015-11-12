@@ -9,23 +9,18 @@
 #include <io/Hdf5VolumeStore.h>
 #include <io/volumes.h>
 #include <inference/Costs.h>
+#include <inference/RandomForest.h>
+#include <inference/CragSolution.h>
 #include <learning/Loss.h>
 #include "logging.h"
 
-template <typename T>
-const T& nodeMapGetter(const Crag::NodeMap<T>& map, Crag::CragNode key) { return map[key]; }
-template <typename T>
-void nodeMapSetter(Crag::NodeMap<T>& map, Crag::CragNode key, const T& value) { map[key] = value; }
-template <typename T>
-const T& edgeMapGetter(const Crag::EdgeMap<T>& map, Crag::CragEdge key) { return map[key]; }
-template <typename T>
-void edgeMapSetter(Crag::EdgeMap<T>& map, Crag::CragEdge key, const T& value) { map[key] = value; }
-template <typename T>
-const T& explicitVolumeGetter(const ExplicitVolume<T>& volume, util::point<int, 3> pos) { return volume[pos]; }
-template <typename T>
-const T& pointGetter(const util::point<T, 3>& p, int i) { return p[i]; }
-template <typename T>
-void pointSetter(util::point<T, 3>& p, int i, const T& value) { p[i] = value; }
+template <typename Map, typename K, typename V>
+const V& genericGetter(const Map& map, const K& k) { return map[k]; }
+template <typename Map, typename K, typename V>
+void genericSetter(Map& map, const K& k, const V& value) { map[k] = value; }
+
+template <typename Map, typename K, typename V>
+void featuresSetter(Map& map, const K& k, const V& value) { map.set(k, value); }
 
 // iterator traits specializations
 namespace boost { namespace detail {
@@ -193,8 +188,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
 			.def("z", static_cast<const float&(util::point<float, 3>::*)() const>(&util::point<float, 3>::z),
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__getitem__", &pointGetter<float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &pointSetter<float>)
+			.def("__getitem__", &genericGetter<util::point<float,3>, int, float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<util::point<float,3>, int, float>)
 			;
 
 	// util::point<int, 3>
@@ -205,8 +200,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
 			.def("z", static_cast<const int&(util::point<int, 3>::*)() const>(&util::point<int, 3>::z),
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__getitem__", &pointGetter<int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &pointSetter<int>)
+			.def("__getitem__", &genericGetter<util::point<int,3>, int, int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<util::point<int,3>, int, int>)
 			;
 
 	// util::box<T, 3> (aka bounding boxes)
@@ -248,7 +243,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getDiscreteBoundingBox", &ExplicitVolume<int>::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &ExplicitVolume<int>::getResolution, boost::python::return_internal_reference<>())
 			.def("cut", &ExplicitVolume<int>::cut)
-			.def("__getitem__", &explicitVolumeGetter<int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__getitem__", &genericGetter<ExplicitVolume<int>,
+					util::point<int,3>, int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
 	// CragVolume
@@ -256,7 +252,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
 			.def("getDiscreteBoundingBox", &CragVolume::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &CragVolume::getResolution, boost::python::return_internal_reference<>())
-			.def("__getitem__", &explicitVolumeGetter<unsigned char>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__getitem__", &genericGetter<ExplicitVolume<unsigned char>, util::point<int,3>, unsigned char>,
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
 	// volume io
@@ -274,12 +271,12 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// node and edge maps
 	boost::python::class_<Crag::NodeMap<double>, boost::noncopyable>("CragNodeMap_d", boost::python::init<const Crag&>())
-			.def("__getitem__", &nodeMapGetter<double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &nodeMapSetter<double>)
+			.def("__getitem__", &genericGetter<Crag::NodeMap<double>, Crag::CragNode, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<Crag::NodeMap<double>, Crag::CragNode, double>)
 			;
 	boost::python::class_<Crag::EdgeMap<double>, boost::noncopyable>("CragEdgeMap_d", boost::python::init<const Crag&>())
-			.def("__getitem__", &edgeMapGetter<double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &edgeMapSetter<double>)
+			.def("__getitem__", &genericGetter<Crag::EdgeMap<double>, Crag::CragEdge, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<Crag::EdgeMap<double>, Crag::CragEdge, double>)
 			;
 
 	// Costs
@@ -293,28 +290,74 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def_readwrite("constant", &Loss::constant)
 			;
 
+	// std::vector<double>
+	boost::python::class_<std::vector<double>>("vector_d")
+			.def(boost::python::vector_indexing_suite<std::vector<double>>())
+			;
+
+	// NodeFeatures
+	boost::python::class_<NodeFeatures>("NodeFeatures", boost::python::init<const Crag&>())
+			.def("__getitem__", &genericGetter<NodeFeatures, Crag::CragNode, std::vector<double>>,
+					boost::python::return_internal_reference<>())
+			.def("__setitem__", &featuresSetter<NodeFeatures, Crag::CragNode, std::vector<double>>)
+			.def("dims", &NodeFeatures::dims)
+			.def("append", &NodeFeatures::append)
+			;
+
+	// EdgeFeatures
+	boost::python::class_<EdgeFeatures>("EdgeFeatures", boost::python::init<const Crag&>())
+			.def("__getitem__", &genericGetter<EdgeFeatures, Crag::CragEdge, std::vector<double>>,
+					boost::python::return_internal_reference<>())
+			.def("__setitem__", &featuresSetter<EdgeFeatures, Crag::CragEdge, std::vector<double>>)
+			.def("dims", &EdgeFeatures::dims)
+			.def("append", &EdgeFeatures::append)
+			;
+
+	// FeatureWeights
+	boost::python::class_<FeatureWeights>("FeatureWeights", boost::python::init<const NodeFeatures&, const EdgeFeatures&, double>())
+			.def("__getitem__", &genericGetter<FeatureWeights, Crag::NodeType, std::vector<double>>,
+					boost::python::return_internal_reference<>())
+			.def("__setitem__", &genericSetter<FeatureWeights, Crag::NodeType, std::vector<double>>)
+			.def("__getitem__", &genericGetter<FeatureWeights, Crag::EdgeType, std::vector<double>>,
+					boost::python::return_internal_reference<>())
+			.def("__setitem__", &genericSetter<FeatureWeights, Crag::EdgeType, std::vector<double>>)
+			;
+
+	// CragSolution
+	void (CragSolution::*sS1)(Crag::CragNode, bool) = &CragSolution::setSelected;
+	void (CragSolution::*sS2)(Crag::CragEdge, bool) = &CragSolution::setSelected;
+	bool (CragSolution::*s1)(Crag::CragNode) const  = &CragSolution::selected;
+	bool (CragSolution::*s2)(Crag::CragEdge) const  = &CragSolution::selected;
+	boost::python::class_<CragSolution, boost::noncopyable>("CragSolution", boost::python::init<const Crag&>())
+			.def("setSelected", sS1)
+			.def("setSelected", sS2)
+			.def("selected", s1)
+			.def("selected", s2)
+			.def("label", &CragSolution::label)
+			;
+
 	// CRAG store
 	boost::python::class_<Hdf5CragStore, boost::noncopyable>("Hdf5CragStore", boost::python::init<std::string>())
 			.def("saveCrag", &Hdf5CragStore::saveCrag)
 			.def("saveVolumes", &Hdf5CragStore::saveVolumes)
-			//.def("saveNodeFeatures", &Hdf5CragStore::saveNodeFeatures)
-			//.def("saveEdgeFeatures", &Hdf5CragStore::saveEdgeFeatures)
+			.def("saveNodeFeatures", &Hdf5CragStore::saveNodeFeatures)
+			.def("saveEdgeFeatures", &Hdf5CragStore::saveEdgeFeatures)
 			//.def("saveSkeletons", &Hdf5CragStore::saveSkeletons)
-			//.def("saveFeatureWeights", &Hdf5CragStore::saveFeatureWeights)
+			.def("saveFeatureWeights", &Hdf5CragStore::saveFeatureWeights)
 			//.def("saveFeaturesMin", &Hdf5CragStore::saveFeaturesMin)
 			//.def("saveFeaturesMax", &Hdf5CragStore::saveFeaturesMax)
 			.def("saveCosts", &Hdf5CragStore::saveCosts)
-			//.def("saveSolution", &Hdf5CragStore::saveSolution)
+			.def("saveSolution", &Hdf5CragStore::saveSolution)
 			.def("retrieveCrag", &Hdf5CragStore::retrieveCrag)
 			.def("retrieveVolumes", &Hdf5CragStore::retrieveVolumes)
-			//.def("retrieveNodeFeatures", &Hdf5CragStore::retrieveNodeFeatures)
-			//.def("retrieveEdgeFeatures", &Hdf5CragStore::retrieveEdgeFeatures)
+			.def("retrieveNodeFeatures", &Hdf5CragStore::retrieveNodeFeatures)
+			.def("retrieveEdgeFeatures", &Hdf5CragStore::retrieveEdgeFeatures)
 			//.def("retrieveFeaturesMin", &Hdf5CragStore::retrieveFeaturesMin)
 			//.def("retrieveFeaturesMax", &Hdf5CragStore::retrieveFeaturesMax)
 			//.def("retrieveSkeletons", &Hdf5CragStore::retrieveSkeletons)
-			//.def("retrieveFeatureWeights", &Hdf5CragStore::retrieveFeatureWeights)
+			.def("retrieveFeatureWeights", &Hdf5CragStore::retrieveFeatureWeights)
 			.def("retrieveCosts", &Hdf5CragStore::retrieveCosts)
-			//.def("retrieveSolution", &Hdf5CragStore::retrieveSolution)
+			.def("retrieveSolution", &Hdf5CragStore::retrieveSolution)
 			.def("getSolutionNames", &Hdf5CragStore::getSolutionNames)
 			;
 
@@ -328,6 +371,16 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("retrieveBoundaries", &Hdf5VolumeStore::retrieveBoundaries)
 			.def("retrieveGroundTruth", &Hdf5VolumeStore::retrieveGroundTruth)
 			.def("retrieveLabels", &Hdf5VolumeStore::retrieveLabels)
+			;
+
+	// RandomForest
+	boost::python::class_<RandomForest>("RandomForest")
+			.def("prepareTraining", &RandomForest::prepareTraining)
+			.def("addSample", &RandomForest::addSample)
+			.def("train", &RandomForest::train)
+			.def("getProbabilities", &RandomForest::getProbabilities)
+			.def("write", &RandomForest::write)
+			.def("read", &RandomForest::read)
 			;
 }
 
