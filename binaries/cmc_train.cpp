@@ -285,9 +285,13 @@ int main(int argc, char** argv) {
 
 		cragStore->saveCosts(crag, *trainingLoss, "training_loss");
 
+		// create initial set of weights for the given features
+		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());
+
 		if (optionDryRun) {
 
 			LOG_USER(logger::out) << "dry run -- skip learning" << std::endl;
+			cragStore->saveFeatureWeights(weights);
 			return 0;
 		}
 
@@ -299,9 +303,6 @@ int main(int argc, char** argv) {
 				*trainingLoss,
 				*bestEffort,
 				solverParameters);
-
-		// create initial set of weights for the given features
-		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());
 
 		UTIL_TIME_SCOPE("training");
 
