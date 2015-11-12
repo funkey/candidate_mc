@@ -65,12 +65,12 @@ public:
 	/**
 	 * Write the classifier to a file.
 	 */
-	void write(std::string filename);
+	void write(std::string filename, std::string group);
 
 	/**
 	 * Read the classifier from a file.
 	 */
-	void read(std::string filename);
+	void read(std::string filename, std::string group);
 
 private:
 

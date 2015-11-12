@@ -115,11 +115,11 @@ RandomForest::getProbabilities(const std::vector<FeatureType>& sample) {
 }
 
 void
-RandomForest::write(std::string filename) {
+RandomForest::write(std::string filename, std::string group) {
 
 	try {
 
-		vigra::rf_export_HDF5(_rf, filename);
+		vigra::rf_export_HDF5(_rf, filename, group);
 
 	} catch (std::runtime_error e) {
 
@@ -129,11 +129,11 @@ RandomForest::write(std::string filename) {
 }
 
 void
-RandomForest::read(std::string filename) {
+RandomForest::read(std::string filename, std::string group) {
 
 	try {
 
-		vigra::rf_import_HDF5(_rf, filename);
+		vigra::rf_import_HDF5(_rf, filename, group);
 
 	} catch (std::runtime_error e) {
 
