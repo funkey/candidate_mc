@@ -53,10 +53,13 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 	// n      number of affiliated edges
 	// id_i   id of ith affiliated edge
 	std::vector<int> aeIds;
-	for (Crag::EdgeIt e(crag); e != lemon::INVALID; ++e) {
+	for (Crag::CragEdge e : crag.edges()) {
 
-			if (numEdges%100 == 0)
-				LOG_USER(hdf5storelog) << logger::delline << numEdges << " affiliated egde lists prepared" << std::flush;
+		if (!crag.isLeafEdge(e))
+			continue;
+
+		if (numEdges%100 == 0)
+			LOG_USER(hdf5storelog) << logger::delline << numEdges << " affiliated egde lists prepared" << std::flush;
 
 		aeIds.push_back(crag.id(crag.u(e)));
 		aeIds.push_back(crag.id(crag.v(e)));
@@ -163,8 +166,8 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 
 		for (unsigned int i = 0; i < aeIds.size();) {
 
-			Crag::Node u = crag.nodeFromId(aeIds[i]);
-			Crag::Node v = crag.nodeFromId(aeIds[i+1]);
+			Crag::CragNode u = crag.nodeFromId(aeIds[i]);
+			Crag::CragNode v = crag.nodeFromId(aeIds[i+1]);
 			int n = aeIds[i+2];
 			i += 3;
 
@@ -174,12 +177,13 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 			i += n;
 
 			// find edge in CRAG and set affiliated edge list
-			for (Crag::IncEdgeIt e(crag, u); e != lemon::INVALID; ++e)
-				if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
+			if (affiliatedEdges.size()  > 0)
+				for (Crag::CragEdge e : crag.adjEdges(u))
+					if (crag.getAdjacencyGraph().oppositeNode(u, e) == v) {
 
-					crag.setAffiliatedEdges(e, affiliatedEdges);
-					break;
-				}
+						crag.setAffiliatedEdges(e, affiliatedEdges);
+						break;
+					}
 		}
 
 	} catch (std::exception& e) {

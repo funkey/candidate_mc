@@ -182,7 +182,9 @@ FeatureExtractor::extractNodeFeatures(
 			<< "extracted " << nodeFeatures.dims(Crag::AssignmentNode)
 			<< " features per assignment node" << std::endl;
 
-	_numOriginalVolumeNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
+	_numOriginalVolumeNodeFeatures     = nodeFeatures.dims(Crag::VolumeNode);
+	_numOriginalSliceNodeFeatures      = nodeFeatures.dims(Crag::SliceNode);
+	_numOriginalAssignmentNodeFeatures = nodeFeatures.dims(Crag::AssignmentNode);
 
 	///////////////////
 	// NORMALIZATION //
@@ -688,21 +690,34 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 		if (_crag.type(e) != Crag::AdjacencyEdge)
 			continue;
 
+		LOG_ALL(featureextractorlog) << "extracting derived features for edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
+
 		Crag::CragNode u = e.u();
 		Crag::CragNode v = e.v();
-		std::cout << _crag.id(u) << " " << _crag.id(v) << std::endl;
 		// feature vectors from node u/v
 		const auto & featsU = nodeFeatures[u];
 		const auto & featsV = nodeFeatures[v];
 
-		UTIL_ASSERT(_crag.type(u) == Crag::VolumeNode || _crag.type(u) == Crag::SliceNode);
-		UTIL_ASSERT(_crag.type(v) == Crag::VolumeNode || _crag.type(v) == Crag::SliceNode);
+		int numOriginalNodeFeatures;
+		switch (_crag.type(u)) {
+
+			case Crag::VolumeNode:
+				numOriginalNodeFeatures = _numOriginalVolumeNodeFeatures;
+				break;
+			case Crag::SliceNode:
+				numOriginalNodeFeatures = _numOriginalSliceNodeFeatures;
+				break;
+			default:
+				numOriginalNodeFeatures = _numOriginalAssignmentNodeFeatures;
+		}
+
+		UTIL_ASSERT(_crag.type(u) == _crag.type(v));
 		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
-		UTIL_ASSERT_REL(featsU.size(), >=, _numOriginalVolumeNodeFeatures);
-		UTIL_ASSERT_REL(featsV.size(), >=, _numOriginalVolumeNodeFeatures);
+		UTIL_ASSERT_REL(featsU.size(), >=, numOriginalNodeFeatures);
+		UTIL_ASSERT_REL(featsV.size(), >=, numOriginalNodeFeatures);
 
 		// loop over all features
-		for(size_t nfi=0; nfi < _numOriginalVolumeNodeFeatures; ++nfi){
+		for(size_t nfi=0; nfi < numOriginalNodeFeatures; ++nfi){
 			// single feature from node u/v
 			const auto fu = featsU[nfi];
 			const auto fv = featsV[nfi];
@@ -727,6 +742,8 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 		if (_crag.type(e) != Crag::AdjacencyEdge)
 			continue;
 
+		LOG_ALL(featureextractorlog) << "extracting features for adjacency edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
+
 		// accumulate statistics
 		
 		// Define an accumulator set for calculating the mean and the
@@ -741,16 +758,24 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 		accumulator_set<double, Stats> accRaw;
 
 		// push data into the accumulator
-		for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(e)) {
-			const auto ggU = gridGraph.u(ae);
-			const auto ggV = gridGraph.v(ae);
+		unsigned int numAffiliatedEdges = 0;
+		for (Crag::CragEdge leafEdge : _crag.leafEdges(e))
+			for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(leafEdge)) {
+				const auto ggU = gridGraph.u(ae);
+				const auto ggV = gridGraph.v(ae);
 
-			accBoundary(_boundaries[ggU]);
-			accBoundary(_boundaries[ggV]);
+				accBoundary(_boundaries[ggU]);
+				accBoundary(_boundaries[ggV]);
 
-			accRaw(_raw[ggU]);
-			accRaw(_raw[ggV]);
-		}
+				accRaw(_raw[ggU]);
+				accRaw(_raw[ggV]);
+
+				numAffiliatedEdges++;
+			}
+
+		LOG_ALL(featureextractorlog) << "collecting features over " << numAffiliatedEdges << " affiliated edges" << std::endl;
+
+		edgeFeatures.append(e, numAffiliatedEdges);
 
 		// extract the features from the accumulator
 		edgeFeatures.append(e, mean(accBoundary));

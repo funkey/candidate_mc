@@ -132,7 +132,7 @@ PlanarAdjacencyAnnotator::annotate(Crag& crag, const CragVolumes& volumes) {
 		int u = rag.id(rag.u(*e));
 		int v = rag.id(rag.v(*e));
 
-		Crag::Edge newEdge = crag.addAdjacencyEdge(
+		Crag::CragEdge newEdge = crag.addAdjacencyEdge(
 				crag.nodeFromId(u),
 				crag.nodeFromId(v));
 		crag.setAffiliatedEdges(

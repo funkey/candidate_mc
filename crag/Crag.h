@@ -1,9 +1,11 @@
 #ifndef CANDIDATE_MC_CRAG_CRAG_H__
 #define CANDIDATE_MC_CRAG_CRAG_H__
 
+#include <set>
 #include <lemon/list_graph.h>
 #define WITH_LEMON
 #include <vigra/multi_gridgraph.hxx>
+#include <util/exceptions.h>
 
 /**
  * Candidate region adjacency graph.
@@ -355,9 +357,22 @@ public:
 	 * Associate affiliated edges to a pair of adjacent leaf node regions. It is 
 	 * assumed that an adjacency edge has already been added between u and v.
 	 */
-	void setAffiliatedEdges(Edge e, const std::vector<vigra::GridGraph<3>::Edge>& edges) { _affiliatedEdges[e] = edges; }
+	void setAffiliatedEdges(CragEdge e, const std::vector<vigra::GridGraph<3>::Edge>& edges) {
 
-	const std::vector<vigra::GridGraph<3>::Edge>& getAffiliatedEdges(Edge e) const { return _affiliatedEdges[e]; }
+		if (!isLeafEdge(e))
+			UTIL_THROW_EXCEPTION(UsageError, "affiliated edges can only be set for leaf edges");
+		 _affiliatedEdges[e] = edges;
+	}
+
+	/**
+	 * Get affiliated edges for a leaf edge.
+	 */
+	const std::vector<vigra::GridGraph<3>::Edge>& getAffiliatedEdges(CragEdge e) const {
+
+		if (!isLeafEdge(e))
+			UTIL_THROW_EXCEPTION(UsageError, "affiliated edges only set for leaf edges");
+		return _affiliatedEdges[e];
+	}
 
 	const vigra::GridGraph<3>& getGridGraph() const { return _gridGraph; }
 
@@ -466,7 +481,19 @@ public:
 	EdgeMap<EdgeType>& edgeTypes() { return _edgeTypes; }
 	const EdgeMap<EdgeType>& edgeTypes() const { return _edgeTypes; }
 
+	/**
+	 * Get all leaf nodes under the given node n.
+	 */
+	std::set<CragNode> leafNodes(CragNode n) const;
+
+	/**
+	 * Get all leaf edges under the given edge e.
+	 */
+	std::set<CragEdge> leafEdges(CragEdge e) const;
+
 private:
+
+	void recLeafNodes(CragNode n, std::set<CragNode>& leafNodes) const;
 
 	// adjacency graph
 	lemon::ListGraph _rag;

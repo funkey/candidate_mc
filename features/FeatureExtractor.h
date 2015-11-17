@@ -78,6 +78,8 @@ private:
 
 	// number of "real" node features, before add squares and bias
 	int _numOriginalVolumeNodeFeatures;
+	int _numOriginalSliceNodeFeatures;
+	int _numOriginalAssignmentNodeFeatures;
 
 	// number of "real" edge features, before add squares and bias
 	int _numOriginalEdgeFeatures;

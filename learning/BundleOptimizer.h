@@ -212,7 +212,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 	}
 
 	if (t == _parameter.steps)
-		ReachedSteps;
+			return ReachedSteps;
 
 	return ReachedMinGap;
 }
