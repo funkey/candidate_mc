@@ -135,40 +135,24 @@ CragImport::readCrag(
 
 	ExplicitVolume<int> segmentation = readVolume<int>(getImageFiles(candidateSegmentation));
 
-	LOG_USER(logger::out) << "grouping supervoxels" << std::endl;
-
 	// get all segments
 	std::set<int> segmentIds;
 	for (int id : segmentation.data())
 		segmentIds.insert(id);
 
-	// get overlap of each node with segments
-	std::map<Crag::Node, std::map<int, int>> overlap;
-	for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+	LOG_USER(logger::out) << "found " << segmentIds.size() << " segments" << std::endl;
+	LOG_USER(logger::out) << "assigning supervoxels to segments" << std::endl;
 
-		// Here, we assume that the given volumes (supervoxels and candidate 
-		// segmentation) have the same resolution.
+	// get overlap of each supervoxel with segments
+	std::map<int /*sv id*/, std::map<int /*segment id*/, int /*size*/>> overlap;
+	for (unsigned int z = 0; z < ids.depth(); z++)
+	for (unsigned int y = 0; y < ids.height(); y++)
+	for (unsigned int x = 0; x < ids.width(); x++) {
 
-		//if (segmentation.getResolution() != crag.getVolume(n).getResolution())
-			//UTIL_THROW_EXCEPTION(
-					//UsageError,
-					//"candidate segmentation has different resolution (" << segmentation.getResolution() <<
-					//" than supervoxels " << crag.getVolume(n).getResolution());
+		int svId  = ids(x, y, z);
+		int segId = segmentation(x, y, z);
 
-		util::point<int, 3> offset = volumes[n]->getOffset()/volumes[n]->getResolution() - segmentation.getOffset();
-
-		const util::box<int, 3>& bb = volumes[n]->getDiscreteBoundingBox();
-		for (int z = 0; z < bb.depth();  z++)
-		for (int y = 0; y < bb.height(); y++)
-		for (int x = 0; x < bb.width();  x++) {
-
-			int segId = segmentation(
-					offset.x() + x,
-					offset.y() + y,
-					offset.z() + z);
-
-			overlap[n][segId]++;
-		}
+		overlap[svId][segId]++;
 	}
 
 	// create a node for each segment (that has overlapping supervoxels) and 
@@ -176,16 +160,19 @@ CragImport::readCrag(
 	std::map<int, Crag::Node> segIdToNode;
 	for (const auto& nodeSegOverlap : overlap) {
 
-		Crag::Node leaf = nodeSegOverlap.first;
+		int svId = nodeSegOverlap.first;
 		int maxOverlap = 0;
 		int maxSegmentId = 0;
 
 		for (const auto& segOverlap : nodeSegOverlap.second) {
 
-			if (segOverlap.first != 0 && segOverlap.second >= maxOverlap) {
+			int segId = segOverlap.first;
+			int overlap = segOverlap.second;
 
-				maxOverlap = segOverlap.second;
-				maxSegmentId = segOverlap.first;
+			if (segId != 0 && overlap >= maxOverlap) {
+
+				maxOverlap = overlap;
+				maxSegmentId = segId;
 			}
 		}
 
@@ -195,8 +182,10 @@ CragImport::readCrag(
 			segIdToNode[maxSegmentId] = candidate;
 		}
 
-		crag.addSubsetArc(leaf, segIdToNode[maxSegmentId]);
+		crag.addSubsetArc(svIdToNode[svId], segIdToNode[maxSegmentId]);
 	}
+
+	volumes.fillEmptyVolumes();
 }
 
 std::map<int, Crag::Node>
