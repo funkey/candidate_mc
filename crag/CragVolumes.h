@@ -17,7 +17,7 @@ public:
 	/**
 	 * Create an empty volume map for the given Crag. Populate it using 
 	 * setVolume() for each node or setVolume() for each leaf node and 
-	 * propagateLeafNodeVolumes().
+	 * fillEmptyVolumes().
 	 */
 	CragVolumes(const Crag& crag) :
 		_crag(crag),
