@@ -138,7 +138,8 @@ CragImport::readCrag(
 	// get all segments
 	std::set<int> segmentIds;
 	for (int id : segmentation.data())
-		segmentIds.insert(id);
+		if (id != 0)
+			segmentIds.insert(id);
 
 	LOG_USER(logger::out) << "found " << segmentIds.size() << " segments" << std::endl;
 	LOG_USER(logger::out) << "assigning supervoxels to segments" << std::endl;
@@ -152,7 +153,8 @@ CragImport::readCrag(
 		int svId  = ids(x, y, z);
 		int segId = segmentation(x, y, z);
 
-		overlap[svId][segId]++;
+		if (segId != 0)
+			overlap[svId][segId]++;
 	}
 
 	// create a node for each segment (that has overlapping supervoxels) and 
