@@ -34,7 +34,7 @@ RandomForest::addSample(const std::vector<FeatureType>& sample, LabelType label)
 }
 
 void
-RandomForest::train(int numTrees, int numFeatures) {
+RandomForest::train(int numTrees, int numFeatures, bool computeVariableImportance) {
 
 	if (_nextSample != _numSamples) {
 
@@ -59,16 +59,25 @@ RandomForest::train(int numTrees, int numFeatures) {
 	vigra::rf::visitors::VariableImportanceVisitor variableVisitor;
 	vigra::rf::visitors::OOB_Error                 errorVisitor;
 
-	_rf.learn(
-			_samples,
-			_labels,
-			vigra::rf::visitors::create_visitor(variableVisitor, errorVisitor));
+	if (computeVariableImportance) {
+
+		_rf.learn(
+				_samples,
+				_labels,
+				vigra::rf::visitors::create_visitor(variableVisitor, errorVisitor));
+
+		for (unsigned int i = 0; i < _numFeatures; i++)
+			_variableImportance[i] = variableVisitor.variable_importance_(i);
+
+	} else {
+
+		_rf.learn(
+				_samples,
+				_labels,
+				vigra::rf::visitors::create_visitor(errorVisitor));
+	}
 
 	_outOfBagError = errorVisitor.oob_breiman;
-
-	for (unsigned int i = 0; i < _numFeatures; i++)
-		_variableImportance[i] = variableVisitor.variable_importance_(i);
-
 	_numClasses = _rf.class_count();
 }
 

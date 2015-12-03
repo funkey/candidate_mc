@@ -39,7 +39,7 @@ public:
 	 * Train the classifier with the given number of trees under consideration
 	 * of numFeatures features.
 	 */
-	void train(int numTrees = 0, int numFeatures = 0);
+	void train(int numTrees = 0, int numFeatures = 0, bool computeVariableImportance = false);
 
 	/**
 	 * Returns the out-of-bag error after training.
