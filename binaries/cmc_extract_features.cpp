@@ -55,6 +55,8 @@ int main(int argc, char** argv) {
 
 		Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
 
+		LOG_USER(logger::out) << "reading CRAG and volumes" << std::endl;
+
 		Crag        crag;
 		CragVolumes volumes(crag);
 		cragStore.retrieveCrag(crag);
@@ -70,6 +72,8 @@ int main(int argc, char** argv) {
 		EdgeFeatures edgeFeatures(crag);
 
 		if (!optionNoFeatures) {
+
+			LOG_USER(logger::out) << "extracting features" << std::endl;
 
 			FeatureWeights min, max;
 

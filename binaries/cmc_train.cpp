@@ -123,6 +123,8 @@ int main(int argc, char** argv) {
 		ExplicitVolume<int> groundTruth;
 		volumeStore.retrieveGroundTruth(groundTruth);
 
+		LOG_USER(logger::out) << "reading CRAG and volumes" << std::endl;
+
 		Crag crag;
 		CragVolumes volumes(crag);
 		cragStore->retrieveCrag(crag);
