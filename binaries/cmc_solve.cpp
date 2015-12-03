@@ -40,6 +40,10 @@ util::ProgramOption optionExportSolution(
 		util::_long_name        = "exportSolution",
 		util::_description_text = "Create a volume export for the solution.");
 
+util::ProgramOption optionReadOnly(
+		util::_long_name        = "readOnly",
+		util::_description_text = "Don't write the solution or costs to the project file (only export the solution).");
+
 inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
 
 	UTIL_ASSERT_REL(a.size(), ==, b.size());
@@ -74,12 +78,18 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
+		LOG_USER(logger::out) << "reading CRAG and volumes" << std::endl;
+
 		Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
 		cragStore.retrieveCrag(crag);
 		cragStore.retrieveVolumes(volumes);
 
+		LOG_USER(logger::out) << "reading features" << std::endl;
+
 		cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 		cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
+
+		LOG_USER(logger::out) << "computing costs" << std::endl;
 
 		FeatureWeights weights;
 		cragStore.retrieveFeatureWeights(weights);
@@ -101,7 +111,10 @@ int main(int argc, char** argv) {
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
 		}
 
-		cragStore.saveCosts(crag, costs, "costs");
+		if (!optionReadOnly)
+			cragStore.saveCosts(crag, costs, "costs");
+
+		LOG_USER(logger::out) << "solving" << std::endl;
 
 		CragSolution solution(crag);
 		std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes));
@@ -112,7 +125,8 @@ int main(int argc, char** argv) {
 			solver->solve(solution);
 		}
 
-		cragStore.saveSolution(crag, solution, "solution");
+		if (!optionReadOnly)
+			cragStore.saveSolution(crag, solution, "solution");
 
 		if (optionExportSolution) {
 
