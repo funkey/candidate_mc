@@ -381,6 +381,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getProbabilities", &RandomForest::getProbabilities)
 			.def("write", &RandomForest::write)
 			.def("read", &RandomForest::read)
+			.def("getOutOfBagError", &RandomForest::getOutOfBagError)
+			.def("getVariableImportance", &RandomForest::getVariableImportance)
 			;
 }
 
