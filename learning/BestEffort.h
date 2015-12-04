@@ -23,6 +23,42 @@ public:
 			const CragVolumes&            volumes,
 			const Costs&                  costs,
 			const CragSolver::Parameters& params = CragSolver::Parameters());
+
+	/**
+	 * Create a best-effort solution by assigning each leaf candidate to the 
+	 * ground-truth region with maximal overlap. The best-effort candidates are 
+	 * the largest candidates whose leafs are only assigned to one region 
+	 * (excluding the background). Adjacency edges are switched on between 
+	 * candidates with the same assignment.
+	 */
+	BestEffort(
+			const Crag&                   crag,
+			const CragVolumes&            volumes,
+			const ExplicitVolume<int>&    groundTruth);
+
+private:
+
+	void getGroundTruthOverlaps(
+			const Crag&                        crag,
+			const CragVolumes&                 volumes,
+			const ExplicitVolume<int>&         groundTruth,
+			Crag::NodeMap<std::map<int, int>>& overlaps );
+
+	void getGroundTruthAssignments(
+			const Crag&                              crag,
+			const Crag::NodeMap<std::map<int, int>>& overlaps,
+			Crag::NodeMap<int>&                      gtAssignments);
+
+	void getLeafAssignments(
+			const Crag&                   crag,
+			Crag::CragNode                n,
+			const Crag::NodeMap<int>&     gtAssignments,
+			Crag::NodeMap<std::set<int>>& leafAssignments);
+
+	void labelSingleAssignmentCandidate(
+			const Crag&                         crag,
+			Crag::CragNode                      n,
+			const Crag::NodeMap<std::set<int>>& leafAssignments);
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
