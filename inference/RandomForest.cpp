@@ -51,6 +51,7 @@ RandomForest::train(int numTrees, int numFeatures, bool computeVariableImportanc
 		options.tree_count(numTrees);
 	if (numFeatures > 0)
 		options.features_per_node(numFeatures);
+	options.use_stratification(vigra::RF_EQUAL);
 
 	_rf = RandomForestType(options);
 
