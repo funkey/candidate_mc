@@ -58,6 +58,12 @@ public:
 		AdjacencyEdge,
 
 		/**
+		 * Indicates that the connected candidates have to belong to different 
+		 * regions. To be used by solvers to enforce user constraints.
+		 */
+		SeparationEdge,
+
+		/**
 		 * An adjecency edge that links Slice nodes and Assignment nodes. This 
 		 * edge has no features and no costs.
 		 */
