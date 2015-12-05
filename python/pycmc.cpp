@@ -121,6 +121,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 	// EdgeType
 	boost::python::enum_<Crag::EdgeType>("CragEdgeType")
 			.value("AdjacencyEdge", Crag::AdjacencyEdge)
+			.value("SeparationEdge", Crag::SeparationEdge)
 			.value("AssignmentEdge", Crag::AssignmentEdge)
 			.value("NoAssignmentEdge", Crag::NoAssignmentEdge)
 			;
@@ -162,6 +163,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("addNode", static_cast<Crag::CragNode(Crag::*)(Crag::NodeType)>(&Crag::addNode))
 			.def("addAdjacencyEdge", static_cast<Crag::CragEdge(Crag::*)(Crag::CragNode, Crag::CragNode)>(&Crag::addAdjacencyEdge))
 			.def("addAdjacencyEdge", static_cast<Crag::CragEdge(Crag::*)(Crag::CragNode, Crag::CragNode, Crag::EdgeType)>(&Crag::addAdjacencyEdge))
+			.def("addSubsetArc", &Crag::addSubsetArc)
 			.def("erase", static_cast<void(Crag::*)(Crag::CragNode)>(&Crag::erase))
 			.def("erase", static_cast<void(Crag::*)(Crag::CragEdge)>(&Crag::erase))
 			.def("erase", static_cast<void(Crag::*)(Crag::CragArc)>(&Crag::erase))
@@ -178,6 +180,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("type", static_cast<Crag::NodeType(Crag::*)(Crag::CragNode) const>(&Crag::type))
 			.def("type", static_cast<Crag::EdgeType(Crag::*)(Crag::CragEdge) const>(&Crag::type))
 			.def("getLevel", &Crag::getLevel)
+			.def("isLeafNode", &Crag::isLeafNode)
+			.def("isLeafEdge", &Crag::isLeafEdge)
 			;
 
 	// util::point<float, 3>
