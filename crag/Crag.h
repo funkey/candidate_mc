@@ -305,9 +305,9 @@ public:
 	 * Indicate that the candidate represented by node u is a subset of the 
 	 * candidate represented by node v.
 	 */
-	inline SubsetArc addSubsetArc(CragNode u, CragNode v) {
+	inline CragArc addSubsetArc(CragNode u, CragNode v) {
 
-		return _ssg.addArc(toSubset(u), toSubset(v));
+		return CragArc(*this, _ssg.addArc(toSubset(u), toSubset(v)));
 	}
 
 	CragNodes nodes() const { return CragNodes(*this); }
