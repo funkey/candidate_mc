@@ -339,7 +339,7 @@ FeatureExtractor::extractEdgeFeatures(
 
 	// append a 1 for bias
 	for (Crag::CragEdge e : _crag.edges())
-		if (_crag.type(e) != Crag::AssignmentEdge)
+		if (_crag.type(e) != Crag::AssignmentEdge && _crag.type(e) != Crag::SeparationEdge)
 			edgeFeatures.append(e, 1);
 
 	LOG_USER(featureextractorlog)

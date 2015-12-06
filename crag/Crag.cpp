@@ -4,7 +4,7 @@
 Crag::CragNode Crag::Invalid;
 
 const std::vector<Crag::NodeType> Crag::NodeTypes = { VolumeNode, SliceNode, AssignmentNode, NoAssignmentNode };
-const std::vector<Crag::EdgeType> Crag::EdgeTypes = { AdjacencyEdge, AssignmentEdge, NoAssignmentEdge };
+const std::vector<Crag::EdgeType> Crag::EdgeTypes = { AdjacencyEdge, SeparationEdge, AssignmentEdge, NoAssignmentEdge };
 
 int
 Crag::getLevel(Crag::CragNode n) const {
