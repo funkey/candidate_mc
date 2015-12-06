@@ -81,6 +81,7 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 		_current = Crag::CragNode();
 		removeMesh(n);
+		send<sg_gui::SetMeshes>(_meshes);
 
 	} else
 		showSingleMesh(n);
@@ -289,7 +290,25 @@ MeshViewController::addMesh(Crag::CragNode n) {
 void
 MeshViewController::removeMesh(Crag::CragNode n) {
 
-	_meshes->remove(_crag.id(n));
+	if (_solution) {
+
+		// find all other nodes that are in a connected component with n and 
+		// remove all of them
+		int label = _solution->label(n);
+
+		LOG_DEBUG(meshviewcontrollerlog) << "label of selected node is " << label << std::endl;
+
+		for (Crag::CragNode m : _crag.nodes())
+			if (_solution->label(m) == label) {
+
+				LOG_DEBUG(meshviewcontrollerlog) << "removing node " << _crag.id(m) << " as well" << std::endl;
+				_meshes->remove(_crag.id(m));
+			}
+
+	} else {
+
+		_meshes->remove(_crag.id(n));
+	}
 }
 
 Crag::CragNode
