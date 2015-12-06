@@ -1,0 +1,3 @@
+dataset.hdf is first 50 sections of SNEMI, fragments from Juan, trained on sopnet proposal
+
+../../../run/2015_11_29_learn-to-fix_snemi_sopnet_rf/00_create_training_project/training_dataset.hdf
