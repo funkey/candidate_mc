@@ -84,9 +84,6 @@ BestEffort::getGroundTruthOverlaps(
 
 			int gtLabel = groundTruth[offset + util::point<unsigned int, 3>(x, y, z)];
 
-			if (gtLabel == 0)
-				continue;
-
 			overlaps[n][gtLabel]++;
 		}
 	}
@@ -149,7 +146,7 @@ BestEffort::labelSingleAssignmentCandidate(
 		Crag::CragNode                      n,
 		const Crag::NodeMap<std::set<int>>& leafAssignments) {
 
-	if (leafAssignments[n].size() == 1) {
+	if (leafAssignments[n].size() == 1 && (*leafAssignments[n].begin()) != 0) {
 
 		setSelected(n, true);
 		return;
