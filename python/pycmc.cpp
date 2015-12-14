@@ -127,34 +127,43 @@ BOOST_PYTHON_MODULE(pycmc) {
 			;
 
 	// Node, Edge, Arc
-	boost::python::class_<Crag::CragNode>("CragNode");
-	boost::python::class_<Crag::CragEdge>("CragEdge", boost::python::init<const Crag&, Crag::RagType::Edge>());
-	boost::python::class_<Crag::CragArc >("CragArc" , boost::python::init<const Crag&, Crag::SubsetType::Arc>());
+	boost::python::class_<Crag::CragNode>("CragNode")
+			.def("__eq__", &Crag::CragNode::operator==)
+			.def("__ne__", &Crag::CragNode::operator!=)
+			;
+	boost::python::class_<Crag::CragEdge>("CragEdge", boost::python::init<const Crag&, Crag::RagType::Edge>())
+			.def("u", &Crag::CragEdge::u)
+			.def("v", &Crag::CragEdge::v)
+			;
+	boost::python::class_<Crag::CragArc >("CragArc" , boost::python::init<const Crag&, Crag::SubsetType::Arc>())
+			.def("source", &Crag::CragArc::source)
+			.def("target", &Crag::CragArc::target)
+			;
 
 	// iterators
 	boost::python::class_<Crag::CragNodes>("CragNodes", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragNodes>())
-			.def("size", &Crag::CragNodes::size)
+			.def("__len__", &Crag::CragNodes::size)
 			;
 	boost::python::class_<Crag::CragEdges>("CragEdges", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragEdges>())
-			.def("size", &Crag::CragEdges::size)
+			.def("__len__", &Crag::CragEdges::size)
 			;
 	boost::python::class_<Crag::CragIncEdges>("CragIncEdges", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragIncEdges>())
-			.def("size", &Crag::CragIncEdges::size)
+			.def("__len__", &Crag::CragIncEdges::size)
 			;
 	boost::python::class_<Crag::CragArcs>("CragArcs", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragArcs>())
-			.def("size", &Crag::CragArcs::size)
+			.def("__len__", &Crag::CragArcs::size)
 			;
 	boost::python::class_<Crag::CragIncArcs<Crag::InArcTag>>("CragIncInArcs", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragIncArcs<Crag::InArcTag>>())
-			.def("size", &Crag::CragIncArcs<Crag::InArcTag>::size)
+			.def("__len__", &Crag::CragIncArcs<Crag::InArcTag>::size)
 			;
 	boost::python::class_<Crag::CragIncArcs<Crag::OutArcTag>>("CragIncOutArcs", boost::python::no_init)
 			.def("__iter__", boost::python::iterator<Crag::CragIncArcs<Crag::OutArcTag>>())
-			.def("size", &Crag::CragIncArcs<Crag::OutArcTag>::size)
+			.def("__len__", &Crag::CragIncArcs<Crag::OutArcTag>::size)
 			;
 
 	// Crag
@@ -171,6 +180,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("id", static_cast<int(Crag::*)(Crag::CragEdge) const>(&Crag::id))
 			.def("id", static_cast<int(Crag::*)(Crag::CragArc)  const>(&Crag::id))
 			.def("nodeFromId", &Crag::nodeFromId)
+			.def("oppositeNode", &Crag::oppositeNode)
 			.def("nodes", &Crag::nodes)
 			.def("edges", &Crag::edges)
 			.def("arcs", &Crag::arcs)
@@ -180,6 +190,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("type", static_cast<Crag::NodeType(Crag::*)(Crag::CragNode) const>(&Crag::type))
 			.def("type", static_cast<Crag::EdgeType(Crag::*)(Crag::CragEdge) const>(&Crag::type))
 			.def("getLevel", &Crag::getLevel)
+			.def("isRootNode", &Crag::isRootNode)
 			.def("isLeafNode", &Crag::isLeafNode)
 			.def("isLeafEdge", &Crag::isLeafEdge)
 			;
