@@ -17,7 +17,8 @@ class CragView :
 						sg_gui::ContentChanged
 				>,
 				sg::ProvidesInner<
-						sg_gui::ChangeAlpha
+						sg_gui::ChangeAlpha,
+						sg_gui::SetAlphaPlane
 				>,
 				sg::PassesUp<
 						sg_gui::ContentChanged,

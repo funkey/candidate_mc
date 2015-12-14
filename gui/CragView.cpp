@@ -56,7 +56,17 @@ CragView::onSignal(sg_gui::KeyDown& signal) {
 		if (_alpha > 1.0)
 			_alpha = 0;
 
-		sendInner<sg_gui::ChangeAlpha>(_alpha);
+		if (signal.modifiers & sg_gui::keys::ShiftDown) {
+
+			util::plane<float,3> plane(
+					util::point<float,3>(0, 0, _rawView->getVolume()->getOffset().z() + _rawView->getCurrentZ()*_rawView->getVolume()->getResolution().z()),
+					util::point<float,3>(0, 0, 1));
+			sendInner<sg_gui::SetAlphaPlane>(_alpha, plane, 0.5);
+
+		} else {
+
+			sendInner<sg_gui::ChangeAlpha>(_alpha);
+		}
 	}
 
 	if (signal.key == sg_gui::keys::L) {

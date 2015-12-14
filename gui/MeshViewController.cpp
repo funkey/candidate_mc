@@ -204,7 +204,7 @@ MeshViewController::showSingleMesh(Crag::CragNode n) {
 	_current = n;
 	_meshes->clear();
 
-	if (_solution) {
+	if (_solution && _solution->label(n) != 0) {
 
 		// find all other nodes that are in a connected component with n and 
 		// show all of them
