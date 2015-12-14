@@ -81,9 +81,15 @@ MultiCutSolver::solve(CragSolution& solution) {
 
 			int numSelected = 0;
 			int numMerged = 0;
+			double avgDepth = 0;
 			for (Crag::CragNode n : _crag.nodes())
-				if (solution.selected(n))
+				if (solution.selected(n)) {
+
 					numSelected++;
+					avgDepth += _crag.getLevel(n);
+				}
+			avgDepth /= numSelected;
+
 			for (Crag::CragEdge e : _crag.edges())
 				if (solution.selected(e))
 					numMerged++;
@@ -91,6 +97,9 @@ MultiCutSolver::solve(CragSolution& solution) {
 			LOG_USER(multicutlog)
 					<< numSelected << " candidates selected, "
 					<< numMerged << " adjacent candidates merged"
+					<< std::endl;
+			LOG_USER(multicutlog)
+					<< "average depth of selected candidates is " << avgDepth
 					<< std::endl;
 
 			return SolutionFound;
