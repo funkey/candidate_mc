@@ -40,6 +40,14 @@ util::ProgramOption optionExportSolution(
 		util::_long_name        = "exportSolution",
 		util::_description_text = "Create a volume export for the solution.");
 
+util::ProgramOption optionNumIterations(
+		util::_long_name        = "numIterations",
+		util::_description_text = "The number of iterations to spend on finding a solution. Depends on used solver.");
+
+util::ProgramOption optionExportSolutionWithBoundary(
+		util::_long_name        = "exportSolutionWithBoundary",
+		util::_description_text = "Create a volume export for the solution, showing the boundaries as well..");
+
 util::ProgramOption optionReadOnly(
 		util::_long_name        = "readOnly",
 		util::_description_text = "Don't write the solution or costs to the project file (only export the solution).");
@@ -117,7 +125,10 @@ int main(int argc, char** argv) {
 		LOG_USER(logger::out) << "solving" << std::endl;
 
 		CragSolution solution(crag);
-		std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes));
+		CragSolver::Parameters parameters;
+		if (optionNumIterations)
+			parameters.numIterations = optionNumIterations;
+		std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes, parameters));
 
 		solver->setCosts(costs);
 		{
@@ -125,10 +136,16 @@ int main(int argc, char** argv) {
 			solver->solve(solution);
 		}
 
+		LOG_USER(logger::out) << "problem solved" << std::endl;
+
+		LOG_USER(logger::out) << "storing solution" << std::endl;
+
 		if (!optionReadOnly)
 			cragStore.saveSolution(crag, solution, "solution");
 
 		if (optionExportSolution) {
+
+			LOG_USER(logger::out) << "exporting solution to " << optionExportSolution.as<std::string>() << std::endl;
 
 			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 			ExplicitVolume<float> intensities;
@@ -137,6 +154,18 @@ int main(int argc, char** argv) {
 			SolutionImageWriter imageWriter;
 			imageWriter.setExportArea(intensities.getBoundingBox());
 			imageWriter.write(crag, volumes, solution, optionExportSolution.as<std::string>());
+		}
+
+		if (optionExportSolutionWithBoundary) {
+
+			LOG_USER(logger::out) << "exporting solution with boundaries to " << optionExportSolutionWithBoundary.as<std::string>() << std::endl;
+
+			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
+			ExplicitVolume<float> intensities;
+			volumeStore.retrieveIntensities(intensities);
+
+			SolutionImageWriter imageWriter;
+			imageWriter.setExportArea(intensities.getBoundingBox());
 			imageWriter.write(crag, volumes, solution, optionExportSolution.as<std::string>() + "_boundary", true);
 		}
 

@@ -109,6 +109,10 @@ util::ProgramOption optionExportBestEffort(
 		util::_long_name        = "exportBestEffort",
 		util::_description_text = "Create a volume export for the best-effort solution.");
 
+util::ProgramOption optionExportBestEffortWithBoundary(
+		util::_long_name        = "exportBestEffortWithBoundary",
+		util::_description_text = "Create a volume export for the best-effort solution, showing the boundaries as well.");
+
 int main(int argc, char** argv) {
 
 	UTIL_TIME_SCOPE("main");
@@ -233,8 +237,14 @@ int main(int argc, char** argv) {
 
 			SolutionImageWriter imageWriter;
 			imageWriter.setExportArea(groundTruth.getBoundingBox());
-			imageWriter.write(crag, volumes, *bestEffort, "best-effort");
-			imageWriter.write(crag, volumes, *bestEffort, "best-effort_boundary", true);
+			imageWriter.write(crag, volumes, *bestEffort, optionExportBestEffort);
+		}
+
+		if (optionExportBestEffortWithBoundary) {
+
+			SolutionImageWriter imageWriter;
+			imageWriter.setExportArea(groundTruth.getBoundingBox());
+			imageWriter.write(crag, volumes, *bestEffort, optionExportBestEffortWithBoundary, true);
 		}
 
 		if (optionLoss.as<std::string>() == "hamming") {
