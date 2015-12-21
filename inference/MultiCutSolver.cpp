@@ -401,7 +401,7 @@ MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 		if (_labels[s] != _labels[t] || !solution.selected(s))
 			continue;
 
-		LOG_DEBUG(multicutlog)
+		LOG_ALL(multicutlog)
 				<< "nodes " << _crag.id(s)
 				<< " and " << _crag.id(t)
 				<< " (edge " << edgeIdToVar(_crag.id(e))
@@ -419,7 +419,7 @@ MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 					<< "dijkstra could not find a path!"
 					<< std::endl;
 
-		LOG_DEBUG(multicutlog)
+		LOG_ALL(multicutlog)
 				<< "nodes " << _crag.id(s)
 				<< " and " << _crag.id(t)
 				<< " are in same component "
@@ -432,14 +432,14 @@ MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 
 		// walk along the path between u and v
 		Crag::CragNode cur = t;
-		LOG_DEBUG(multicutlog)
+		LOG_ALL(multicutlog)
 				<< "nodes " << _crag.id(s)
 				<< " and " << _crag.id(t)
 				<< " (edge " << edgeIdToVar(_crag.id(e)) << ")"
 				<< " are connected via path ";
 		while (cur != s) {
 
-			LOG_DEBUG(multicutlog)
+			LOG_ALL(multicutlog)
 					<< _crag.id(cur)
 					<< " ";
 
@@ -470,13 +470,13 @@ MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 			cycleConstraint.setCoefficient(
 					edgeIdToVar(_crag.id(*pathEdge)),
 					1.0);
-			LOG_DEBUG(multicutlog)
+			LOG_ALL(multicutlog)
 					<< "(edge " << edgeIdToVar(_crag.id(*pathEdge)) << ") ";
 
 			lenPath++;
 			cur = pre;
 		}
-		LOG_DEBUG(multicutlog) << _crag.id(s) << std::endl;
+		LOG_ALL(multicutlog) << _crag.id(s) << std::endl;
 
 		cycleConstraint.setCoefficient(
 				edgeIdToVar(_crag.id(e)),
@@ -484,7 +484,7 @@ MultiCutSolver::findViolatedConstraints(CragSolution& solution) {
 		cycleConstraint.setRelation(LessEqual);
 		cycleConstraint.setValue(lenPath - 1);
 
-		LOG_DEBUG(multicutlog) << cycleConstraint << std::endl;
+		LOG_ALL(multicutlog) << cycleConstraint << std::endl;
 
 		_constraints.add(cycleConstraint);
 

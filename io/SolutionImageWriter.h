@@ -18,7 +18,7 @@ public:
 	 * If not set, the bounding box of the volumes is used (which might be 
 	 * smaller than the bounding box of the intensity volume).
 	 */
-	void setExportArea(const util::box<float, 3>& bb) { _volumesBB = bb; }
+	void setExportArea(const util::box<float, 3>& bb);
 
 	/**
 	 * Store the solution as label image in the given image file.

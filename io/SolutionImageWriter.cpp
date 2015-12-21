@@ -2,6 +2,16 @@
 #include <vigra/multi_impex.hxx>
 #include <vigra/functorexpression.hxx>
 #include "SolutionImageWriter.h"
+#include <util/Logger.h>
+
+logger::LogChannel solutionimagewriterlog("solutionimagewriterlog", "[SolutionImageWriter] ");
+
+void
+SolutionImageWriter::setExportArea(const util::box<float, 3>& bb) {
+
+	_volumesBB = bb;
+	LOG_DEBUG(solutionimagewriterlog) << "export area set to " << _volumesBB << std::endl;
+}
 
 void
 SolutionImageWriter::write(
@@ -11,8 +21,13 @@ SolutionImageWriter::write(
 		const std::string& basename,
 		bool boundary) {
 
+	LOG_DEBUG(solutionimagewriterlog) << "storing solution in " << basename << std::endl;
+
 	if (_volumesBB.isZero())
 		_volumesBB = volumes.getBoundingBox();
+
+	LOG_DEBUG(solutionimagewriterlog) << "using bounding box of " << _volumesBB << std::endl;
+
 	util::point<float, 3> resolution;
 	for (Crag::CragNode n : crag.nodes()) {
 
@@ -21,6 +36,8 @@ SolutionImageWriter::write(
 		resolution = volumes[n]->getResolution();
 		break;
 	}
+
+	LOG_DEBUG(solutionimagewriterlog) << "using resolution of " << resolution << std::endl;
 
 	// create a vigra multi-array large enough to hold all volumes
 	vigra::MultiArray<3, float> components(
@@ -38,6 +55,8 @@ SolutionImageWriter::write(
 
 	for (Crag::CragNode n : crag.nodes()) {
 
+		LOG_ALL(solutionimagewriterlog) << "drawing node " << crag.id(n) << std::endl;
+
 		// draw only selected nodes
 		if (!solution.selected(n))
 			continue;
@@ -51,6 +70,10 @@ SolutionImageWriter::write(
 						volumeDiscreteBB.width(),
 						volumeDiscreteBB.height(),
 						volumeDiscreteBB.depth());
+
+		LOG_ALL(solutionimagewriterlog) << "\toffset      : " << volumeOffset << std::endl;
+		LOG_ALL(solutionimagewriterlog) << "\tdiscrete bb : " << volumeDiscreteBB << std::endl;
+		LOG_ALL(solutionimagewriterlog) << "\ttarget area : " << begin << " -- " << end << std::endl;
 
 		// fill id of connected component
 		vigra::combineTwoMultiArrays(
