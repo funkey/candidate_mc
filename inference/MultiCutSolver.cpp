@@ -312,13 +312,15 @@ MultiCutSolver::collectTreePathConstraints(Crag::CragNode n, std::vector<int>& p
 void
 MultiCutSolver::findCut(CragSolution& solution) {
 
+	LOG_USER(multicutlog) << "searching for cut..." << std::endl;
+
 	// re-set constraints to inform solver about potential changes
 	_solver->setConstraints(_constraints);
 	std::string msg;
 	if (!_solver->solve(_solution, msg))
 		LOG_ERROR(multicutlog) << "solver did not find optimal solution: " << msg << std::endl;
-
-	LOG_USER(multicutlog) << "searching for optimal cut..." << std::endl;
+	else
+		LOG_DEBUG(multicutlog) << "solver returned solution with message: " << msg << std::endl;
 
 	// get selected candidates
 	for (Crag::CragNode n : _crag.nodes()) {

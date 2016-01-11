@@ -27,6 +27,12 @@ util::ProgramOption optionGurobiMIPFocus(
 		util::_description_text = "The Gurobi MIP focus: 0 = balanced, 1 = feasible solutions, 2 = optimal solution, 3 = bound.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionGurobiTimeout(
+		util::_module           = "inference.gurobi",
+		util::_long_name        = "timeout",
+		util::_description_text = "The number of seconds after which to stop the gurobi solver and report a sub-optimal solution.",
+		util::_default_value    = 0);
+
 util::ProgramOption optionGurobiNumThreads(
 		util::_module           = "inference.gurobi",
 		util::_long_name        = "numThreads",
@@ -91,6 +97,9 @@ GurobiBackend::initialize(
 		setMIPFocus(optionGurobiMIPFocus.as<unsigned int>());
 	else
 		LOG_ERROR(gurobilog) << "Invalid value for MPI focus!" << std::endl;
+
+	if (optionGurobiTimeout)
+		setTimeout(optionGurobiTimeout.as<double>());
 
 	setNumThreads(optionGurobiNumThreads);
 
@@ -266,7 +275,32 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 	if (status != GRB_OPTIMAL) {
 
 		msg = "Optimal solution *NOT* found";
-		return false;
+
+		// see if a feasible solution exists
+
+		if (status == GRB_TIME_LIMIT) {
+
+			msg += " (timeout";
+
+			int numSolutions;
+			GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_SOLCOUNT, &numSolutions));
+
+			if (numSolutions == 0) {
+
+				msg += ", no feasible solution found)";
+				return false;
+			}
+
+			msg += ", " + boost::lexical_cast<std::string>(numSolutions) + " feasible solutions found)";
+
+		} else if (status == GRB_SUBOPTIMAL) {
+
+			msg += " (suboptimal solution found)";
+
+		} else {
+
+			return false;
+		}
 
 	} else {
 
@@ -275,8 +309,12 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 
 	// extract solution
 
+	LOG_ALL(gurobilog) << "extracting solution for " << _numVariables << " variables" << std::endl;
+
 	x.resize(_numVariables);
 	for (unsigned int i = 0; i < _numVariables; i++)
+		// in case of several suboptimal solutions, the best-objective solution 
+		// is read
 		GRB_CHECK(GRBgetdblattrelement(_model, GRB_DBL_ATTR_X, i, &x[i]));
 
 	// get current value of the objective
@@ -290,29 +328,42 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 void
 GurobiBackend::setMIPGap(double gap) {
 
-	GRB_CHECK(GRBsetdblparam(_env, GRB_DBL_PAR_MIPGAP, gap));
+	GRBenv* modelenv = GRBgetenv(_model);
+	GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAP, gap));
 }
 
 void
 GurobiBackend::setMIPFocus(unsigned int focus) {
 
-	GRB_CHECK(GRBsetintparam(_env, GRB_INT_PAR_MIPFOCUS, focus));
+	GRBenv* modelenv = GRBgetenv(_model);
+	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_MIPFOCUS, focus));
+}
+
+void
+GurobiBackend::setTimeout(double timeout) {
+
+	GRBenv* modelenv = GRBgetenv(_model);
+	GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_TIMELIMIT, timeout));
+	LOG_USER(gurobilog) << "using timeout of " << timeout << "s for inference" << std::endl;
 }
 
 void
 GurobiBackend::setNumThreads(unsigned int numThreads) {
 
-	GRB_CHECK(GRBsetintparam(_env, GRB_INT_PAR_THREADS, numThreads));
+	GRBenv* modelenv = GRBgetenv(_model);
+	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_THREADS, numThreads));
 }
 
 void
 GurobiBackend::setVerbose(bool verbose) {
 
+	GRBenv* modelenv = GRBgetenv(_model);
+
 	// setup GRB environment
 	if (verbose) {
-		GRB_CHECK(GRBsetintparam(_env, GRB_INT_PAR_OUTPUTFLAG, 1));
+		GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 1));
 	} else {
-		GRB_CHECK(GRBsetintparam(_env, GRB_INT_PAR_OUTPUTFLAG, 0));
+		GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 0));
 	}
 }
 

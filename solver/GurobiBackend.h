@@ -77,6 +77,9 @@ private:
 	// set the mpi focus
 	void setMIPFocus(unsigned int focus);
 
+	// set a timeout
+	void setTimeout(double timeout);
+
 	// set the number of threads to use
 	void setNumThreads(unsigned int numThreads);
 
