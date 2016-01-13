@@ -317,13 +317,21 @@ MultiCutSolver::findCut(CragSolution& solution) {
 	// re-set constraints to inform solver about potential changes
 	_solver->setConstraints(_constraints);
 	std::string msg;
-	if (!_solver->solve(_solution, msg))
+	if (!_solver->solve(_solution, msg)) {
+
 		LOG_ERROR(multicutlog) << "solver did not find optimal solution: " << msg << std::endl;
-	else
+
+	} else {
+
 		LOG_DEBUG(multicutlog) << "solver returned solution with message: " << msg << std::endl;
+	}
 
 	// get selected candidates
 	for (Crag::CragNode n : _crag.nodes()) {
+
+		LOG_ALL(multicutlog) << _crag.id(n) << std::endl;
+		LOG_ALL(multicutlog) << nodeIdToVar(_crag.id(n)) << std::endl;
+		LOG_ALL(multicutlog) << _solution[nodeIdToVar(_crag.id(n))] << std::endl;
 
 		solution.setSelected(n, (_solution[nodeIdToVar(_crag.id(n))] > 0.5));
 
