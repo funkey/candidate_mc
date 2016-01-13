@@ -14,6 +14,7 @@
 #include <io/Hdf5VolumeStore.h>
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
+#include <features/VolumeRays.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -43,6 +44,20 @@ util::ProgramOption optionMinMaxFromProject(
 util::ProgramOption optionNoSkeletons(
 		util::_long_name        = "noSkeletons",
 		util::_description_text = "Do not extract skeletons for the candidates.");
+
+util::ProgramOption optionNoVolumeRays(
+		util::_long_name        = "noVolumeRays",
+		util::_description_text = "Do not extract rays locally describing the volume for the candidates.");
+
+util::ProgramOption optionVolumeRaysSampleRadius(
+		util::_long_name        = "volumeRaysSampleRadius",
+		util::_description_text = "The size of the sphere to use to estimate the surface normal of boundary points.",
+		util::_default_value    = 50);
+
+util::ProgramOption optionVolumeRaysSampleDensity(
+		util::_long_name        = "volumeRaysSampleDensity",
+		util::_description_text = "Distance between sample points in the normal estimation sphere.",
+		util::_default_value    = 2);
 
 int main(int argc, char** argv) {
 
@@ -130,6 +145,21 @@ int main(int argc, char** argv) {
 			{
 				UTIL_TIME_SCOPE("storing skeletons");
 				cragStore.saveSkeletons(crag, skeletons);
+			}
+		}
+
+		if (!optionNoVolumeRays) {
+
+			VolumeRays rays(crag);
+
+			{
+				UTIL_TIME_SCOPE("extracting volume rays");
+				rays.extractFromVolumes(volumes, optionVolumeRaysSampleRadius, optionVolumeRaysSampleDensity);
+			}
+
+			{
+				UTIL_TIME_SCOPE("storing volume rays");
+				cragStore.saveVolumeRays(rays);
 			}
 		}
 

@@ -60,6 +60,11 @@ public:
 	void saveSkeletons(const Crag& crag, const Skeletons& skeletons);
 
 	/**
+	 * Store the volume rays for candidates of a CRAG.
+	 */
+	void saveVolumeRays(const VolumeRays& rays);
+
+	/**
 	 * Store a set of feature weights.
 	 */
 	void saveFeatureWeights(const FeatureWeights& weights) override;
@@ -110,6 +115,11 @@ public:
 	 * Retrieve skeletons for the candidates of the CRAG.
 	 */
 	void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) override;
+
+	/**
+	 * Retrieve volume rays for the candidates of the CRAG.
+	 */
+	void retrieveVolumeRays(VolumeRays& rays) override;
 
 	/**
 	 * Retrieve feature weights.

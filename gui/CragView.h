@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_GUI_CRAG_VIEW_H__
 #define CANDIDATE_MC_GUI_CRAG_VIEW_H__
 
+#include <gui/VolumeRaysView.h>
 #include <scopegraph/Scope.h>
 #include <sg_gui/NormalsView.h>
 #include <sg_gui/MeshView.h>
@@ -35,6 +36,8 @@ public:
 	void setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume);
 
 	void setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume);
+
+	void setVolumeRays(std::shared_ptr<VolumeRays> rays);
 
 	void onSignal(sg_gui::KeyDown& signal);
 
@@ -160,6 +163,7 @@ private:
 	std::shared_ptr<LabelsScope>        _labelsScope;
 	std::shared_ptr<sg_gui::VolumeView> _rawView;
 	std::shared_ptr<sg_gui::VolumeView> _labelsView;
+	std::shared_ptr<VolumeRaysView>     _volumeRaysView;
 
 	double _alpha;
 };

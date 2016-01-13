@@ -211,6 +211,20 @@ int main(int argc, char** argv) {
 			LOG_USER(logger::out) << "could not find costs" << std::endl;
 		}
 
+		// get volume rays
+
+		std::shared_ptr<VolumeRays> rays = std::make_shared<VolumeRays>(crag);
+
+		try {
+
+			cragStore.retrieveVolumeRays(*rays);
+
+		} catch (std::exception& e) {
+
+			LOG_USER(logger::out) << "could not find volume rays" << std::endl;
+			rays.reset();
+		}
+
 		// visualize
 
 		auto cragView       = std::make_shared<CragView>();
@@ -233,6 +247,9 @@ int main(int argc, char** argv) {
 
 		cragView->setRawVolume(intensities);
 		cragView->setLabelsVolume(overlay);
+
+		if (rays)
+			cragView->setVolumeRays(rays);
 
 		window->processEvents();
 

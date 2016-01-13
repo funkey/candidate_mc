@@ -12,6 +12,7 @@ CragView::CragView() :
 	_labelsScope(std::make_shared<LabelsScope>()),
 	_rawView(std::make_shared<sg_gui::VolumeView>()),
 	_labelsView(std::make_shared<sg_gui::VolumeView>()),
+	_volumeRaysView(std::make_shared<VolumeRaysView>()),
 	_alpha(1.0) {
 
 	_rawScope->add(_rawView);
@@ -23,6 +24,8 @@ CragView::CragView() :
 
 	if (optionShowNormals)
 		add(_normalsView);
+
+	add(_volumeRaysView);
 }
 
 void
@@ -45,6 +48,12 @@ void
 CragView::setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 
 	_labelsView->setVolume(volume);
+}
+
+void
+CragView::setVolumeRays(std::shared_ptr<VolumeRays> rays) {
+
+	_volumeRaysView->setVolumeRays(rays);
 }
 
 void

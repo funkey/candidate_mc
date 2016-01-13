@@ -7,6 +7,7 @@
 #include <features/NodeFeatures.h>
 #include <features/EdgeFeatures.h>
 #include <features/Skeletons.h>
+#include <features/VolumeRays.h>
 #include <inference/Costs.h>
 #include <inference/CragSolution.h>
 
@@ -50,6 +51,11 @@ public:
 	 * Store the skeletons for candidates of a CRAG.
 	 */
 	virtual void saveSkeletons(const Crag& crag, const Skeletons& skeletons) = 0;
+
+	/**
+	 * Store the volume rays for candidates of a CRAG.
+	 */
+	virtual void saveVolumeRays(const VolumeRays& rays) = 0;
 
 	/**
 	 * Store a set of feature weights.
@@ -96,6 +102,11 @@ public:
 	 * Retrieve skeletons for the candidates of the CRAG.
 	 */
 	virtual void retrieveSkeletons(const Crag& crag, Skeletons& skeletons) = 0;
+
+	/**
+	 * Retrieve the volume rays for the candidates of the CRAG.
+	 */
+	virtual void retrieveVolumeRays(VolumeRays& rays) = 0;
 
 	/**
 	 * Retrieve feature weights.

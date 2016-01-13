@@ -435,6 +435,90 @@ Hdf5CragStore::retrieveSkeletons(const Crag& crag, Skeletons& skeletons) {
 }
 
 void
+Hdf5CragStore::saveVolumeRays(const VolumeRays& rays) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("crag");
+	_hdfFile.cd_mk("volume_rays");
+
+	for (Crag::CragNode n : rays.getCrag().nodes()) {
+
+		int         id   = rays.getCrag().id(n);
+		std::string name = boost::lexical_cast<std::string>(id);
+
+		_hdfFile.cd_mk(name);
+
+		std::vector<double> data;
+		for (auto ray : rays[n]) {
+
+			data.push_back(ray.position().x());
+			data.push_back(ray.position().y());
+			data.push_back(ray.position().z());
+			data.push_back(ray.direction().x());
+			data.push_back(ray.direction().y());
+			data.push_back(ray.direction().z());
+		}
+
+		if (data.size() > 0)
+			_hdfFile.write(
+					"rays",
+					vigra::ArrayVectorView<double>(data.size(), const_cast<double*>(&data[0])));
+
+		_hdfFile.cd_up();
+	}
+}
+
+void
+Hdf5CragStore::retrieveVolumeRays(VolumeRays& rays) {
+
+	try {
+
+		_hdfFile.cd("/crag/volume_rays");
+
+	} catch (vigra::PreconditionViolation& e) {
+
+		return;
+	}
+
+	for (Crag::CragNode n : rays.getCrag().nodes()) {
+
+		LOG_ALL(hdf5storelog) << "reading volume rays for node " << rays.getCrag().id(n) << std::endl;
+
+		std::string name = boost::lexical_cast<std::string>(rays.getCrag().id(n));
+
+		try {
+
+			_hdfFile.cd(name);
+
+		} catch (vigra::PreconditionViolation& e) {
+
+			continue;
+		}
+
+		vigra::ArrayVector<double> data;
+		_hdfFile.readAndResize(
+				"rays",
+				data);
+
+		for (unsigned int i = 0; i < data.size();) {
+
+			util::ray<float, 3> ray;
+			ray.position().x() = data[i]; i++;
+			ray.position().y() = data[i]; i++;
+			ray.position().z() = data[i]; i++;
+			ray.direction().x() = data[i]; i++;
+			ray.direction().y() = data[i]; i++;
+			ray.direction().z() = data[i]; i++;
+
+			rays[n].push_back(ray);
+		}
+
+		_hdfFile.cd_up();
+	}
+}
+
+
+void
 Hdf5CragStore::saveFeatureWeights(const FeatureWeights& weights) {
 
 	_hdfFile.root();
