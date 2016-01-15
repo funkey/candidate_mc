@@ -7,7 +7,9 @@
 #include <util/helpers.hpp>
 #include <util/timing.h>
 #include <util/assert.h>
+#include <util/geometry.hpp>
 #include "FeatureExtractor.h"
+#include "VolumeRayFeature.h"
 #include <vigra/multi_impex.hxx>
 #include <vigra/flatmorphology.hxx>
 #include <vigra/multi_morphology.hxx>
@@ -66,6 +68,12 @@ util::ProgramOption optionEdgeAccumulatedeFeatures(
 	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
 	                          "(mean, 1-moment, 2-moment). Enabled by default.",
 	util::_default_value    = true
+);
+
+util::ProgramOption optionEdgeVolumeRayFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "volumeRayFeatures",
+	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
 );
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
@@ -275,6 +283,9 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
+
+	if (optionEdgeVolumeRayFeatures)
+		extractVolumeRaysEdgeFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
@@ -785,6 +796,34 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 		edgeFeatures.append(e, mean(accRaw));
 		edgeFeatures.append(e, moment<1>(accRaw));
 		edgeFeatures.append(e, moment<2>(accRaw));
+	}
+}
+
+void
+FeatureExtractor::extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures) {
+
+	VolumeRayFeature volumeRayFeature(_volumes, _rays);
+
+	for (Crag::CragEdge e : _crag.edges()) {
+
+		if (_crag.type(e) != Crag::AdjacencyEdge)
+			continue;
+
+		// the longest piece of a ray from one node inside the other node
+		util::ray<float, 3> uvRay;
+		util::ray<float, 3> vuRay;
+		double uvMaxPiercingDepth = volumeRayFeature.maxVolumeRayPiercingDepth(e.u(), e.v(), uvRay);
+		double vuMaxPiercingDepth = volumeRayFeature.maxVolumeRayPiercingDepth(e.v(), e.u(), vuRay);
+
+		// the largest mutual piercing distance
+		double mutualPiercingScore = std::min(uvMaxPiercingDepth, vuMaxPiercingDepth);
+
+		// normalize piercing dephts
+		double norm = std::max(length(uvRay.direction()), length(vuRay.direction()));
+		double normalizedMutualPiercingScore = mutualPiercingScore/norm;
+
+		edgeFeatures.append(e, mutualPiercingScore);
+		edgeFeatures.append(e, normalizedMutualPiercingScore);
 	}
 }
 

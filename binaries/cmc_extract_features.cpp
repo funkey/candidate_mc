@@ -86,6 +86,21 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
+		VolumeRays rays(crag);
+
+		if (!optionNoVolumeRays) {
+
+			{
+				UTIL_TIME_SCOPE("extracting volume rays");
+				rays.extractFromVolumes(volumes, optionVolumeRaysSampleRadius, optionVolumeRaysSampleDensity);
+			}
+
+			{
+				UTIL_TIME_SCOPE("storing volume rays");
+				cragStore.saveVolumeRays(rays);
+			}
+		}
+
 		if (!optionNoFeatures) {
 
 			LOG_USER(logger::out) << "extracting features" << std::endl;
@@ -98,7 +113,7 @@ int main(int argc, char** argv) {
 				cragStore.retrieveFeaturesMax(max);
 			}
 
-			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries);
+			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(nodeFeatures, edgeFeatures, min, max);
 
 			if (!optionMinMaxFromProject) {
@@ -145,21 +160,6 @@ int main(int argc, char** argv) {
 			{
 				UTIL_TIME_SCOPE("storing skeletons");
 				cragStore.saveSkeletons(crag, skeletons);
-			}
-		}
-
-		if (!optionNoVolumeRays) {
-
-			VolumeRays rays(crag);
-
-			{
-				UTIL_TIME_SCOPE("extracting volume rays");
-				rays.extractFromVolumes(volumes, optionVolumeRaysSampleRadius, optionVolumeRaysSampleDensity);
-			}
-
-			{
-				UTIL_TIME_SCOPE("storing volume rays");
-				cragStore.saveVolumeRays(rays);
 			}
 		}
 

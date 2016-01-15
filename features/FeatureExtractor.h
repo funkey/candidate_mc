@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__
 
 #include <io/CragStore.h>
+#include <features/VolumeRays.h>
 #include "NodeFeatures.h"
 #include "EdgeFeatures.h"
 
@@ -13,11 +14,13 @@ public:
 			Crag&                        crag,
 			CragVolumes&                 volumes,
 			const ExplicitVolume<float>& raw,
-			const ExplicitVolume<float>& boundaries) :
+			const ExplicitVolume<float>& boundaries,
+			const VolumeRays&            rays) :
 		_crag(crag),
 		_volumes(volumes),
 		_raw(raw),
-		_boundaries(boundaries) {}
+		_boundaries(boundaries),
+		_rays(rays) {}
 
 	/**
 	 * Extract node and edge features, along with the respective min and max 
@@ -60,6 +63,8 @@ private:
 
 	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
+	void extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures);
+
     void extractAccumulatedEdgeFeatures(EdgeFeatures& edgeFeatures);
 
 	void extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures);
@@ -75,6 +80,8 @@ private:
 
 	const ExplicitVolume<float>& _raw;
 	const ExplicitVolume<float>& _boundaries;
+
+	const VolumeRays& _rays;
 
 	// number of "real" node features, before add squares and bias
 	int _numOriginalVolumeNodeFeatures;
