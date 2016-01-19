@@ -703,6 +703,8 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 
 		LOG_ALL(featureextractorlog) << "extracting derived features for edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
 
+		UTIL_TIME_SCOPE("extract derived edge features");
+
 		Crag::CragNode u = e.u();
 		Crag::CragNode v = e.v();
 		// feature vectors from node u/v
@@ -754,6 +756,8 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 			continue;
 
 		LOG_ALL(featureextractorlog) << "extracting features for adjacency edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
+
+		UTIL_TIME_SCOPE("extract accumulated edge features");
 
 		// accumulate statistics
 		
@@ -808,6 +812,8 @@ FeatureExtractor::extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures) {
 
 		if (_crag.type(e) != Crag::AdjacencyEdge)
 			continue;
+
+		UTIL_TIME_SCOPE("extract volume rays edge features");
 
 		// the longest piece of a ray from one node inside the other node
 		util::ray<float, 3> uvRay;
