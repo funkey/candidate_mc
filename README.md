@@ -27,7 +27,13 @@ Dependencies
   * libhdf5-serial-dev
   * Gurobi (optional)
 
-    Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
+  On Ubuntu, you can get these packages via
+
+  ```
+  sudo apt-get install libboost-all-dev liblapack-dev libfftw3-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxi-dev freeglut3-dev libglew1.6-dev libpng12-dev libtiff4-dev libhdf5-serial-dev
+  ```
+
+  Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
 
   * XQuartz (only on OS X, http://xquartz.macosforge.org/)
 
