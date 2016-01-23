@@ -82,25 +82,6 @@ Hdf5CragStore::saveCrag(const Crag& crag) {
 }
 
 void
-Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
-
-	_hdfFile.cd_mk("/crag");
-	_hdfFile.cd_mk("volumes");
-
-	int numNodes = 0;
-	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n) {
-
-		if (numNodes%100 == 0)
-			LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes written" << std::flush;
-
-		writeVolume(*volumes[n], boost::lexical_cast<std::string>(volumes.getCrag().id(n)));
-		numNodes++;
-	}
-
-	LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes written" << std::endl;
-}
-
-void
 Hdf5CragStore::retrieveCrag(Crag& crag) {
 
 	_hdfFile.root();
@@ -193,21 +174,105 @@ Hdf5CragStore::retrieveCrag(Crag& crag) {
 }
 
 void
+Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
+
+	_hdfFile.cd_mk("/crag");
+	_hdfFile.cd_mk("volumes");
+
+	std::vector<unsigned char> serialized;
+	std::vector<int> meta;
+	std::vector<float> offsets;
+	std::vector<float> resolutions;
+
+	int numNodes = 0;
+	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n) {
+
+		if (numNodes%100 == 0)
+			LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes prepared for writing" << std::flush;
+
+		const CragVolume& volume = *volumes[n];
+		meta.push_back(volumes.getCrag().id(n));
+		meta.push_back(volume.width());
+		meta.push_back(volume.height());
+		meta.push_back(volume.depth());
+		offsets.push_back(volume.getOffset().x());
+		offsets.push_back(volume.getOffset().y());
+		offsets.push_back(volume.getOffset().z());
+		resolutions.push_back(volume.getResolution().x());
+		resolutions.push_back(volume.getResolution().y());
+		resolutions.push_back(volume.getResolution().z());
+		std::copy(volume.data().begin(), volume.data().end(), std::back_inserter(serialized));
+
+		numNodes++;
+	}
+
+	LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes prepared for writing" << std::endl;
+
+	LOG_USER(hdf5storelog) << "writing node volumes... " << std::flush;
+
+	_hdfFile.write(
+			"serialized",
+			vigra::ArrayVectorView<unsigned char>(serialized.size(), const_cast<unsigned char*>(&serialized[0])));
+	_hdfFile.write(
+			"meta",
+			vigra::ArrayVectorView<int>(meta.size(), const_cast<int*>(&meta[0])));
+	_hdfFile.write(
+			"offsets",
+			vigra::ArrayVectorView<float>(offsets.size(), const_cast<float*>(&offsets[0])));
+	_hdfFile.write(
+			"resolutions",
+			vigra::ArrayVectorView<float>(resolutions.size(), const_cast<float*>(&resolutions[0])));
+
+	LOG_USER(hdf5storelog) << "done." << std::endl;
+}
+
+void
 Hdf5CragStore::retrieveVolumes(CragVolumes& volumes) {
 
 	_hdfFile.root();
 	_hdfFile.cd("/crag");
 	_hdfFile.cd("volumes");
 
-	std::vector<std::string> vols = _hdfFile.ls();
+	vigra::MultiArray<1, unsigned char> serialized;
+	vigra::MultiArray<1, int> meta;
+	vigra::MultiArray<1, float> offsets;
+	vigra::MultiArray<1, float> resolutions;
 
-	for (std::string vol : vols) {
+	_hdfFile.readAndResize("serialized", serialized);
+	_hdfFile.readAndResize("meta", meta);
+	_hdfFile.readAndResize("offsets", offsets);
+	_hdfFile.readAndResize("resolutions", resolutions);
 
-		int id = boost::lexical_cast<int>(vol);
+	UTIL_ASSERT_REL(meta.size() % 4, ==, 0);
+	UTIL_ASSERT_REL(offsets.size() % 3, ==, 0);
+	UTIL_ASSERT_REL(resolutions.size() % 3, ==, 0);
+	UTIL_ASSERT_REL(meta.size()/4, ==, offsets.size()/3);
+	UTIL_ASSERT_REL(meta.size()/4, ==, resolutions.size()/3);
+
+	auto si = serialized.begin();
+	std::size_t oi = 0;
+	std::size_t ri = 0;
+	for (int i = 0; i < meta.size();) {
+
+		int id = meta[i++];
+		int width = meta[i++];
+		int height = meta[i++];
+		int depth = meta[i++];
+
+		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(width, height, depth);
+		std::copy(si, si + width*height*depth, volume->data().begin());
+		si += width*height*depth;
+
+		float x = resolutions[ri++];
+		float y = resolutions[ri++];
+		float z = resolutions[ri++];
+		volume->setResolution(x, y, z);
+		x = offsets[oi++];
+		y = offsets[oi++];
+		z = offsets[oi++];
+		volume->setOffset(x, y, z);
 
 		Crag::Node n = volumes.getCrag().nodeFromId(id);
-		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>();
-		readVolume(*volume, vol);
 		volumes.setVolume(n, volume);
 
 		UTIL_ASSERT(!volume->getBoundingBox().isZero());
