@@ -117,6 +117,8 @@ CragImport::readCrag(
 				idToNode[b],
 				n);
 	}
+
+	volumes.fillEmptyVolumes();
 }
 
 void
