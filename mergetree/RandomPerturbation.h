@@ -4,7 +4,6 @@
 #include <boost/math/distributions/normal.hpp>
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
-#include "ScoringFunction.h"
 
 extern util::ProgramOption optionRandomPerturbationStdDev;
 extern util::ProgramOption optionRandomPerturbationSeed;
@@ -16,9 +15,14 @@ extern logger::LogChannel randomperturbationlog;
  * standard deviation of optionRandomPerturbationStdDev.
  */
 template <typename ScoringFunctionType>
-class RandomPerturbation : public ScoringFunction {
+class RandomPerturbation {
 
 public:
+
+	static const int Dim = ScoringFunctionType::Dim;
+
+	typedef typename ScoringFunctionType::GridGraphType GridGraphType;
+	typedef typename ScoringFunctionType::RagType       RagType;
 
 	RandomPerturbation(ScoringFunctionType& scoringFunction) :
 		_scoringFunction(scoringFunction),
@@ -33,7 +37,7 @@ public:
 			srand(optionRandomPerturbationSeed.as<int>());
 		}
 
-	float operator()(const RagType::Edge& edge, std::vector<GridGraphType::Edge>& gridEdges) {
+	float operator()(const typename RagType::Edge& edge, std::vector<typename GridGraphType::Edge>& gridEdges) {
 
 		float score = _scoringFunction(edge, gridEdges);
 
@@ -45,7 +49,7 @@ public:
 		return score + pertubation;
 	}
 
-	void onMerge(const RagType::Edge& edge, const RagType::Node newRegion) {
+	void onMerge(const typename RagType::Edge& edge, const typename RagType::Node newRegion) {
 
 		_scoringFunction.onMerge(edge, newRegion);
 	}

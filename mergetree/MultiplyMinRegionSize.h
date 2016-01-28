@@ -5,7 +5,6 @@
 #include <util/ProgramOptions.h>
 #include <util/assert.h>
 #include "NodeNumConverter.h"
-#include "ScoringFunction.h"
 
 extern util::ProgramOption optionMultiplyMinRegionSizeExponent;
 
@@ -14,50 +13,37 @@ extern util::ProgramOption optionMultiplyMinRegionSizeExponent;
  * score of another scoring function.
  */
 template <typename ScoringFunctionType>
-class MultiplyMinRegionSize : public ScoringFunction {
+class MultiplyMinRegionSize {
 
 public:
 
-	typedef vigra::GridGraph<2>                                                    GridGraphType;
-	typedef vigra::AdjacencyListGraph                                              RagType;
-	typedef util::cont_map<RagType::Node, std::size_t, NodeNumConverter<RagType> > RegionSizesType;
-	typedef util::cont_map<RagType::Node, float, NodeNumConverter<RagType> >       AverageIntensitiesType;
+	static const int Dim = ScoringFunctionType::Dim;
 
+	typedef typename ScoringFunctionType::GridGraphType GridGraphType;
+	typedef typename ScoringFunctionType::RagType       RagType;
+
+	typedef util::cont_map<typename RagType::Node, std::size_t, NodeNumConverter<RagType> > RegionSizesType;
+	typedef util::cont_map<typename RagType::Node, float, NodeNumConverter<RagType> >       AverageIntensitiesType;
+
+	template <typename T>
 	MultiplyMinRegionSize(
-			RagType&                              rag,
-			const vigra::MultiArrayView<2, float> intensities,
-			const vigra::MultiArrayView<2, int>   initialRegions,
-			ScoringFunctionType&                  scoringFunction) :
+			RagType&             rag,
+			const T&             initialRegions,
+			ScoringFunctionType& scoringFunction) :
 		_rag(rag),
 		_regionSizes(_rag),
-		_averageIntensities(_rag),
-		_intensities(intensities),
 		_scoringFunction(scoringFunction),
 		_exponent(optionMultiplyMinRegionSizeExponent) {
 
-		// get initial region sizes and average intensities
-		vigra::MultiArray<2, int>::const_iterator   i = initialRegions.begin();
-		vigra::MultiArray<2, float>::const_iterator j = intensities.begin();
-
-		UTIL_ASSERT(initialRegions.shape() == intensities.shape());
-
-		for (; i != initialRegions.end(); i++, j++) {
-
-			RagType::Node node = _rag.nodeFromId(*i);
-			float value = *j;
-
-			_regionSizes[node]++;
-			_averageIntensities[node] += value;
-		}
-
-		for (RagType::NodeIt node(_rag); node != lemon::INVALID; ++node)
-			_averageIntensities[*node] /= _regionSizes[*node];
+		// get initial region sizes
+		for (auto id : initialRegions)
+			_regionSizes[_rag.nodeFromId(id)]++;
 	}
 
-	float operator()(const RagType::Edge& edge, std::vector<GridGraphType::Edge>& gridEdges) {
+	float operator()(const typename RagType::Edge& edge, std::vector<typename GridGraphType::Edge>& gridEdges) {
 
-		RagType::Node u = _rag.u(edge);
-		RagType::Node v = _rag.v(edge);
+		typename RagType::Node u = _rag.u(edge);
+		typename RagType::Node v = _rag.v(edge);
 
 		float score = _scoringFunction(edge, gridEdges);
 
@@ -66,31 +52,22 @@ public:
 		return score;
 	}
 
-	void onMerge(const RagType::Edge& edge, const RagType::Node newRegion) {
+	void onMerge(const typename RagType::Edge& edge, const typename RagType::Node newRegion) {
 
-		RagType::Node u = _rag.u(edge);
-		RagType::Node v = _rag.v(edge);
+		typename RagType::Node u = _rag.u(edge);
+		typename RagType::Node v = _rag.v(edge);
 
 		_regionSizes[newRegion] =
 				_regionSizes[u] +
 				_regionSizes[v];
-
-		_averageIntensities[newRegion] =
-				(_averageIntensities[u]*_regionSizes[u]+
-				 _averageIntensities[v]*_regionSizes[v])/
-				(_regionSizes[u] + _regionSizes[v]);
 
 		_scoringFunction.onMerge(edge, newRegion);
 	}
 
 private:
 
-	RagType&               _rag;
-	RegionSizesType        _regionSizes;
-	AverageIntensitiesType _averageIntensities;
-
-	vigra::MultiArrayView<2, float> _intensities;
-
+	RagType&             _rag;
+	RegionSizesType      _regionSizes;
 	ScoringFunctionType& _scoringFunction;
 
 	float _exponent;

@@ -1,8 +1,8 @@
 /**
  * merge_tree
  *
- * Creates a gray-level merge-tree image given a region boundary prediction 
- * image.
+ * Given a source image or volume, creates initial supervoxels and iteratively 
+ * merges them.
  */
 
 #include <iostream>
@@ -14,7 +14,6 @@
 #include <vigra/impex.hxx>
 #include <vigra/multi_array.hxx>
 #include <vigra/functorexpression.hxx>
-#include <vigra/flatmorphology.hxx>
 #include <vigra/slic.hxx>
 #include <vigra/multi_convolution.hxx>
 #include <mergetree/IterativeRegionMerging.h>
@@ -23,20 +22,20 @@
 #include <mergetree/MultiplyMinRegionSize.h>
 #include <mergetree/MultiplySizeDifference.h>
 #include <mergetree/RandomPerturbation.h>
+#include <io/volumes.h>
 
-util::ProgramOption optionSourceImage(
+util::ProgramOption optionSource(
 		util::_long_name        = "source",
 		util::_short_name       = "s",
-		util::_description_text = "An image to compute the merge tree for.",
-		util::_default_value    = "source.png");
+		util::_description_text = "An image or directory of images to compute the merge tree for.");
 
 util::ProgramOption optionSuperpixelImage(
 		util::_long_name        = "superpixelImage",
 		util::_description_text = "Create an image with the initial superpixels.");
 
-util::ProgramOption optionSuperpixelWithBordersImage(
-		util::_long_name        = "superpixelWithBordersImage",
-		util::_description_text = "Create an image with the initial superpixels.");
+util::ProgramOption optionReportNextSuperpixelId(
+		util::_long_name        = "reportNextSuperpixelId",
+		util::_description_text = "Report the largest id + 1 after merging.");
 
 util::ProgramOption optionSuperpixelsFirstId(
 		util::_long_name        = "superpixelFirstId",
@@ -50,11 +49,6 @@ util::ProgramOption optionRagFile(
 util::ProgramOption optionMergeHistory(
 		util::_long_name        = "mergeHistory",
 		util::_description_text = "A file to write the region adjacency graph and merge history after merging.");
-
-util::ProgramOption optionMedian(
-		util::_long_name        = "medianFilter",
-		util::_description_text = "Median filter the (possibly smoothed) input image with a disc of the given size for superpixel seed extraction. "
-		                          "This affects only the seeds, the superpixels will be extracted on the (possibly smoothed) input image.");
 
 util::ProgramOption optionSmooth(
 		util::_long_name        = "smooth",
@@ -89,28 +83,6 @@ util::ProgramOption optionRandomPerturbation(
 
 using namespace logger;
 
-vigra::MultiArray<2, float>
-readImage(std::string filename) {
-
-	// get information about the image to read
-	vigra::ImageImportInfo info(filename.c_str());
-
-	// abort if image is not grayscale
-	if (!info.isGrayscale()) {
-
-		UTIL_THROW_EXCEPTION(
-				IOError,
-				filename << " is not a gray-scale image!");
-	}
-
-	vigra::MultiArray<2, float> image(info.shape());
-
-	// read image
-	importImage(info, vigra::destImage(image));
-
-	return image;
-}
-
 int main(int optionc, char** optionv) {
 
 	using namespace vigra::functor;
@@ -128,73 +100,30 @@ int main(int optionc, char** optionv) {
 		logger::LogManager::init();
 
 		// read image
-		vigra::MultiArray<2, float> image = readImage(optionSourceImage);
+		ExplicitVolume<float> source = readVolume<float>(getImageFiles(optionSource.as<std::string>()));
 
 		// smooth
 		if (optionSmooth)
 			vigra::gaussianSmoothMultiArray(
-					image,
-					image,
+					source.data(),
+					source.data(),
 					optionSmooth.as<double>());
-		//vigra::exportImage(
-				//image,
-				//vigra::ImageExportInfo("smoothed.tif").setPixelType("FLOAT"));
 
 		// generate seeds
-		vigra::MultiArray<2, int> initialRegions(image.shape());
+		vigra::MultiArray<3, int> initialRegions(source.data().shape());
 
-		if (optionMedian) {
-
-			// normalize
-			float min, max;
-			image.minmax(&min, &max);
-			vigra::transformImage(
-					image,
-					image,
-					(Arg1() - Param(min))/(Param(max) - Param(min)));
-
-			// discretize to [0,255]
-			vigra::MultiArray<2, int> medianFiltered(image.shape());
-			vigra::transformImage(
-					image,
-					medianFiltered,
-					Arg1()*Param(255));
-
-			// median filter
-			vigra::discMedian(
-					medianFiltered,
-					medianFiltered,
-					optionMedian.as<int>());
-
-			//vigra::exportImage(
-					//medianFiltered,
-					//vigra::ImageExportInfo("median_filtered.tif").setPixelType("UINT8"));
-
-			vigra::generateWatershedSeeds(
-					medianFiltered,
-					initialRegions,
-					vigra::IndirectNeighborhood,
-					vigra::SeedOptions().extendedMinima());
-
-		} else {
-
-			vigra::generateWatershedSeeds(
-					image,
-					initialRegions,
-					vigra::IndirectNeighborhood,
-					vigra::SeedOptions().extendedMinima());
-		}
-
-		//vigra::exportImage(
-				//initialRegions,
-				//vigra::ImageExportInfo("seeds.tif").setPixelType("FLOAT"));
+		vigra::generateWatershedSeeds(
+				source.data(),
+				initialRegions,
+				vigra::IndirectNeighborhood,
+				vigra::SeedOptions().extendedMinima());
 
 		// perform watersheds or find SLIC superpixels
 
 		if (optionSlicSuperpixels) {
 
 			unsigned int maxLabel = vigra::slicSuperpixels(
-					image,
+					source.data(),
 					initialRegions,
 					optionSlicIntensityScaling.as<double>(),
 					optionSliceSize.as<double>());
@@ -204,58 +133,39 @@ int main(int optionc, char** optionv) {
 		} else {
 
 			unsigned int maxLabel = vigra::watershedsMultiArray(
-					image, /* non-median filtered, possibly smoothed */
+					source.data(), /* non-median filtered, possibly smoothed */
 					initialRegions,
 					vigra::IndirectNeighborhood);
 
 			LOG_USER(logger::out) << "found " << maxLabel << " watershed regions" << std::endl;
 
-			// report highest used superpixel id
-			LOG_USER(logger::out) << "next superpixel id: ";
-			std::cout << (maxLabel + optionSuperpixelsFirstId.as<int>()) << std::endl;
+			if (optionReportNextSuperpixelId) {
+
+				// report highest used superpixel id
+				LOG_USER(logger::out) << "next superpixel id: ";
+				std::cout << (maxLabel + optionSuperpixelsFirstId.as<int>()) << std::endl;
+			}
 		}
 
-		if (optionSuperpixelImage || optionSuperpixelWithBordersImage) {
+		if (optionSuperpixelImage) {
 
-			vigra::MultiArray<2, int> initialRegionsExport(initialRegions.shape());
-			vigra::transformImage(
+			ExplicitVolume<int> initialRegionsExport(source.data().shape()[0], source.data().shape()[1], source.data().shape()[2]);
+			vigra::transformMultiArray(
 					initialRegions,
-					initialRegionsExport,
+					initialRegionsExport.data(),
 					// vigra starts counting sp with 1
 					Arg1() - Param(1 - optionSuperpixelsFirstId.as<int>()));
 
 			if (optionSuperpixelImage)
-				vigra::exportImage(
+				saveVolume(
 						initialRegionsExport,
-						vigra::ImageExportInfo(optionSuperpixelImage.as<std::string>().c_str()).setPixelType("FLOAT"));
-
-			if (optionSuperpixelWithBordersImage) {
-
-				vigra::MultiArray<2, int> initialRegionsWithBorders(image.shape());
-				initialRegionsWithBorders = initialRegionsExport;
-
-				for (unsigned int y = 0; y < initialRegions.height() - 1; y++)
-					for (unsigned int x = 0; x < initialRegions.width() - 1; x++) {
-
-						float value = initialRegions(x, y);
-						float right = initialRegions(x+1, y);
-						float down  = initialRegions(x, y+1);
-						float diag  = initialRegions(x+1, y+1);
-
-						if (value != right || value != down || value != diag)
-							initialRegionsWithBorders(x, y) = 0;
-					}
-
-				vigra::exportImage(
-						initialRegionsWithBorders,
-						vigra::ImageExportInfo(optionSuperpixelWithBordersImage.as<std::string>().c_str()));
-			}
+						optionSuperpixelImage.as<std::string>());
 		}
 
 		// extract merge tree
-		IterativeRegionMerging<2> merging(initialRegions);
+		IterativeRegionMerging<3> merging(initialRegions);
 
-		MedianEdgeIntensity mei(image);
+		MedianEdgeIntensity<3> mei(source.data());
 
 		// create the RAG description for the median edge intensities
 		if (optionRagFile)
@@ -263,15 +173,15 @@ int main(int optionc, char** optionv) {
 
 		if (optionMergeSmallRegionsFirst) {
 
-			SmallFirst<MedianEdgeIntensity> scoringFunction(
+			SmallFirst<MedianEdgeIntensity<3>> scoringFunction(
 					merging.getRag(),
-					image,
+					source.data(),
 					initialRegions,
 					mei);
 
 			if (optionRandomPerturbation) {
 
-				RandomPerturbation<SmallFirst<MedianEdgeIntensity> > rp(scoringFunction);
+				RandomPerturbation<SmallFirst<MedianEdgeIntensity<3>> > rp(scoringFunction);
 				merging.createMergeTree(rp);
 
 			} else {
@@ -285,14 +195,14 @@ int main(int optionc, char** optionv) {
 
 		} else if (optionMultiplySizeDifference) {
 
-			MultiplySizeDifference<MedianEdgeIntensity> scoringFunction(
+			MultiplySizeDifference<MedianEdgeIntensity<3>> scoringFunction(
 					merging.getRag(),
 					initialRegions,
 					mei);
 
 			if (optionRandomPerturbation) {
 
-				RandomPerturbation<MultiplySizeDifference<MedianEdgeIntensity> > rp(scoringFunction);
+				RandomPerturbation<MultiplySizeDifference<MedianEdgeIntensity<3>> > rp(scoringFunction);
 				merging.createMergeTree(rp);
 
 			} else {
@@ -306,15 +216,14 @@ int main(int optionc, char** optionv) {
 
 		} else {
 
-			MultiplyMinRegionSize<MedianEdgeIntensity> scoringFunction(
+			MultiplyMinRegionSize<MedianEdgeIntensity<3>> scoringFunction(
 					merging.getRag(),
-					image,
 					initialRegions,
 					mei);
 
 			if (optionRandomPerturbation) {
 
-				RandomPerturbation<MultiplyMinRegionSize<MedianEdgeIntensity> > rp(scoringFunction);
+				RandomPerturbation<MultiplyMinRegionSize<MedianEdgeIntensity<3>>> rp(scoringFunction);
 				merging.createMergeTree(rp);
 
 			} else {

@@ -25,6 +25,14 @@ struct GraphMapTypeTraits<MultiArrayView<2, int> > {
 	typedef const int& ConstReference;
 };
 
+// type traits to use MultiArrayView as NodeMap
+template <>
+struct GraphMapTypeTraits<MultiArrayView<3, int> > {
+	typedef int        Value;
+	typedef int&       Reference;
+	typedef const int& ConstReference;
+};
+
 } // namespace vigra
 
 

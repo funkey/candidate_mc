@@ -4,20 +4,20 @@
 #include <util/cont_map.hpp>
 #include <vigra/graph_algorithms.hxx>
 #include "EdgeNumConverter.h"
-#include "ScoringFunction.h"
 
 /**
  * An edge scoring function that returns the median intensity of the edge 
  * pixels.
  */
-class MedianEdgeIntensity : public ScoringFunction {
+template <int D>
+class MedianEdgeIntensity {
 
 public:
+	static const int Dim = D;
 
-	typedef vigra::GridGraph<2>       GridGraphType;
-	typedef vigra::AdjacencyListGraph RagType;
-
-	typedef GridGraphType::EdgeMap<float> EdgeWeightsType;
+	typedef vigra::GridGraph<Dim>                           GridGraphType;
+	typedef vigra::AdjacencyListGraph                       RagType;
+	typedef typename GridGraphType::template EdgeMap<float> EdgeWeightsType;
 
 	struct EdgeComp {
 
@@ -25,15 +25,15 @@ public:
 			: weights(weights_) {}
 
 		bool operator()(
-				const GridGraphType::Edge& a,
-				const GridGraphType::Edge& b) const {
+				const typename GridGraphType::Edge& a,
+				const typename GridGraphType::Edge& b) const {
 			return weights[a] < weights[b];
 		}
 
 		const EdgeWeightsType& weights;
 	};
 
-	MedianEdgeIntensity(const vigra::MultiArrayView<2, float> intensities) :
+	MedianEdgeIntensity(const vigra::MultiArrayView<D, float> intensities) :
 		_grid(intensities.shape()),
 		_edgeWeights(_grid) {
 
@@ -44,28 +44,26 @@ public:
 
 		if (_edgeWeights.size() == 0)
 			return;
-		_maxEdgeWeight = *_edgeWeights.begin();
-		for (EdgeWeightsType::iterator i = _edgeWeights.begin(); i != _edgeWeights.end(); i++)
-			_maxEdgeWeight = std::max(_maxEdgeWeight, *i);
 	}
 
 	/**
 	 * Get the score for an edge. An edge will be merged the earlier, the 
 	 * smaller its score is.
 	 */
-	float operator()(const RagType::Edge& edge, std::vector<GridGraphType::Edge>& gridEdges) {
+	float operator()(const RagType::Edge& edge, std::vector<typename GridGraphType::Edge>& gridEdges) {
 
-		std::vector<GridGraphType::Edge>::iterator median = gridEdges.begin() + gridEdges.size()/2;
+		typename std::vector<typename GridGraphType::Edge>::iterator median = gridEdges.begin() + gridEdges.size()/2;
 		std::nth_element(gridEdges.begin(), median, gridEdges.end(), EdgeComp(_edgeWeights));
 
 		return _edgeWeights[*median];
 	}
 
+	void onMerge(const typename RagType::Edge&, const typename RagType::Node) {}
+
 private:
 
 	GridGraphType   _grid;
 	EdgeWeightsType _edgeWeights;
-	float           _maxEdgeWeight;
 };
 
 #endif // MULTI2CUT_MERGETREE_MEDIAN_EDGE_INTENSITY_H__
