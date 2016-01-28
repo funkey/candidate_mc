@@ -47,10 +47,6 @@ public:
 	 *              the form "a b c", stating that candidate a got merged with b 
 	 *              into new candidate c. Supervoxels from the supervoxel volume 
 	 *              are the initial candidates.
-	 * @param mergeScores
-	 *              Path to a text file containing a score for each merge in the 
-	 *              merge history, in the same order. Can be used to stop 
-	 *              merging after a certain threshold.
 	 * @param crag
 	 *              The CRAG to fill.
 	 * @param volumes
@@ -60,10 +56,9 @@ public:
 	 * @param offset
 	 *              The offset of the volume, to be stored in the volumes.
 	 */
-	void readCrag(
+	void readCragFromMergeHistory(
 			std::string           supervoxels,
 			std::string           mergeHistory,
-			std::string           mergeScores,
 			Crag&                 crag,
 			CragVolumes&          volumes,
 			util::point<float, 3> resolution,
@@ -91,7 +86,7 @@ public:
 	 * @param offset
 	 *              The offset of the volume, to be stored in the volumes.
 	 */
-	void readCrag(
+	void readCragFromCandidateSegmentation(
 			std::string           supervoxels,
 			std::string           candidateSegmentation,
 			Crag&                 crag,

@@ -1,4 +1,5 @@
 #include <fstream>
+#include <limits>
 #include <vigra/impex.hxx>
 #include <util/Logger.h>
 #include <util/ProgramOptions.h>
@@ -10,9 +11,13 @@ util::ProgramOption optionMaxMerges(
 		util::_long_name        = "maxMerges",
 		util::_description_text = "The maximal depth of the CRAG subset tree, starting counting from the leaf nodes.");
 
+util::ProgramOption optionMergeHistoryWithScores(
+		util::_long_name        = "mergeHistoryWithScores",
+		util::_description_text = "Indicate that the merge history file contains lines with 'a b c score' for merges of a and b into c.");
+
 util::ProgramOption optionMaxMergeScore(
 		util::_long_name        = "maxMergeScore",
-		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from file mergeScores.");
+		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from the merge history file.");
 
 void
 CragImport::readCrag(
@@ -37,10 +42,9 @@ CragImport::readCrag(
 }
 
 void
-CragImport::readCrag(
+CragImport::readCragFromMergeHistory(
 		std::string           supervoxels,
 		std::string           mergeHistory,
-		std::string           mergeScores,
 		Crag&                 crag,
 		CragVolumes&          volumes,
 		util::point<float, 3> resolution,
@@ -60,27 +64,23 @@ CragImport::readCrag(
 		return;
 	}
 
-	std::ifstream scores(mergeScores);
-	if (optionMaxMerges && scores.fail()) {
+	bool useScores = optionMergeHistoryWithScores.as<bool>();
 
-		LOG_ERROR(logger::out) << "could not read merge scores" << std::endl;
-		return;
-	}
-
-	bool useScores = (mergeScores.size() > 0) && optionMaxMergeScore;
-	double maxScore = optionMaxMergeScore.as<double>();
+	double maxScore = std::numeric_limits<double>::max();
+	if (optionMaxMergeScore)
+		maxScore = optionMaxMergeScore.as<double>();
 
 	while (true) {
 		int a, b, c;
 		file >> a;
 		file >> b;
 		file >> c;
-		if (!file.good())
-			break;
-
 		double score = 0;
 		if (useScores)
-			scores >> score;
+			file >> score;
+
+		if (!file.good())
+			break;
 
 		// we might encounter ids that we didn't add, since they are too high in 
 		// the merge tree or have a score exceeding maxScore
@@ -122,7 +122,7 @@ CragImport::readCrag(
 }
 
 void
-CragImport::readCrag(
+CragImport::readCragFromCandidateSegmentation(
 		std::string           supervoxels,
 		std::string           candidateSegmentation,
 		Crag&                 crag,

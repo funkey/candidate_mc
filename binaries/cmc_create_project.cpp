@@ -43,10 +43,6 @@ util::ProgramOption optionCandidateSegmentation(
 		                          "Candidates will be added to the CRAG for each segment. For that, supervoxels will be assigned "
 		                          "to the segment with maximal overlap.");
 
-util::ProgramOption optionMergeScores(
-		util::_long_name        = "mergeScores",
-		util::_description_text = "An optional file containing the scores of the merges in mergeHistory. See maxMergeScore.");
-
 util::ProgramOption optionIntensities(
 		util::_long_name        = "intensities",
 		util::_short_name       = "i",
@@ -235,9 +231,9 @@ int main(int argc, char** argv) {
 			UTIL_TIME_SCOPE("read CRAG from merge history");
 
 			if (optionMergeHistory)
-				import.readCrag(optionSupervoxels, optionMergeHistory, optionMergeScores, *crag, *volumes, resolution, offset);
+				import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset);
 			else
-				import.readCrag(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
+				import.readCragFromCandidateSegmentation(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
 
 		} else {
 

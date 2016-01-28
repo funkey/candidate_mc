@@ -189,10 +189,6 @@ int main(int optionc, char** optionv) {
 				merging.createMergeTree(scoringFunction);
 			}
 
-			LOG_USER(logger::out) << "writing merge history..." << std::endl;
-
-			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
-
 		} else if (optionMultiplySizeDifference) {
 
 			MultiplySizeDifference<MedianEdgeIntensity<3>> scoringFunction(
@@ -210,10 +206,6 @@ int main(int optionc, char** optionv) {
 				merging.createMergeTree(scoringFunction);
 			}
 
-			LOG_USER(logger::out) << "writing merge history..." << std::endl;
-
-			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
-
 		} else {
 
 			MultiplyMinRegionSize<MedianEdgeIntensity<3>> scoringFunction(
@@ -230,11 +222,11 @@ int main(int optionc, char** optionv) {
 
 				merging.createMergeTree(scoringFunction);
 			}
-
-			LOG_USER(logger::out) << "writing merge history..." << std::endl;
-
-			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
 		}
+
+		LOG_USER(logger::out) << "writing merge history..." << std::endl;
+
+		merging.storeMergeHistory(optionMergeHistory.as<std::string>());
 
 	} catch (Exception& e) {
 

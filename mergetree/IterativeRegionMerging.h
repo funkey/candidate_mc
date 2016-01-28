@@ -55,6 +55,8 @@ public:
 	template <typename ScoringFunction>
 	void createMergeTree(ScoringFunction& scoringFunction);
 
+	void storeMergeHistory(std::string filename);
+
 	/**
 	 * Get the region adjacency graph.
 	 */
@@ -117,6 +119,15 @@ private:
 	GridEdgesType   _ragToGridEdges;
 	ParentNodesType _parentNodes;
 	EdgeScoresType  _edgeScores;
+
+	struct Merge {
+
+		typename RagType::Node u;
+		typename RagType::Node v;
+		typename RagType::Node parent;
+		float                  score;
+	};
+	std::vector<Merge> _mergeHistory;
 
 	MergeEdgesType _mergeEdges;
 };
@@ -198,6 +209,8 @@ IterativeRegionMerging<D>::createMergeTree(ScoringFunction& scoringFunction) {
 
 		RagType::Node merged = mergeRegions(next, scoringFunction);
 
+		_mergeHistory.push_back({_rag.u(next), _rag.v(next), merged, score});
+
 		LOG_ALL(mergetreelog)
 				<< "merged regions " << _rag.id(_rag.u(next)) << " and " << _rag.id(_rag.v(next))
 				<< " with score " << score
@@ -209,6 +222,31 @@ IterativeRegionMerging<D>::createMergeTree(ScoringFunction& scoringFunction) {
 			<< "_ragToGridEdges contains "
 			<< _ragToGridEdges.size() << " elements, with an overhead of "
 			<< _ragToGridEdges.overhead() << std::endl;
+}
+
+template <int D>
+void
+IterativeRegionMerging<D>::storeMergeHistory(std::string filename) {
+
+	std::ofstream file(filename.c_str());
+
+	for (const Merge& m : _mergeHistory) {
+
+		unsigned int u = _rag.id(m.u);
+		unsigned int v = _rag.id(m.v);
+		unsigned int p = _rag.id(m.parent);
+
+		// vigra starts counting region ids with 1, but we export images where 
+		// we start with 0, therefore:
+		UTIL_ASSERT_REL(u, >, 0);
+		UTIL_ASSERT_REL(v, >, 0);
+		UTIL_ASSERT_REL(p, >, 0);
+		u -= 1;
+		v -= 1;
+		p -= 1;
+
+		file << u << "\t" << v << "\t" << p << "\t" << m.score << std::endl;
+	}
 }
 
 template <int D>
