@@ -30,12 +30,6 @@ util::ProgramOption optionSourceImage(
 		util::_description_text = "An image to compute the merge tree for.",
 		util::_default_value    = "source.png");
 
-util::ProgramOption optionMergeTreeImage(
-		util::_long_name        = "mergeTreeImage",
-		util::_short_name       = "m",
-		util::_description_text = "An image representing the merge tree.",
-		util::_default_value    = "mergetree.png");
-
 util::ProgramOption optionSuperpixelImage(
 		util::_long_name        = "superpixelImage",
 		util::_description_text = "Create an image with the initial superpixels.");
@@ -52,6 +46,10 @@ util::ProgramOption optionSuperpixelsFirstId(
 util::ProgramOption optionRagFile(
 		util::_long_name        = "ragFile",
 		util::_description_text = "A file to write the region adjacency graph for the initial superpixels.");
+
+util::ProgramOption optionMergeHistory(
+		util::_long_name        = "mergeHistory",
+		util::_description_text = "A file to write the region adjacency graph and merge history after merging.");
 
 util::ProgramOption optionMedian(
 		util::_long_name        = "medianFilter",
@@ -255,7 +253,7 @@ int main(int optionc, char** optionv) {
 		}
 
 		// extract merge tree
-		IterativeRegionMerging merging(initialRegions);
+		IterativeRegionMerging<2> merging(initialRegions);
 
 		MedianEdgeIntensity mei(image);
 
@@ -281,11 +279,14 @@ int main(int optionc, char** optionv) {
 				merging.createMergeTree(scoringFunction);
 			}
 
+			LOG_USER(logger::out) << "writing merge history..." << std::endl;
+
+			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
+
 		} else if (optionMultiplySizeDifference) {
 
 			MultiplySizeDifference<MedianEdgeIntensity> scoringFunction(
 					merging.getRag(),
-					image,
 					initialRegions,
 					mei);
 
@@ -298,6 +299,10 @@ int main(int optionc, char** optionv) {
 
 				merging.createMergeTree(scoringFunction);
 			}
+
+			LOG_USER(logger::out) << "writing merge history..." << std::endl;
+
+			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
 
 		} else {
 
@@ -316,13 +321,11 @@ int main(int optionc, char** optionv) {
 
 				merging.createMergeTree(scoringFunction);
 			}
+
+			LOG_USER(logger::out) << "writing merge history..." << std::endl;
+
+			merging.storeRag(optionMergeHistory.as<std::string>(), scoringFunction);
 		}
-
-		LOG_USER(logger::out) << "writing merge tree..." << std::endl;
-
-		vigra::exportImage(
-				merging.getMergeTree(),
-				vigra::ImageExportInfo(optionMergeTreeImage.as<std::string>().c_str()).setPixelType("FLOAT"));
 
 	} catch (Exception& e) {
 

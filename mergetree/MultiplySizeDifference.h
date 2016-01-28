@@ -24,26 +24,19 @@ public:
 
 	MultiplySizeDifference(
 			RagType&                              rag,
-			const vigra::MultiArrayView<2, float> intensities,
 			const vigra::MultiArrayView<2, int>   initialRegions,
 			ScoringFunctionType&                  scoringFunction) :
 		_rag(rag),
 		_regionSizes(_rag),
-		_intensities(intensities),
 		_scoringFunction(scoringFunction),
 		_exponent(optionMultiplySizeDifferenceExponent) {
 
-		// get initial region sizes and average intensities
+		// get initial region sizes
 		vigra::MultiArray<2, int>::const_iterator   i = initialRegions.begin();
-		vigra::MultiArray<2, float>::const_iterator j = intensities.begin();
 
-		UTIL_ASSERT(initialRegions.shape() == intensities.shape());
-
-		for (; i != initialRegions.end(); i++, j++) {
+		for (; i != initialRegions.end(); i++) {
 
 			RagType::Node node = _rag.nodeFromId(*i);
-			float value = *j;
-
 			_regionSizes[node]++;
 		}
 	}
@@ -76,8 +69,6 @@ private:
 
 	RagType&               _rag;
 	RegionSizesType        _regionSizes;
-
-	vigra::MultiArrayView<2, float> _intensities;
 
 	ScoringFunctionType& _scoringFunction;
 
