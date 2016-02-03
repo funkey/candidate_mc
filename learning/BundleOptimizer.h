@@ -68,6 +68,8 @@ public:
 		EpsStrategy epsStrategy;
 	};
 
+	BundleOptimizer(const Parameters& parameter = Parameters());
+
 	BundleOptimizer(std::shared_ptr<CragStore> store, const Parameters& parameter = Parameters());
 
 	~BundleOptimizer();
@@ -99,8 +101,6 @@ private:
 	template <typename Weights>
 	double dot(const Weights& a, const Weights& b);
 
-	std::shared_ptr<CragStore> _store;
-
 	Parameters _parameter;
 
 	BundleCollector _bundleCollector;
@@ -108,8 +108,7 @@ private:
 	QuadraticSolverBackend* _solver;
 };
 
-BundleOptimizer::BundleOptimizer(std::shared_ptr<CragStore> store, const Parameters& parameter) :
-	_store(store),
+BundleOptimizer::BundleOptimizer(const Parameters& parameter) :
 	_parameter(parameter),
 	_solver(0) {}
 
@@ -190,7 +189,6 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 		// update weights data structure
 		weights.importFromVector(w);
-		_store->saveFeatureWeights(weights);
 
 		LOG_DEBUG(bundleoptimizerlog) << " min_w ℒ(w)   + ½λ|w|²   is: " << minLower << std::endl;
 		//LOG_ALL(bundleoptimizerlog) << " w* of ℒ(w)   + ½λ|w|²   is: "  << w << std::endl;

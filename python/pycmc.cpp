@@ -11,7 +11,9 @@
 #include <inference/Costs.h>
 #include <inference/RandomForest.h>
 #include <inference/CragSolution.h>
+#include <learning/BundleOptimizer.h>
 #include <learning/Loss.h>
+#include "PyOracle.h"
 #include "logging.h"
 
 template <typename Map, typename K, typename V>
@@ -398,6 +400,45 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("read", &RandomForest::read)
 			.def("getOutOfBagError", &RandomForest::getOutOfBagError)
 			.def("getVariableImportance", &RandomForest::getVariableImportance)
+			;
+
+	// BundleOptimizer
+	boost::python::class_<BundleOptimizer>("BundleOptimizer", boost::python::init<const BundleOptimizer::Parameters&>())
+			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracle::Weights>)
+			;
+
+	// BundleOptimizer::Parameters
+	boost::python::class_<BundleOptimizer::Parameters>("BundleOptimizerParameters")
+			.def_readwrite("lambada" /* "lambda" is a keyword in python */, &BundleOptimizer::Parameters::lambda)
+			.def_readwrite("steps", &BundleOptimizer::Parameters::steps)
+			.def_readwrite("min_eps", &BundleOptimizer::Parameters::min_eps)
+			.def_readwrite("eps_strategy", &BundleOptimizer::Parameters::epsStrategy)
+			;
+
+	// BundleOptimizer::OptimizerResult
+	boost::python::enum_<BundleOptimizer::OptimizerResult>("BundleOptimizerResult")
+			.value("ReachedMinGap", BundleOptimizer::ReachedMinGap)
+			.value("ReachedSteps", BundleOptimizer::ReachedSteps)
+			.value("Error", BundleOptimizer::Error)
+			;
+
+	// BundleOptimizer::EpsStrategy
+	boost::python::enum_<BundleOptimizer::EpsStrategy>("BundleOptimizerEpsStrategy")
+			.value("EpsFromGap", BundleOptimizer::EpsFromGap)
+			.value("EpsFromChange", BundleOptimizer::EpsFromChange)
+			;
+
+	// PyOracle
+	boost::python::class_<PyOracle>("PyOracle")
+			.def("setEvaluateFunctor", &PyOracle::setEvaluateFunctor)
+			;
+
+	// PyOracleWeights
+	boost::python::class_<PyOracle::Weights>("PyOracleWeights", boost::python::init<std::size_t>())
+			.def("__iter__", boost::python::iterator<PyOracle::Weights>())
+			.def("__len__", &PyOracle::Weights::size)
+			.def("__getitem__", &genericGetter<PyOracle::Weights, size_t, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<PyOracle::Weights, size_t, double>)
 			;
 }
 

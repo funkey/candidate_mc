@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
 			parameters.lambda      = optionRegularizerWeight;
 			parameters.epsStrategy = BundleOptimizer::EpsFromGap;
 			parameters.steps       = optionNumSteps;
-			BundleOptimizer optimizer(cragStore, parameters);
+			BundleOptimizer optimizer(parameters);
 			optimizer.optimize(oracle, weights);
 		}
 
