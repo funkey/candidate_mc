@@ -1,5 +1,13 @@
 #include <inference/CragSolverFactory.h>
+#include <util/ProgramOptions.h>
 #include "BestEffort.h"
+
+util::ProgramOption optionBackgroundOverlapWeight(
+		util::_long_name        = "backgroundOverlapWeight",
+		util::_description_text = "The weight of background voxels for the computation of the best-effort. A value smaller than 1 means "
+		                          "that a supervoxel can be assigned to a ground-truth region even though it overlaps with more than 50% "
+		                          "with background.",
+		util::_default_value    = "project.hdf");
 
 BestEffort::BestEffort(
 		const Crag&                   crag,
@@ -95,19 +103,24 @@ BestEffort::getGroundTruthAssignments(
 		const Crag::NodeMap<std::map<int, int>>& overlaps,
 		Crag::NodeMap<int>&                      gtAssignments) {
 
+	double bgOverlapWeight = optionBackgroundOverlapWeight;
+
 	for (Crag::CragNode i : crag.nodes()) {
 
 		if (crag.type(i) == Crag::NoAssignmentNode)
 			continue;
 
 		// find most overlapping ground truth region
-		int maxOverlap = 0;
+		double maxOverlap = 0;
 		int bestGtLabel = 0;
 
 		for (auto& p : overlaps[i]) {
 
 			int gtLabel = p.first;
-			int overlap = p.second;
+			double overlap = p.second;
+
+			if (gtLabel == 0)
+					overlap *= bgOverlapWeight;
 
 			if (overlap > maxOverlap) {
 
