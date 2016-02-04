@@ -29,6 +29,27 @@ Crag::leafNodes(CragNode n) const {
 }
 
 std::set<Crag::CragEdge>
+Crag::leafEdges(CragNode n) const {
+
+	std::set<CragNode> nleafNodes = leafNodes(n);
+	std::set<CragEdge> leafEdges;
+
+	for (CragNode u : nleafNodes)
+		for (CragNode v : nleafNodes) {
+
+			if (id(u) >= id(v))
+				continue;
+
+			for (CragEdge e : adjEdges(u))
+				if (isLeafEdge(e))
+					if (nleafNodes.count(oppositeNode(u, e)))
+						leafEdges.insert(e);
+		}
+
+	return leafEdges;
+}
+
+std::set<Crag::CragEdge>
 Crag::leafEdges(CragEdge e) const {
 
 	std::set<CragEdge> leafEdges;

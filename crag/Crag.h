@@ -493,6 +493,11 @@ public:
 	std::set<CragNode> leafNodes(CragNode n) const;
 
 	/**
+	 * Get all leaf edges under the given node n.
+	 */
+	std::set<CragEdge> leafEdges(CragNode n) const;
+
+	/**
 	 * Get all leaf edges under the given edge e.
 	 */
 	std::set<CragEdge> leafEdges(CragEdge e) const;
