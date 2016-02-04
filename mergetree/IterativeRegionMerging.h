@@ -142,7 +142,7 @@ IterativeRegionMerging<D>::IterativeRegionMerging(
 	_edgeScores(_rag),
 	_mergeEdges(EdgeCompare(_edgeScores)) {
 
-	// get initial region adjecancy graph
+	// get initial region adjacency graph
 
 	RagType::EdgeMap<std::vector<typename GridGraphType::Edge> > affiliatedEdges;
 	vigra::makeRegionAdjacencyGraph(
@@ -164,7 +164,7 @@ IterativeRegionMerging<D>::IterativeRegionMerging(
 	int numRegionEdges = _ragToGridEdges.size();
 
 	LOG_USER(mergetreelog)
-			<< "got region adjecancy graph with "
+			<< "got region adjacency graph with "
 			<< numRegions << " regions and "
 			<< numRegionEdges << " edges" << std::endl;
 }
