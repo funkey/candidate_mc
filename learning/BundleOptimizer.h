@@ -90,6 +90,16 @@ public:
     template <typename Oracle, typename Weights>
     OptimizerResult optimize(Oracle& oracle, Weights& w);
 
+	/**
+	 * Get the remaining eps after optimization.
+	 */
+	double getEps() const { return _eps_t; }
+
+	/**
+	 * Get the minimal value after optimization.
+	 */
+	double getMinValue() const { return _minValue; }
+
 private:
 
     template <typename Weights>
@@ -106,6 +116,10 @@ private:
 	BundleCollector _bundleCollector;
 
 	QuadraticSolverBackend* _solver;
+
+	double _eps_t;
+
+	double _minValue;
 };
 
 BundleOptimizer::BundleOptimizer(const Parameters& parameter) :
@@ -142,7 +156,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 	  9. return w_t
 	*/
 
-	double minValue     =  std::numeric_limits<double>::infinity();
+	_minValue =  std::numeric_limits<double>::infinity();
 	double lastMinLower = -std::numeric_limits<double>::infinity();
 
 	unsigned int t = 0;
@@ -169,9 +183,9 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 		LOG_ALL(bundleoptimizerlog) << "      ∂L(w)/∂            is: " << a_t << std::endl;
 
 		// update smallest observed value of regularized L
-		minValue = std::min(minValue, L_w_tm1 + _parameter.lambda*0.5*dot(w, w));
+		_minValue = std::min(_minValue, L_w_tm1 + _parameter.lambda*0.5*dot(w, w));
 
-		LOG_DEBUG(bundleoptimizerlog) << " min_i L(w_i) + ½λ|w_i|² is: " << minValue << std::endl;
+		LOG_DEBUG(bundleoptimizerlog) << " min_i L(w_i) + ½λ|w_i|² is: " << _minValue << std::endl;
 
 		// compute hyperplane offset
 		double b_t = L_w_tm1 - dot(w, a_t);
@@ -194,18 +208,17 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 		//LOG_ALL(bundleoptimizerlog) << " w* of ℒ(w)   + ½λ|w|²   is: "  << w << std::endl;
 
 		// compute gap
-		double eps_t;
 		if (_parameter.epsStrategy == EpsFromGap)
-			eps_t = minValue - minLower;
+			_eps_t = _minValue - minLower;
 		else
-			eps_t = minLower - lastMinLower;
+			_eps_t = minLower - lastMinLower;
 
 		lastMinLower = minLower;
 
-		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << eps_t << std::endl;
+		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << _eps_t << std::endl;
 
 		// converged?
-		if (eps_t <= _parameter.min_eps)
+		if (_eps_t <= _parameter.min_eps)
 			break;
 	}
 

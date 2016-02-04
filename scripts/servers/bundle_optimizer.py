@@ -100,12 +100,20 @@ class BundleMethodServer:
 
         if result == BundleOptimizerResult.ReachedMinGap:
             print "Optimal solution found at " + str([x for x in w])
+            result = "reached_min_eps"
         elif result == BundleOptimizerResult.ReachedMaxSteps:
             print "Maximal number of iterations reached"
+            result = "reached_max_steps"
         else:
             print "Optimal solution NOT found"
+            result = "error"
 
-        self.socket.send(chr(FINAL_RES) + json.dumps({"x" : [x for x in w] }))
+        self.socket.send(chr(FINAL_RES) + json.dumps({
+            "x" : [x for x in w],
+            "value" : self.bundle_method.getMinValue(),
+            "eps" : self.bundle_method.getEps(),
+            "status" : result
+        }))
 
 if __name__ == "__main__":
 
