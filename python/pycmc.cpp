@@ -25,7 +25,11 @@ template <typename Map, typename K, typename V>
 void featuresSetter(Map& map, const K& k, const V& value) { map.set(k, value); }
 
 // iterator traits specializations
+#if !defined __clang__ || __clang_major__ < 6
 namespace boost { namespace detail {
+#else
+namespace std {
+#endif
 
 template <>
 struct iterator_traits<Crag::CragNodeIterator> {
@@ -72,11 +76,15 @@ struct iterator_traits<Crag::CragIncArcIterator<T>> {
 	typedef typename std::forward_iterator_tag iterator_category;
 };
 
+#if !defined __clang__ || __clang_major__ < 6
 }} // namespace boost::detail
+#else
+} // namespace std
+#endif
 
-#ifdef __clang__
+#if defined __clang__ && __clang_major__ < 6
 // std::shared_ptr support
-template<class T> T* get_pointer(std::shared_ptr<T> p){ return p.get(); }
+	template<class T> T* get_pointer(std::shared_ptr<T> p){ return p.get(); }
 #endif
 
 namespace pycmc {
