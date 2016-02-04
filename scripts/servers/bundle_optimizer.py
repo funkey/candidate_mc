@@ -47,7 +47,7 @@ class BundleMethodServer:
             raise "Error: expected client to send CONTINUATION_REQ (" + str(CONTINUATION_REQ) + ", sent " + str(t) + " instead"
 
         data = json.loads(reply[1:])
-        value = data["value"]
+        value.v = data["value"]
         for i in range(self.dims):
             gradient[i] = data["gradient"][i]
 

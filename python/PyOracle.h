@@ -9,6 +9,14 @@ class PyOracle {
 public:
 
 	/**
+	 * Simple wrapper around double to pass it by reference to the python oracle.
+	 */
+	struct Value {
+
+		double v;
+	};
+
+	/**
 	 * Simple wrapper around std::vector to use it as weights in the 
 	 * BundleOptimizer.
 	 */

@@ -7,5 +7,7 @@ PyOracle::operator()(
 		PyOracle::Weights&       gradient) {
 
 	// forward the oracle call to the python callback
-	_pyCallback(weights, value, gradient);
+	Value v;
+	_pyCallback(weights, boost::ref(v), boost::ref(gradient));
+	value = v.v;
 }

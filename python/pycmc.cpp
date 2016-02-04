@@ -450,6 +450,11 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("setEvaluateFunctor", &PyOracle::setEvaluateFunctor)
 			;
 
+	// PyOracleValue
+	boost::python::class_<PyOracle::Value>("PyOracleValue")
+			.def_readwrite("v", &PyOracle::Value::v)
+			;
+
 	// PyOracleWeights
 	boost::python::class_<PyOracle::Weights>("PyOracleWeights", boost::python::init<std::size_t>())
 			.def("__iter__", boost::python::iterator<PyOracle::Weights>())
