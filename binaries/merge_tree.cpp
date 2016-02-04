@@ -104,38 +104,67 @@ int main(int optionc, char** optionv) {
 
 		// smooth
 		if (optionSmooth)
-			vigra::gaussianSmoothMultiArray(
-					source.data(),
-					source.data(),
-					optionSmooth.as<double>());
+			if (source.depth() > 1) {
+				vigra::gaussianSmoothMultiArray(
+						source.data(),
+						source.data(),
+						optionSmooth.as<double>());
+			} else {
+				vigra::gaussianSmoothMultiArray(
+						source.data().bind<2>(0),
+						source.data().bind<2>(0),
+						optionSmooth.as<double>());
+			}
 
 		// generate seeds
 		vigra::MultiArray<3, int> initialRegions(source.data().shape());
 
-		vigra::generateWatershedSeeds(
-				source.data(),
-				initialRegions,
-				vigra::IndirectNeighborhood,
-				vigra::SeedOptions().extendedMinima());
+		if (source.depth() > 1)
+			vigra::generateWatershedSeeds(
+					source.data(),
+					initialRegions,
+					vigra::IndirectNeighborhood,
+					vigra::SeedOptions().extendedMinima());
+		else
+			vigra::generateWatershedSeeds(
+					source.data().bind<2>(0),
+					initialRegions.bind<2>(0),
+					vigra::IndirectNeighborhood,
+					vigra::SeedOptions().extendedMinima());
 
 		// perform watersheds or find SLIC superpixels
 
 		if (optionSlicSuperpixels) {
 
-			unsigned int maxLabel = vigra::slicSuperpixels(
-					source.data(),
-					initialRegions,
-					optionSlicIntensityScaling.as<double>(),
-					optionSliceSize.as<double>());
+			unsigned int maxLabel;
+			if (source.depth() > 1)
+					maxLabel = vigra::slicSuperpixels(
+							source.data(),
+							initialRegions,
+							optionSlicIntensityScaling.as<double>(),
+							optionSliceSize.as<double>());
+			else
+					maxLabel = vigra::slicSuperpixels(
+							source.data().bind<2>(0),
+							initialRegions.bind<2>(0),
+							optionSlicIntensityScaling.as<double>(),
+							optionSliceSize.as<double>());
 
 			LOG_USER(logger::out) << "found " << maxLabel << " SLIC superpixels" << std::endl;
 
 		} else {
 
-			unsigned int maxLabel = vigra::watershedsMultiArray(
-					source.data(), /* non-median filtered, possibly smoothed */
-					initialRegions,
-					vigra::IndirectNeighborhood);
+			unsigned int maxLabel;
+			if (source.depth() > 1)
+				maxLabel = vigra::watershedsMultiArray(
+						source.data(), /* non-median filtered, possibly smoothed */
+						initialRegions,
+						vigra::IndirectNeighborhood);
+			else
+				maxLabel = vigra::watershedsMultiArray(
+						source.data().bind<2>(0), /* non-median filtered, possibly smoothed */
+						initialRegions.bind<2>(0),
+						vigra::IndirectNeighborhood);
 
 			LOG_USER(logger::out) << "found " << maxLabel << " watershed regions" << std::endl;
 
