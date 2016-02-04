@@ -195,6 +195,9 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("isRootNode", &Crag::isRootNode)
 			.def("isLeafNode", &Crag::isLeafNode)
 			.def("isLeafEdge", &Crag::isLeafEdge)
+			.def("leafNodes", &Crag::leafNodes)
+			.def("leafEdges", static_cast<std::set<Crag::CragEdge>(Crag::*)(Crag::CragNode) const>(&Crag::leafEdges))
+			.def("leafEdges", static_cast<std::set<Crag::CragEdge>(Crag::*)(Crag::CragEdge) const>(&Crag::leafEdges))
 			;
 
 	// util::point<float, 3>
@@ -312,6 +315,18 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def(boost::python::vector_indexing_suite<std::vector<double>>())
 			;
 
+	// std::set<Crag::CragNode>
+	boost::python::class_<std::set<Crag::CragNode>>("set_CragNode")
+			.def("__iter__", boost::python::iterator<std::set<Crag::CragNode>>())
+			.def("__len__", &std::set<Crag::CragNode>::size)
+			;
+
+	// std::set<Crag::CragEdge>
+	boost::python::class_<std::set<Crag::CragEdge>>("set_CragEdge")
+			.def("__iter__", boost::python::iterator<std::set<Crag::CragEdge>>())
+			.def("__len__", &std::set<Crag::CragEdge>::size)
+			;
+
 	// NodeFeatures
 	boost::python::class_<NodeFeatures>("NodeFeatures", boost::python::init<const Crag&>())
 			.def("__getitem__", &genericGetter<NodeFeatures, Crag::CragNode, std::vector<double>>,
@@ -405,6 +420,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 	// BundleOptimizer
 	boost::python::class_<BundleOptimizer>("BundleOptimizer", boost::python::init<const BundleOptimizer::Parameters&>())
 			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracle::Weights>)
+			.def("getEps", &BundleOptimizer::getEps)
+			.def("getMinValue", &BundleOptimizer::getMinValue)
 			;
 
 	// BundleOptimizer::Parameters
