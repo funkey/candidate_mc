@@ -51,6 +51,11 @@ CragImport::readCragFromMergeHistory(
 		util::point<float, 3> offset) {
 
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+
+	bool is2D = false;
+	if (ids.depth() == 1)
+		is2D = true;
+
 	std::map<int, Crag::Node> idToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
 
 	int maxMerges = -1;
@@ -102,13 +107,15 @@ CragImport::readCragFromMergeHistory(
 		if (useScores && score >= maxScore)
 			continue;
 
-		Crag::Node n = crag.addNode();
+		Crag::Node n = crag.addNode(is2D ? Crag::SliceNode : Crag::VolumeNode);
 		idToNode[c] = n;
 
 		if (!idToNode.count(a))
 			std::cerr << "node " << a << " is used for merging, but was not encountered before" << std::endl;
 		if (!idToNode.count(b))
 			std::cerr << "node " << b << " is used for merging, but was not encountered before" << std::endl;
+
+		LOG_ALL(logger::out) << "merging " << a << " and " << b << " to " << c << std::endl;
 
 		crag.addSubsetArc(
 				idToNode[a],
@@ -131,6 +138,11 @@ CragImport::readCragFromCandidateSegmentation(
 		util::point<float, 3> offset) {
 
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+
+	bool is2D = false;
+	if (ids.depth() == 1)
+		is2D = true;
+
 	std::map<int, Crag::Node> svIdToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
 
 	LOG_USER(logger::out) << "reading segmentation" << std::endl;
@@ -182,7 +194,7 @@ CragImport::readCragFromCandidateSegmentation(
 
 		if (!segIdToNode.count(maxSegmentId)) {
 
-			Crag::Node candidate = crag.addNode();
+			Crag::Node candidate = crag.addNode(is2D ? Crag::SliceNode : Crag::VolumeNode);
 			segIdToNode[maxSegmentId] = candidate;
 		}
 
@@ -199,6 +211,10 @@ CragImport::readSupervoxels(
 		CragVolumes&               volumes,
 		util::point<float, 3>      resolution,
 		util::point<float, 3>      offset) {
+
+	bool is2D = false;
+	if (ids.depth() == 1)
+		is2D = true;
 
 	int minId, maxId;
 	ids.data().minmax(&minId, &maxId);
@@ -227,7 +243,7 @@ CragImport::readSupervoxels(
 		const int& id               = p.first;
 		const util::box<int, 3>& bb = p.second;
 
-		Crag::Node n = crag.addNode();
+		Crag::Node n = crag.addNode(is2D ? Crag::SliceNode : Crag::VolumeNode);
 		std::shared_ptr<CragVolume> volume = std::make_shared<CragVolume>(bb.width(), bb.height(), bb.depth(), 0);
 		volume->setResolution(resolution);
 		volume->setOffset(offset + bb.min()*resolution);
