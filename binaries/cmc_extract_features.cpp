@@ -70,12 +70,14 @@ int main(int argc, char** argv) {
 
 		Hdf5CragStore cragStore(optionProjectFile.as<std::string>());
 
-		LOG_USER(logger::out) << "reading CRAG and volumes" << std::endl;
+		LOG_USER(logger::out) << "reading CRAG and candidate volumes" << std::endl;
 
 		Crag        crag;
 		CragVolumes volumes(crag);
 		cragStore.retrieveCrag(crag);
 		cragStore.retrieveVolumes(volumes);
+
+		LOG_USER(logger::out) << "reading raw and intensity volumes" << std::endl;
 
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 		ExplicitVolume<float> raw;
@@ -89,6 +91,8 @@ int main(int argc, char** argv) {
 		VolumeRays rays(crag);
 
 		if (!optionNoVolumeRays) {
+
+			LOG_USER(logger::out) << "extracting volume rays" << std::endl;
 
 			{
 				UTIL_TIME_SCOPE("extracting volume rays");
@@ -151,6 +155,8 @@ int main(int argc, char** argv) {
 		}
 
 		if (!optionNoSkeletons) {
+
+			LOG_USER(logger::out) << "extracting skeletons" << std::endl;
 
 			Skeletons skeletons(crag);
 
