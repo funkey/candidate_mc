@@ -427,7 +427,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// BundleOptimizer
 	boost::python::class_<BundleOptimizer>("BundleOptimizer", boost::python::init<const BundleOptimizer::Parameters&>())
-			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracle::Weights>)
+			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracleWeights>)
 			.def("getEps", &BundleOptimizer::getEps)
 			.def("getMinValue", &BundleOptimizer::getMinValue)
 			;
@@ -455,7 +455,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// PyOracle
 	boost::python::class_<PyOracle>("PyOracle")
-			.def("setEvaluateFunctor", &PyOracle::setEvaluateFunctor)
+			.def("setValueGradientPCallback", &PyOracle::setValueGradientPCallback)
+			.def("setValueGradientRCallback", &PyOracle::setValueGradientRCallback)
 			;
 
 	// PyOracleValue
@@ -464,11 +465,11 @@ BOOST_PYTHON_MODULE(pycmc) {
 			;
 
 	// PyOracleWeights
-	boost::python::class_<PyOracle::Weights>("PyOracleWeights", boost::python::init<std::size_t>())
-			.def("__iter__", boost::python::iterator<PyOracle::Weights>())
-			.def("__len__", &PyOracle::Weights::size)
-			.def("__getitem__", &genericGetter<PyOracle::Weights, size_t, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &genericSetter<PyOracle::Weights, size_t, double>)
+	boost::python::class_<PyOracleWeights>("PyOracleWeights", boost::python::init<std::size_t>())
+			.def("__iter__", boost::python::iterator<PyOracleWeights>())
+			.def("__len__", &PyOracleWeights::size)
+			.def("__getitem__", &genericGetter<PyOracleWeights, size_t, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<PyOracleWeights, size_t, double>)
 			;
 }
 
