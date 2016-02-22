@@ -5,6 +5,7 @@
 #include <util/assert.h>
 #include <util/helpers.hpp>
 #include <util/Logger.h>
+#include <util/exceptions.h>
 
 logger::LogChannel gradientoptimizerlog("gradientoptimizerlog", "[GradientOptimizer] ");
 
@@ -86,6 +87,11 @@ template <typename Oracle, typename Weights>
 GradientOptimizer::OptimizerResult
 GradientOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
+	if (oracle.haveConcavePart())
+		UTIL_THROW_EXCEPTION(
+				NotYetImplemented,
+				"GradientOptimizer does not minimize concave-convex functions, yet");
+
 	unsigned int t = 0;
 
 	// value of L at current w
@@ -110,7 +116,7 @@ GradientOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 		// get current value and gradient
 		weights.importFromVector(w);
-		oracle(weights, value, gradient);
+		oracle.valueGradientP(weights, value, gradient);
 		g = gradient.exportToVector();
 
 		LOG_DEBUG(gradientoptimizerlog) << "       L(w)              is: " << value << std::endl;

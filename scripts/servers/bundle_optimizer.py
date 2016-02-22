@@ -23,7 +23,9 @@ INITIAL_REQ      = 0
 
 CONTINUATION_REQ = 1
 
-EVALUATE_RES     = 2
+EVALUATE_P_RES   = 2
+
+EVALUATE_R_RES   = 4
 
 FINAL_RES        = 3
 
@@ -33,13 +35,16 @@ class BundleMethodServer:
 
         # init oracle
         self.oracle = PyOracle()
-        self.oracle.setEvaluateFunctor(self.evaluate)
+        self.oracle.setValueGradientPCallback(self.valueGradientP)
+        self.oracle.setValueGradientRCallback(self.valueGradientR)
         self.running = True
 
-    # callback for bundle method
-    def evaluate(self, w, value, gradient):
+    # callback for bundle method, concave part of objective
+    def valueGradientR(self, w, value, gradient):
 
-        self.socket.send(chr(EVALUATE_RES) + json.dumps({ "x" : [ x for x in w] }))
+        print [ x for x in w ]
+
+        self.socket.send(chr(EVALUATE_R_RES) + json.dumps({ "x" : [ x for x in w] }))
         reply = self.socket.recv()
 
         t = ord(reply[0])
@@ -47,7 +52,24 @@ class BundleMethodServer:
             raise "Error: expected client to send CONTINUATION_REQ (" + str(CONTINUATION_REQ) + ", sent " + str(t) + " instead"
 
         data = json.loads(reply[1:])
-        value = data["value"]
+        value.v = data["value"]
+        for i in range(self.dims):
+            gradient[i] = data["gradient"][i]
+
+    # callback for bundle method, convex part of objective
+    def valueGradientP(self, w, value, gradient):
+
+        print [ x for x in w ]
+
+        self.socket.send(chr(EVALUATE_P_RES) + json.dumps({ "x" : [ x for x in w], "eps" : self.bundle_method.getEps() }))
+        reply = self.socket.recv()
+
+        t = ord(reply[0])
+        if t != CONTINUATION_REQ:
+            raise "Error: expected client to send CONTINUATION_REQ (" + str(CONTINUATION_REQ) + ", sent " + str(t) + " instead"
+
+        data = json.loads(reply[1:])
+        value.v = data["value"]
         for i in range(self.dims):
             gradient[i] = data["gradient"][i]
 
@@ -96,6 +118,11 @@ class BundleMethodServer:
         # start bundle method (which will start sending a response, finishes 
         # receiving a request)
         w = PyOracleWeights(self.dims)
+
+        if data.has_key("initial_x"):
+            for i in range(len(w)):
+                w[i] = data["initial_x"][i]
+
         result = self.bundle_method.optimize(self.oracle, w)
 
         if result == BundleOptimizerResult.ReachedMinGap:

@@ -1,9 +1,9 @@
-#include "Oracle.h"
+#include "CragSolverOracle.h"
 #include <sstream>
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
 
-logger::LogChannel oraclelog("oraclelog", "[Oracle] ");
+logger::LogChannel oraclelog("oraclelog", "[CragSolverOracle] ");
 
 util::ProgramOption optionStoreEachMostViolated(
 		util::_long_name        = "storeMostViolated",
@@ -14,7 +14,7 @@ util::ProgramOption optionStoreEachCurrentlyBest(
 		util::_description_text = "In each training iteration, store the currently best solution.");
 
 void
-Oracle::operator()(
+CragSolverOracle::valueGradientP(
 			const FeatureWeights& weights,
 			double&               value,
 			FeatureWeights&       gradient) {
@@ -65,7 +65,7 @@ Oracle::operator()(
 }
 
 void
-Oracle::updateCosts(const FeatureWeights& weights) {
+CragSolverOracle::updateCosts(const FeatureWeights& weights) {
 
 	// Let E(y,w) = <w,Φy>. We have to compute the value and gradient of
 	//
@@ -149,7 +149,7 @@ Oracle::updateCosts(const FeatureWeights& weights) {
 }
 
 void
-Oracle::accumulateGradient(FeatureWeights& gradient) {
+CragSolverOracle::accumulateGradient(FeatureWeights& gradient) {
 
 	// The gradient of the maximand in (1) at y* is
 	//

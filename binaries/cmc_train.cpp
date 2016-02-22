@@ -23,7 +23,7 @@
 #include <learning/GradientOptimizer.h>
 #include <learning/HammingLoss.h>
 #include <learning/HausdorffLoss.h>
-#include <learning/Oracle.h>
+#include <learning/CragSolverOracle.h>
 #include <learning/RandLoss.h>
 #include <learning/OverlapLoss.h>
 #include <learning/TopologicalLoss.h>
@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
 			return 0;
 		}
 
-		Oracle oracle(
+		CragSolverOracle oracle(
 				crag,
 				volumes,
 				nodeFeatures,

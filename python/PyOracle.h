@@ -3,31 +3,51 @@
 
 #include <vector>
 #include <boost/python.hpp>
+#include <learning/Oracle.h>
 
-class PyOracle {
+/**
+ * Simple wrapper around std::vector to use it as weights in the 
+ * BundleOptimizer.
+ */
+class PyOracleWeights : public std::vector<double> {
+
+public:
+
+	PyOracleWeights(std::size_t s) : std::vector<double>(s, 0) {}
+
+	void importFromVector(const std::vector<double>& w) {
+
+		static_cast<std::vector<double>&>(*this) = w;
+	}
+
+	const std::vector<double>& exportToVector() const {
+
+		return *this;
+	}
+};
+
+/**
+ * An oracle to be used in a generic optimizer. The oracle is assumed to 
+ * represent
+ *
+ *   L(w) = P(w) - R(w),
+ *
+ * where P and R are convex. If no callback is registered for R, it will not be 
+ * considered by the optimizers, resulting in standard convex optimization.
+ */
+class PyOracle : public Oracle<PyOracleWeights> {
 
 public:
 
 	/**
-	 * Simple wrapper around std::vector to use it as weights in the 
-	 * BundleOptimizer.
+	 * Simple wrapper around double to pass it by reference to the python oracle.
 	 */
-	class Weights : public std::vector<double> {
+	struct Value {
 
-	public:
-
-		Weights(std::size_t s) : std::vector<double>(s, 0) {}
-
-		void importFromVector(const std::vector<double>& w) {
-
-			static_cast<std::vector<double>&>(*this) = w;
-		}
-
-		const std::vector<double>& exportToVector() {
-
-			return *this;
-		}
+		double v;
 	};
+
+	PyOracle() : _haveConcavePart(false) {}
 
 	/**
 	 * Set a python function object to be called for evaluating the current 
@@ -35,19 +55,41 @@ public:
 	 *
 	 *   pyCallback(w, value, gradient)
 	 */
-	void setEvaluateFunctor(boost::python::api::object pyCallback) {
+	void setValueGradientPCallback(boost::python::api::object pyCallback) {
 
-		_pyCallback = pyCallback;
+		_callbackP = pyCallback;
 	}
 
-	void operator()(
-			const Weights& weights,
-			double&        value,
-			Weights&       gradient);
+	/**
+	 * Set a python function object to be called for evaluating the current 
+	 * value and gradient at w:
+	 *
+	 *   pyCallback(w, value, gradient)
+	 */
+	void setValueGradientRCallback(boost::python::api::object pyCallback) {
+
+		_haveConcavePart = true;
+		_callbackR = pyCallback;
+	}
+
+	void valueGradientP(
+			const PyOracleWeights& weights,
+			double&                value,
+			PyOracleWeights&       gradient) override;
+
+	void valueGradientR(
+			const PyOracleWeights& weights,
+			double&                value,
+			PyOracleWeights&       gradient) override;
+
+	bool haveConcavePart() const { return _haveConcavePart; }
 
 private:
 
-	boost::python::api::object _pyCallback;
+	boost::python::api::object _callbackP;
+	boost::python::api::object _callbackR;
+
+	bool _haveConcavePart;
 };
 
 #endif // CANDIDATE_MC_PYTHON_PY_ORACLE_H__

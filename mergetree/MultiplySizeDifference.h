@@ -1,6 +1,8 @@
 #ifndef MULTI2CUT_MERGETREE_MULTIPLY_SIZE_DIFFERENCE_SIZE_H__
 #define MULTI2CUT_MERGETREE_MULTIPLY_SIZE_DIFFERENCE_SIZE_H__
 
+#include <cstdlib>
+
 #include <util/cont_map.hpp>
 #include <util/ProgramOptions.h>
 #include <util/assert.h>
@@ -46,7 +48,7 @@ public:
 
 		float score = _scoringFunction(edge, gridEdges);
 
-		score *= pow(std::abs(_regionSizes[u] - _regionSizes[v]), _exponent);
+		score *= pow(std::abs<std::size_t>(_regionSizes[u] - _regionSizes[v]), _exponent);
 
 		return score;
 	}

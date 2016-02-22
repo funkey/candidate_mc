@@ -25,7 +25,11 @@ template <typename Map, typename K, typename V>
 void featuresSetter(Map& map, const K& k, const V& value) { map.set(k, value); }
 
 // iterator traits specializations
+#if !defined __clang__ || __clang_major__ < 6
 namespace boost { namespace detail {
+#else
+namespace std {
+#endif
 
 template <>
 struct iterator_traits<Crag::CragNodeIterator> {
@@ -72,11 +76,15 @@ struct iterator_traits<Crag::CragIncArcIterator<T>> {
 	typedef typename std::forward_iterator_tag iterator_category;
 };
 
+#if !defined __clang__ || __clang_major__ < 6
 }} // namespace boost::detail
+#else
+} // namespace std
+#endif
 
-#ifdef __clang__
+#if defined __clang__ && __clang_major__ < 6
 // std::shared_ptr support
-template<class T> T* get_pointer(std::shared_ptr<T> p){ return p.get(); }
+	template<class T> T* get_pointer(std::shared_ptr<T> p){ return p.get(); }
 #endif
 
 namespace pycmc {
@@ -421,7 +429,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// BundleOptimizer
 	boost::python::class_<BundleOptimizer>("BundleOptimizer", boost::python::init<const BundleOptimizer::Parameters&>())
-			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracle::Weights>)
+			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracleWeights>)
 			.def("getEps", &BundleOptimizer::getEps)
 			.def("getMinValue", &BundleOptimizer::getMinValue)
 			;
@@ -449,15 +457,21 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// PyOracle
 	boost::python::class_<PyOracle>("PyOracle")
-			.def("setEvaluateFunctor", &PyOracle::setEvaluateFunctor)
+			.def("setValueGradientPCallback", &PyOracle::setValueGradientPCallback)
+			.def("setValueGradientRCallback", &PyOracle::setValueGradientRCallback)
+			;
+
+	// PyOracleValue
+	boost::python::class_<PyOracle::Value>("PyOracleValue")
+			.def_readwrite("v", &PyOracle::Value::v)
 			;
 
 	// PyOracleWeights
-	boost::python::class_<PyOracle::Weights>("PyOracleWeights", boost::python::init<std::size_t>())
-			.def("__iter__", boost::python::iterator<PyOracle::Weights>())
-			.def("__len__", &PyOracle::Weights::size)
-			.def("__getitem__", &genericGetter<PyOracle::Weights, size_t, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
-			.def("__setitem__", &genericSetter<PyOracle::Weights, size_t, double>)
+	boost::python::class_<PyOracleWeights>("PyOracleWeights", boost::python::init<std::size_t>())
+			.def("__iter__", boost::python::iterator<PyOracleWeights>())
+			.def("__len__", &PyOracleWeights::size)
+			.def("__getitem__", &genericGetter<PyOracleWeights, size_t, double>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<PyOracleWeights, size_t, double>)
 			;
 }
 

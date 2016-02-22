@@ -1,104 +1,48 @@
 #ifndef CANDIDATE_MC_LEARNING_ORACLE_H__
 #define CANDIDATE_MC_LEARNING_ORACLE_H__
 
-#include <crag/Crag.h>
-#include <inference/CragSolverFactory.h>
-#include <features/NodeFeatures.h>
-#include <features/EdgeFeatures.h>
-#include <util/assert.h>
-#include "Loss.h"
-#include "BestEffort.h"
+#include <vector>
 
 /**
- * Provides solution for loss-augmented inference problem, given a set of 
- * weights. To be used in a learning optimizer.
+ * Base class for Oracles. Provides method stubs, to be overwritten by 
+ * subclasses.
+ *
+ * The oracle is suppossed to provide an objective of the form
+ *
+ *   L(w) = P(w) - R(w),
+ *
+ * where P and R are convex functions in w.
  */
+template <typename FeatureWeights>
 class Oracle {
 
 public:
 
-	Oracle(
-			const Crag&             crag,
-			const CragVolumes&      volumes,
-			const NodeFeatures&     nodeFeatures,
-			const EdgeFeatures&     edgeFeatures,
-			const Loss&             loss,
-			const BestEffort&       bestEffort,
-			CragSolver::Parameters  parameters = CragSolver::Parameters()) :
-		_crag(crag),
-		_volumes(volumes),
-		_nodeFeatures(nodeFeatures),
-		_edgeFeatures(edgeFeatures),
-		_loss(loss),
-		_bestEffort(bestEffort),
-		_costs(_crag),
-		_mostViolatedSolution(_crag),
-		_mostViolatedSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
-		_currentBestSolver(CragSolverFactory::createSolver(crag, volumes, parameters)),
-		_iteration(0) {}
+	/**
+	 * Evaluate P at w and return the value and gradient.
+	 */
+	virtual void valueGradientP(
+			const FeatureWeights& w,
+			double&               value,
+			FeatureWeights&       gradient) = 0;
 
-	void operator()(
+	/**
+	 * Return the gradient of -R at w.
+	 */
+	virtual void valueGradientR(
 			const FeatureWeights& weights,
 			double&               value,
-			FeatureWeights&       gradient);
+			FeatureWeights&       gradient) {
 
-private:
-
-	void updateCosts(const FeatureWeights& weights);
-
-	void accumulateGradient(FeatureWeights& gradient);
-
-	inline double nodeCost(Crag::CragNode n, const FeatureWeights& weights) const {
-
-		return dot(weights[_crag.type(n)], _nodeFeatures[n]);
+		// default implementation assumes that R is zero
+		value = 0;
+		gradient.importFromVector(std::vector<double>(weights.exportToVector().size(), 0));
 	}
 
-	inline double edgeCost(Crag::CragEdge e, const FeatureWeights& weights) const {
-
-		return dot(weights[_crag.type(e)], _edgeFeatures[e]);
-	}
-
-	inline double dot(const std::vector<double>& a, const std::vector<double>& b) const {
-
-		UTIL_ASSERT_REL(a.size(), ==, b.size());
-
-		double sum = 0;
-		auto ba = a.begin();
-		auto ea = a.end();
-		auto bb = b.begin();
-
-		while (ba != ea) {
-
-			sum += (*ba)*(*bb);
-			ba++;
-			bb++;
-		}
-
-		return sum;
-	}
-
-	const Crag&         _crag;
-	const CragVolumes&  _volumes;
-	const NodeFeatures& _nodeFeatures;
-	const EdgeFeatures& _edgeFeatures;
-	const Loss&         _loss;
-	const BestEffort&   _bestEffort;
-
-	Costs _costs;
-
-	// constant to be added to the optimal value of the multi-cut solution
-	double _constant;
-
-	// best-effort part of _constant
-	double _B_c;
-
-	CragSolution _mostViolatedSolution;
-
-	std::unique_ptr<CragSolver> _mostViolatedSolver;
-	std::unique_ptr<CragSolver> _currentBestSolver;
-
-	int _iteration;
+	/**
+	 * Indicate whether R is unequal 0.
+	 */
+	virtual bool haveConcavePart() const { return false; }
 };
 
 #endif // CANDIDATE_MC_LEARNING_ORACLE_H__
-
