@@ -47,6 +47,10 @@ util::ProgramOption optionShowCosts(
 		util::_description_text = "For each selected candidate, show the costs with the given name (default: 'costs', the inference costs).",
 		util::_default_value    = "costs");
 
+util::ProgramOption optionShowFeatures(
+		util::_long_name        = "showFeatures",
+		util::_description_text = "For each selected candidate, show the features.");
+
 int main(int argc, char** argv) {
 
 	try {
@@ -243,7 +247,8 @@ int main(int argc, char** argv) {
 		rotateView->add(cragView);
 		rotateView->add(meshController);
 		rotateView->add(costsView);
-		rotateView->add(featuresView);
+		if (optionShowFeatures)
+			rotateView->add(featuresView);
 
 		cragView->setRawVolume(intensities);
 		cragView->setLabelsVolume(overlay);
