@@ -362,6 +362,11 @@ int main(int argc, char** argv) {
 
 		if (optionImportTrainingResult) {
 
+			LOG_USER(logger::out)
+							<< "importing training results from "
+							<< optionImportTrainingResult.as<std::string>()
+							<< std::endl;
+
 			Hdf5CragStore trainingStore(optionImportTrainingResult.as<std::string>());
 
 			FeatureWeights weights;
