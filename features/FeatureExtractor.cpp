@@ -84,6 +84,12 @@ util::ProgramOption optionAddPairwiseFeatureProducts(
 	util::_description_text = "For each pair of features f_i and f_j, add the product f_i*f_j to the feature vector as well."
 );
 
+util::ProgramOption optionNoFeatureProductsForEdges(
+	util::_module           = "features",
+	util::_long_name        = "noFeatureProductsForEdges",
+	util::_description_text = "Don't add feature products for edges (which can result in too many features)."
+);
+
 util::ProgramOption optionAddFeatureSquares(
 	util::_module           = "features",
 	util::_long_name        = "addSquares",
@@ -323,7 +329,7 @@ FeatureExtractor::extractEdgeFeatures(
 	//// POSTPROCESSING //
 	//////////////////////
 
-	if (optionAddFeatureSquares || optionAddPairwiseFeatureProducts) {
+	if ((optionAddFeatureSquares || optionAddPairwiseFeatureProducts) && !optionNoFeatureProductsForEdges) {
 
 		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
