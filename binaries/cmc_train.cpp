@@ -105,6 +105,10 @@ util::ProgramOption optionDryRun(
 		util::_description_text = "Compute and store the best-effort loss, the best-effort, and the training loss; but "
 		                          "don't perform training.");
 
+util::ProgramOption optionReadOnly(
+		util::_long_name        = "readOnly",
+		util::_description_text = "Don't write the best-effort or learnt weights to the project file (only export the best-effort).");
+
 util::ProgramOption optionExportBestEffort(
 		util::_long_name        = "exportBestEffort",
 		util::_description_text = "Create a volume export for the best-effort solution.");
@@ -313,7 +317,8 @@ int main(int argc, char** argv) {
 		if (optionDryRun) {
 
 			LOG_USER(logger::out) << "dry run -- skip learning" << std::endl;
-			cragStore->saveFeatureWeights(weights);
+			if (!optionReadOnly)
+				cragStore->saveFeatureWeights(weights);
 			return 0;
 		}
 
