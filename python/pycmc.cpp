@@ -346,7 +346,9 @@ BOOST_PYTHON_MODULE(pycmc) {
 			;
 
 	// FeatureWeights
-	boost::python::class_<FeatureWeights>("FeatureWeights", boost::python::init<const NodeFeatures&, const EdgeFeatures&, double>())
+	boost::python::class_<FeatureWeights>("FeatureWeights")
+			.def(boost::python::init<>())
+			.def(boost::python::init<const NodeFeatures&, const EdgeFeatures&, double>())
 			.def("__getitem__", &genericGetter<FeatureWeights, Crag::NodeType, std::vector<double>>,
 					boost::python::return_internal_reference<>())
 			.def("__setitem__", &genericSetter<FeatureWeights, Crag::NodeType, std::vector<double>>)
@@ -376,16 +378,16 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("saveEdgeFeatures", &Hdf5CragStore::saveEdgeFeatures)
 			//.def("saveSkeletons", &Hdf5CragStore::saveSkeletons)
 			.def("saveFeatureWeights", &Hdf5CragStore::saveFeatureWeights)
-			//.def("saveFeaturesMin", &Hdf5CragStore::saveFeaturesMin)
-			//.def("saveFeaturesMax", &Hdf5CragStore::saveFeaturesMax)
+			.def("saveFeaturesMin", &Hdf5CragStore::saveFeaturesMin)
+			.def("saveFeaturesMax", &Hdf5CragStore::saveFeaturesMax)
 			.def("saveCosts", &Hdf5CragStore::saveCosts)
 			.def("saveSolution", &Hdf5CragStore::saveSolution)
 			.def("retrieveCrag", &Hdf5CragStore::retrieveCrag)
 			.def("retrieveVolumes", &Hdf5CragStore::retrieveVolumes)
 			.def("retrieveNodeFeatures", &Hdf5CragStore::retrieveNodeFeatures)
 			.def("retrieveEdgeFeatures", &Hdf5CragStore::retrieveEdgeFeatures)
-			//.def("retrieveFeaturesMin", &Hdf5CragStore::retrieveFeaturesMin)
-			//.def("retrieveFeaturesMax", &Hdf5CragStore::retrieveFeaturesMax)
+			.def("retrieveFeaturesMin", &Hdf5CragStore::retrieveFeaturesMin)
+			.def("retrieveFeaturesMax", &Hdf5CragStore::retrieveFeaturesMax)
 			//.def("retrieveSkeletons", &Hdf5CragStore::retrieveSkeletons)
 			.def("retrieveFeatureWeights", &Hdf5CragStore::retrieveFeatureWeights)
 			.def("retrieveCosts", &Hdf5CragStore::retrieveCosts)
