@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.8.12)
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
-include(${CMAKE_SOURCE_DIR}/cmake/include/define_module.cmake)
 
 #######################
 # project information #
@@ -12,6 +11,13 @@ include(${CMAKE_SOURCE_DIR}/cmake/include/define_module.cmake)
 project(candidatemc)
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
+
+########################
+# custom cmake modules #
+########################
+
+include(${CMAKE_SOURCE_DIR}/cmake/include/define_module.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/include/git_sha1.cmake)
 
 #####################
 # compiler settings #
@@ -52,9 +58,6 @@ endif()
 ###############
 # config file #
 ###############
-
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/config.h.in
