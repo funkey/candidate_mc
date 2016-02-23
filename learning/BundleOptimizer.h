@@ -234,7 +234,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 			// 4. w*_T = argmin_w ½λ|w|² + P(w) + <v_T,w> + c_T
 			//         = argmin_w ℐ_w*(w)
-			if (!optimizeConvex(oracle, weights, v_T) == ReachedMinGap) {
+			if (optimizeConvex(oracle, weights, v_T) != ReachedMinGap) {
 
 				LOG_ERROR(bundleoptimizerlog) << "convex optimization did not converge" << std::endl;
 				return Error;
