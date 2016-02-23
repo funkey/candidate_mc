@@ -7,7 +7,7 @@ util::ProgramOption optionBackgroundOverlapWeight(
 		util::_description_text = "The weight of background voxels for the computation of the best-effort. A value smaller than 1 means "
 		                          "that a supervoxel can be assigned to a ground-truth region even though it overlaps with more than 50% "
 		                          "with background.",
-		util::_default_value    = "project.hdf");
+		util::_default_value    = 1);
 
 BestEffort::BestEffort(
 		const Crag&                   crag,
