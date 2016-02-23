@@ -42,7 +42,8 @@ private:
 			const Crag&                        crag,
 			const CragVolumes&                 volumes,
 			const ExplicitVolume<int>&         groundTruth,
-			Crag::NodeMap<std::map<int, int>>& overlaps );
+			Crag::NodeMap<std::map<int, int>>& overlaps,
+			Crag::NodeMap<int>&                sizes);
 
 	void getGroundTruthAssignments(
 			const Crag&                              crag,
@@ -54,12 +55,28 @@ private:
 			Crag::CragNode                n,
 			const Crag::NodeMap<int>&     gtAssignments,
 			Crag::NodeMap<std::set<int>>& leafAssignments);
+	
+	void findConcordantLeafNodeCandidates(
+			const Crag&               crag,
+			const Crag::NodeMap<int>& gtAssignments);
+	
+	void findMajorityOverlapCandidates(
+			const Crag&                              crag,
+			const Crag::NodeMap<std::map<int, int>>& overlaps,
+			const Crag::NodeMap<int>&                sizes,
+			const Crag::NodeMap<int>&                gtAssignments);
 
 	void labelSingleAssignmentCandidate(
 			const Crag&                         crag,
 			Crag::CragNode                      n,
 			const Crag::NodeMap<std::set<int>>& leafAssignments);
+	
+	void labelMajorityOverlapCandidate(
+			const Crag&                              crag,
+			const Crag::CragNode&                    n,
+			const Crag::NodeMap<std::map<int, int>>& overlaps,
+			const Crag::NodeMap<int>&                sizes,
+			const Crag::NodeMap<int>&                gtAssignments);
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
-
