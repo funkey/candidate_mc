@@ -53,6 +53,9 @@ endif()
 # config file #
 ###############
 
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/config.h.in
   ${PROJECT_BINARY_DIR}/config.h
