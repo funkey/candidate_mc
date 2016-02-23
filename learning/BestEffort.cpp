@@ -24,7 +24,8 @@ BestEffort::BestEffort(
 		const CragVolumes&            volumes,
 		const Costs&                  costs,
 		const CragSolver::Parameters& params) :
-	CragSolution(crag) {
+	CragSolution(crag),
+	_bgOverlapWeight(optionBackgroundOverlapWeight) {
 
 	std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes, params));
 	solver->setCosts(costs);
@@ -35,7 +36,8 @@ BestEffort::BestEffort(
 		const Crag&                   crag,
 		const CragVolumes&            volumes,
 		const ExplicitVolume<int>&    groundTruth) :
-	CragSolution(crag) {
+	CragSolution(crag),
+	_bgOverlapWeight(optionBackgroundOverlapWeight) {
 
 	for (Crag::CragNode n : crag.nodes())
 		setSelected(n, false);
@@ -45,8 +47,7 @@ BestEffort::BestEffort(
 	// assign each candidate to the ground-truth region with maximal overlap (this does not select the candidates, yet)
 
 	Crag::NodeMap<std::map<int, int>> overlaps(crag);
-	Crag::NodeMap<int>                sizes(crag);
-	getGroundTruthOverlaps(crag, volumes, groundTruth, overlaps, sizes);
+	getGroundTruthOverlaps(crag, volumes, groundTruth, overlaps);
 
 	Crag::NodeMap<int> gtAssignments(crag);
 	getGroundTruthAssignments(crag, overlaps, gtAssignments);
@@ -54,7 +55,7 @@ BestEffort::BestEffort(
 	// recursively find the largest candidates assigned to only one ground-truth 
 	// region
 	if (optionMajorityOverlap)
-		findMajorityOverlapCandidates(crag, overlaps, sizes, gtAssignments);
+		findMajorityOverlapCandidates(crag, overlaps, gtAssignments);
 	else
 		findConcordantLeafNodeCandidates(crag, gtAssignments);
 
@@ -78,8 +79,7 @@ BestEffort::getGroundTruthOverlaps(
 		const Crag&                        crag,
 		const CragVolumes&                 volumes,
 		const ExplicitVolume<int>&         groundTruth,
-		Crag::NodeMap<std::map<int, int>>& overlaps,
-		Crag::NodeMap<int>&                sizes) {
+		Crag::NodeMap<std::map<int, int>>& overlaps) {
 
 	for (Crag::CragNode n : crag.nodes()) {
 
@@ -102,7 +102,6 @@ BestEffort::getGroundTruthOverlaps(
 			int gtLabel = groundTruth[offset + util::point<unsigned int, 3>(x, y, z)];
 
 			overlaps[n][gtLabel]++;
-			sizes[n]++;
 		}
 	}
 }
@@ -112,8 +111,6 @@ BestEffort::getGroundTruthAssignments(
 		const Crag&                              crag,
 		const Crag::NodeMap<std::map<int, int>>& overlaps,
 		Crag::NodeMap<int>&                      gtAssignments) {
-
-	double bgOverlapWeight = optionBackgroundOverlapWeight;
 
 	for (Crag::CragNode i : crag.nodes()) {
 
@@ -130,7 +127,7 @@ BestEffort::getGroundTruthAssignments(
 			double overlap = p.second;
 
 			if (gtLabel == 0)
-					overlap *= bgOverlapWeight;
+				overlap *= _bgOverlapWeight;
 
 			if (overlap > maxOverlap) {
 
@@ -167,12 +164,11 @@ void
 BestEffort::findMajorityOverlapCandidates(
 		const Crag&                              crag,
 		const Crag::NodeMap<std::map<int, int>>& overlaps,
-		const Crag::NodeMap<int>&                sizes,
 		const Crag::NodeMap<int>&                gtAssignments) {
   
 	for (Crag::CragNode n : crag.nodes())
 		if (crag.isRootNode(n))
-			labelMajorityOverlapCandidate(crag, n, overlaps, sizes, gtAssignments);
+			labelMajorityOverlapCandidate(crag, n, overlaps, gtAssignments);
 }
 
 void
@@ -194,23 +190,24 @@ BestEffort::labelMajorityOverlapCandidate(
 		const Crag&                              crag,
 		const Crag::CragNode&                    n,
 		const Crag::NodeMap<std::map<int, int>>& overlaps,
-		const Crag::NodeMap<int>&                sizes,
 		const Crag::NodeMap<int>&                gtAssignments) {
 
-	double overlap = overlaps[n].at(gtAssignments[n]);
-	int size = sizes[n];
-
+	double maxOverlap = overlaps[n].at(gtAssignments[n]);
 	if (gtAssignments[n] == 0)
-		overlap *= optionBackgroundOverlapWeight.as<double>();
- 
-	if (crag.isLeafNode(n) || overlap/size > 0.5) {
+		maxOverlap *= _bgOverlapWeight;
 
-		setSelected(n, true);
+	double totalOverlap = 0;
+	for (auto& p : overlaps[n])
+		totalOverlap += ((double)p.second)*(p.first == 0 ? _bgOverlapWeight : 1.0);
+ 
+	if (crag.isLeafNode(n) || maxOverlap/totalOverlap > 0.5) {
+
+		setSelected(n, gtAssignments[n] != 0);
 		return;
 	}
 
 	for (Crag::CragArc childArc : crag.inArcs(n))
-		labelMajorityOverlapCandidate(crag, childArc.source(), overlaps, sizes, gtAssignments);
+		labelMajorityOverlapCandidate(crag, childArc.source(), overlaps, gtAssignments);
 }
 
 void

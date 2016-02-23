@@ -42,8 +42,7 @@ private:
 			const Crag&                        crag,
 			const CragVolumes&                 volumes,
 			const ExplicitVolume<int>&         groundTruth,
-			Crag::NodeMap<std::map<int, int>>& overlaps,
-			Crag::NodeMap<int>&                sizes);
+			Crag::NodeMap<std::map<int, int>>& overlaps);
 
 	void getGroundTruthAssignments(
 			const Crag&                              crag,
@@ -63,7 +62,6 @@ private:
 	void findMajorityOverlapCandidates(
 			const Crag&                              crag,
 			const Crag::NodeMap<std::map<int, int>>& overlaps,
-			const Crag::NodeMap<int>&                sizes,
 			const Crag::NodeMap<int>&                gtAssignments);
 
 	void labelSingleAssignmentCandidate(
@@ -75,8 +73,11 @@ private:
 			const Crag&                              crag,
 			const Crag::CragNode&                    n,
 			const Crag::NodeMap<std::map<int, int>>& overlaps,
-			const Crag::NodeMap<int>&                sizes,
 			const Crag::NodeMap<int>&                gtAssignments);
+
+	// when considering overlap with gt regions, scale the overlap with 
+	// background by this value
+	double _bgOverlapWeight;
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
