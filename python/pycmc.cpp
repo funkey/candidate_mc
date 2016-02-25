@@ -320,6 +320,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// std::vector<double>
 	boost::python::class_<std::vector<double>>("vector_d")
+			.def(boost::python::init<>())
+			.def(boost::python::init<std::size_t>())
 			.def(boost::python::vector_indexing_suite<std::vector<double>>())
 			;
 
