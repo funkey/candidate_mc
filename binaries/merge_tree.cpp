@@ -194,7 +194,7 @@ int main(int optionc, char** optionv) {
 						initialRegions.data(),
 						initialRegionsExport.data(),
 						// vigra starts counting sp with 1
-						Arg1() - Param(1 - optionSuperpixelsFirstId.as<int>()));
+						Arg1() + Param(optionSuperpixelsFirstId.as<int>()));
 
 				if (optionSuperpixelImage)
 					saveVolume(

@@ -236,15 +236,6 @@ IterativeRegionMerging<D>::storeMergeHistory(std::string filename) {
 		unsigned int v = _rag.id(m.v);
 		unsigned int p = _rag.id(m.parent);
 
-		// vigra starts counting region ids with 1, but we export images where 
-		// we start with 0, therefore:
-		UTIL_ASSERT_REL(u, >, 0);
-		UTIL_ASSERT_REL(v, >, 0);
-		UTIL_ASSERT_REL(p, >, 0);
-		u -= 1;
-		v -= 1;
-		p -= 1;
-
 		file << u << "\t" << v << "\t" << p << "\t" << m.score << std::endl;
 	}
 }
