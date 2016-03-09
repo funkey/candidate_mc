@@ -159,7 +159,7 @@ CragImport::readCragFromCandidateSegmentation(
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
 
 	bool is2D = false;
-	if (ids.depth() == 1)
+	if (ids.depth() == 1 || option2dSupervoxels)
 		is2D = true;
 
 	std::map<int, Crag::Node> svIdToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
@@ -232,7 +232,7 @@ CragImport::readSupervoxels(
 		util::point<float, 3>      offset) {
 
 	bool is2D = false;
-	if (ids.depth() == 1)
+	if (ids.depth() == 1 || option2dSupervoxels)
 		is2D = true;
 
 	int minId, maxId;
