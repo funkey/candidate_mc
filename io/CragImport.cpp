@@ -19,6 +19,12 @@ util::ProgramOption optionMaxMergeScore(
 		util::_long_name        = "maxMergeScore",
 		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from the merge history file.");
 
+util::ProgramOption option2dSupervoxels(
+		util::_long_name        = "2dSupervoxels",
+		util::_description_text = "Indicate that all supervoxels are 2D slices (even though the volume is 3D). This will create "
+		                          "a CRAG with SliceNodes instead of VolumeNodes. SliceNodes have more features that only apply "
+		                          "to 2D objects.");
+
 void
 CragImport::readCrag(
 		std::string           filename,
@@ -53,7 +59,7 @@ CragImport::readCragFromMergeHistory(
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
 
 	bool is2D = false;
-	if (ids.depth() == 1)
+	if (ids.depth() == 1 || option2dSupervoxels)
 		is2D = true;
 
 	std::map<int, Crag::Node> idToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
@@ -126,6 +132,19 @@ CragImport::readCragFromMergeHistory(
 	}
 
 	volumes.fillEmptyVolumes();
+
+	if (option2dSupervoxels) {
+
+		for (Crag::CragNode n : crag.nodes()) {
+
+			const CragVolume& volume = *volumes[n];
+
+			if (volume.depth() != 1)
+				UTIL_THROW_EXCEPTION(
+						UsageError,
+						"option '2dSupervoxels' was given, but after import, CRAG contains a node with depth " << volume.depth() << ". Check if the initial supervoxels are really 2D, and that the merge history only merges in 2D.");
+		}
+	}
 }
 
 void
