@@ -230,9 +230,75 @@ int main(int argc, char** argv) {
 
 			UTIL_TIME_SCOPE("read CRAG from merge history");
 
-			if (optionMergeHistory)
-				import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset);
-			else
+			if (optionMergeHistory) {
+
+				std::string mergeHistoryPath = optionMergeHistory;
+
+				if (boost::filesystem::is_directory(boost::filesystem::path(mergeHistoryPath))) {
+
+					// get all merge-history files
+					std::vector<std::string> mhFiles;
+					for (boost::filesystem::directory_iterator i(mergeHistoryPath); i != boost::filesystem::directory_iterator(); i++)
+						if (!boost::filesystem::is_directory(*i) && (
+							i->path().extension() == ".txt" ||
+							i->path().extension() == ".dat"
+						))
+							mhFiles.push_back(i->path().native());
+					std::sort(mhFiles.begin(), mhFiles.end());
+
+					// get all supervoxel files
+					std::vector<std::string> svFiles = getImageFiles(optionSupervoxels);
+
+					// process one image after another
+					std::vector<std::unique_ptr<Crag>> crags(mhFiles.size());
+					std::vector<std::unique_ptr<CragVolumes>> cragsVolumes;
+					for (auto& c : crags) {
+						c = std::unique_ptr<Crag>(new Crag);
+						cragsVolumes.push_back(std::unique_ptr<CragVolumes>(new CragVolumes(*c)));
+					}
+
+					for (int i = 0; i < mhFiles.size(); i++) {
+						
+						LOG_USER(logger::out) << "reading crag from supervoxel file " << svFiles[i] << " and merge history " << mhFiles[i] << std::endl;
+
+						import.readCragFromMergeHistory(svFiles[i], mhFiles[i], *crags[i], *cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+					}
+
+					if (optionDownsampleCrag) {
+
+						UTIL_TIME_SCOPE("downsample CRAG");
+
+						DownSampler downSampler(optionMinCandidateSize.as<int>());
+
+						std::vector<std::unique_ptr<Crag>> downSampledCrags(crags.size());
+						std::vector<std::unique_ptr<CragVolumes>> downSampledVolumes(crags.size());
+
+						for (int i = 0; i < crags.size(); i++) {
+
+							downSampledCrags[i]   = std::unique_ptr<Crag>(new Crag());
+							downSampledVolumes[i] = std::unique_ptr<CragVolumes>(new CragVolumes(*downSampledCrags[i]));
+
+							downSampler.process(*crags[i], *cragsVolumes[i], *downSampledCrags[i], *downSampledVolumes[i]);
+						}
+
+						std::swap(cragsVolumes, downSampledVolumes);
+						std::swap(crags, downSampledCrags);
+
+						// prevent another downsampling on the candidates added by 
+						// the combiner
+						alreadyDownsampled = true;
+					}
+
+					// combine crags
+					CragStackCombiner combiner;
+					combiner.combine(crags, cragsVolumes, *crag, *volumes);
+
+				} else {
+
+					import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset);
+				}
+
+			} else
 				import.readCragFromCandidateSegmentation(optionSupervoxels, optionCandidateSegmentation, *crag, *volumes, resolution, offset);
 
 		} else {
