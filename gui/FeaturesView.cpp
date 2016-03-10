@@ -2,7 +2,7 @@
 #include <util/helpers.hpp>
 
 void
-FeaturesView::onSignal(SetEdge& signal) {
+SoltionView::onSignal(SetEdge& signal) {
 
 	if (_crag.type(signal.getEdge()) == Crag::AssignmentEdge)
 		return;
@@ -12,7 +12,7 @@ FeaturesView::onSignal(SetEdge& signal) {
 }
 
 void
-FeaturesView::onSignal(SetCandidate& signal) {
+SoltionView::onSignal(SetCandidate& signal) {
 
 	if (_crag.type(signal.getCandidate()) == Crag::NoAssignmentNode)
 		return;

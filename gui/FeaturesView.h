@@ -7,9 +7,9 @@
 #include <scopegraph/Agent.h>
 #include "Signals.h"
 
-class FeaturesView :
+class SoltionView :
 		public sg::Agent<
-				FeaturesView,
+				SoltionView,
 				sg::Accepts<
 						SetCandidate,
 						SetEdge
@@ -18,7 +18,7 @@ class FeaturesView :
 
 public:
 
-	FeaturesView(
+	SoltionView(
 			const Crag&         crag,
 			const NodeFeatures& nodeFeatures,
 			const EdgeFeatures& edgeFeatures) :

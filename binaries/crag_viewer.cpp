@@ -10,6 +10,7 @@
 #include <gui/MeshViewController.h>
 #include <gui/CostsView.h>
 #include <gui/FeaturesView.h>
+#include <gui/SolutionView.h>
 #include <sg_gui/RotateView.h>
 #include <sg_gui/ZoomView.h>
 #include <sg_gui/Window.h>
@@ -50,6 +51,10 @@ util::ProgramOption optionShowCosts(
 util::ProgramOption optionShowFeatures(
 		util::_long_name        = "showFeatures",
 		util::_description_text = "For each selected candidate, show the features.");
+
+util::ProgramOption optionShowSolution(
+		util::_long_name        = "showSolution",
+		util::_description_text = "For each selected candidate, show whether it is part of the solution with the given name.");
 
 int main(int argc, char** argv) {
 
@@ -120,7 +125,8 @@ int main(int argc, char** argv) {
 		}
 
 		std::shared_ptr<ExplicitVolume<float>> overlay;
-		std::shared_ptr<CragSolution>          solution;
+		std::shared_ptr<CragSolution>          overlaySolution;
+		std::shared_ptr<CragSolution>          viewSolution;
 
 		if (optionOverlay.as<std::string>() == "leaf") {
 
@@ -142,8 +148,8 @@ int main(int argc, char** argv) {
 
 			LOG_USER(logger::out) << "showing " << optionOverlay.as<std::string>() << " labels in overlay" << std::endl;
 
-			solution = std::make_shared<CragSolution>(crag);
-			cragStore.retrieveSolution(crag, *solution, optionOverlay.as<std::string>());
+			overlaySolution = std::make_shared<CragSolution>(crag);
+			cragStore.retrieveSolution(crag, *overlaySolution, optionOverlay.as<std::string>());
 
 			overlay =
 					std::make_shared<ExplicitVolume<float>>(
@@ -155,7 +161,7 @@ int main(int argc, char** argv) {
 
 			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
 
-				if (!solution->selected(n))
+				if (!overlaySolution->selected(n))
 					continue;
 
 				const CragVolume& volume = *volumes[n];
@@ -170,21 +176,27 @@ int main(int argc, char** argv) {
 								offset.x() + x,
 								offset.y() + y,
 								offset.z() + z)
-										= solution->label(n) + 1;
+										= overlaySolution->label(n) + 1;
 				}
 			}
 		}
 
-		bool showSolution = false;
+		if (optionShowSolution) {
+
+			viewSolution = std::make_shared<CragSolution>(crag);
+			cragStore.retrieveSolution(crag, *viewSolution, optionShowSolution.as<std::string>());
+		}
+
+		bool showSolutionCandidates = false;
 		if (optionCandidates.as<std::string>() != "crag") {
 
-			if (!solution) {
+			if (!overlaySolution) {
 
-				solution = std::make_shared<CragSolution>(crag);
-				cragStore.retrieveSolution(crag, *solution, optionCandidates.as<std::string>());
+				overlaySolution = std::make_shared<CragSolution>(crag);
+				cragStore.retrieveSolution(crag, *overlaySolution, optionCandidates.as<std::string>());
 			}
 
-			showSolution = true;
+			showSolutionCandidates = true;
 		}
 
 		// get features
@@ -234,21 +246,28 @@ int main(int argc, char** argv) {
 		auto cragView       = std::make_shared<CragView>();
 		auto meshController = std::make_shared<MeshViewController>(crag, volumes, supervoxels);
 		auto costsView      = std::make_shared<CostsView>(crag, costs, optionShowCosts);
-		auto featuresView   = std::make_shared<FeaturesView>(crag, nodeFeatures, edgeFeatures);
+		auto featuresView   = std::make_shared<SoltionView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);
 		auto window         = std::make_shared<sg_gui::Window>("CRAG viewer");
 
-		if (showSolution)
-			meshController->setSolution(solution);
+		if (showSolutionCandidates)
+			meshController->setSolution(overlaySolution);
 
 		window->add(zoomView);
 		zoomView->add(rotateView);
 		rotateView->add(cragView);
 		rotateView->add(meshController);
 		rotateView->add(costsView);
+
 		if (optionShowFeatures)
 			rotateView->add(featuresView);
+
+		if (optionShowSolution) {
+
+			auto solutionView = std::make_shared<SolutionView>(crag, *viewSolution, optionShowSolution.as<std::string>());
+			rotateView->add(solutionView);
+		}
 
 		cragView->setRawVolume(intensities);
 		cragView->setLabelsVolume(overlay);
