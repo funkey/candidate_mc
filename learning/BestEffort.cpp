@@ -2,6 +2,12 @@
 #include <util/ProgramOptions.h>
 #include "BestEffort.h"
 
+util::ProgramOption optionFullBestEffort(
+		util::_long_name        = "fullBestEffort",
+		util::_description_text = "When finding the best-effort using the assignment heuristic, include all candidates and all adjacency "
+								"edges that produce the same segmentation. I.e., if a candidate was selected to be part of the best-effort, "
+								"all its children will be selected as well (and the edges connecting them).");
+
 util::ProgramOption optionBackgroundOverlapWeight(
 		util::_long_name        = "backgroundOverlapWeight",
 		util::_description_text = "The weight of background voxels for the computation of the best-effort. A value smaller than 1 means "
@@ -25,6 +31,7 @@ BestEffort::BestEffort(
 		const Costs&                  costs,
 		const CragSolver::Parameters& params) :
 	CragSolution(crag),
+	_fullBestEffort(optionFullBestEffort),
 	_bgOverlapWeight(optionBackgroundOverlapWeight) {
 
 	std::unique_ptr<CragSolver> solver(CragSolverFactory::createSolver(crag, volumes, params));
@@ -37,6 +44,7 @@ BestEffort::BestEffort(
 		const CragVolumes&            volumes,
 		const ExplicitVolume<int>&    groundTruth) :
 	CragSolution(crag),
+	_fullBestEffort(optionFullBestEffort),
 	_bgOverlapWeight(optionBackgroundOverlapWeight) {
 
 	for (Crag::CragNode n : crag.nodes())
@@ -203,7 +211,10 @@ BestEffort::labelMajorityOverlapCandidate(
 	if (crag.isLeafNode(n) || maxOverlap/totalOverlap > 0.5) {
 
 		setSelected(n, gtAssignments[n] != 0);
-		return;
+
+		// for the full best-effort, we continue going down
+		if (!_fullBestEffort)
+			return;
 	}
 
 	for (Crag::CragArc childArc : crag.inArcs(n))
@@ -219,7 +230,10 @@ BestEffort::labelSingleAssignmentCandidate(
 	if (leafAssignments[n].size() == 1 && (*leafAssignments[n].begin()) != 0) {
 
 		setSelected(n, true);
-		return;
+
+		// for the full best-effort, we continue going down
+		if (!_fullBestEffort)
+			return;
 	}
 
 	for (Crag::CragArc childArc : crag.inArcs(n))

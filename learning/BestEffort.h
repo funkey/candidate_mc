@@ -75,6 +75,9 @@ private:
 			const Crag::NodeMap<std::map<int, int>>& overlaps,
 			const Crag::NodeMap<int>&                gtAssignments);
 
+	// include children and child edges of best-effort candidates and edges
+	bool _fullBestEffort;
+
 	// when considering overlap with gt regions, scale the overlap with 
 	// background by this value
 	double _bgOverlapWeight;
