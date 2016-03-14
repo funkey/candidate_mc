@@ -19,12 +19,18 @@ util::ProgramOption optionLazyTreePathConstraints(
         util::_description_text = "Only add violated tree path constraints",
         util::_default_value    = false);
 
+util::ProgramOption optionDismissPositiveCosts(
+		util::_long_name        = "dismissPositiveCosts",
+		util::_description_text = "If set, the costs of non-leaf nodes and non-leaf edges that are positive "
+								  "will be set to inf.");
+
 MultiCutSolver::MultiCutSolver(const Crag& crag, const Parameters& parameters) :
 	_crag(crag),
 	_numNodes(0),
 	_numEdges(0),
 	_solver(0),
 	_parameters(parameters),
+	_numPositiveCostPinConstraints(0),
 	_labels(crag) {
 
 	_numNodes = _crag.nodes().size();
@@ -57,6 +63,50 @@ MultiCutSolver::setCosts(const Costs& costs) {
 		_objective.setCoefficient(
 				edgeIdToVar(_crag.id(e)),
 				costs.edge[e]);
+
+	if (optionDismissPositiveCosts) {
+
+		if (_numPositiveCostPinConstraints > 0) {
+
+			LOG_USER(multicutlog) << "setting new costs invalidates previous pin constraints, resetting all constraints" << std::endl;
+
+			_constraints.clear();
+			_numPositiveCostPinConstraints = 0;
+			setInitialConstraints();
+		}
+
+		for (Crag::CragNode n : _crag.nodes())
+			if (!_crag.isLeafNode(n)) {
+
+				int var = nodeIdToVar(_crag.id(n));
+				if (_objective.getCoefficients()[var] > 0) {
+
+					LinearConstraint pin;
+					pin.setCoefficient(var, 1.0);
+					pin.setRelation(Equal);
+					pin.setValue(0.0);
+
+					_constraints.add(pin);
+					_numPositiveCostPinConstraints++;
+				}
+			}
+
+		for (Crag::CragEdge e : _crag.edges())
+			if (!_crag.isLeafEdge(e)) {
+
+				int var = edgeIdToVar(_crag.id(e));
+				if (_objective.getCoefficients()[var] > 0) {
+
+					LinearConstraint pin;
+					pin.setCoefficient(var, 1.0);
+					pin.setRelation(Equal);
+					pin.setValue(0.0);
+
+					_constraints.add(pin);
+					_numPositiveCostPinConstraints++;
+				}
+			}
+	}
 }
 
 MultiCutSolver::Status

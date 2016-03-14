@@ -72,6 +72,8 @@ private:
 
     std::vector<LinearConstraint> _allTreePathConstraints;
 
+	int _numPositiveCostPinConstraints;
+
 	Crag::NodeMap<int> _labels;
 };
 
