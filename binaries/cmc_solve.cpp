@@ -31,6 +31,11 @@ util::ProgramOption optionMergeBias(
 		util::_description_text = "A bias to be added to each edge weight.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionDismissPositiveCosts(
+		util::_long_name        = "dismissPositiveCosts",
+		util::_description_text = "If set, the costs of non-leaf nodes and non-leaf edges that are positive "
+								  "will be set to inf.");
+
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
@@ -107,16 +112,24 @@ int main(int argc, char** argv) {
 		float edgeBias = optionMergeBias;
 		float nodeBias = optionForegroundBias;
 
+		bool dismissPositiveCosts = optionDismissPositiveCosts;
+
 		for (Crag::CragNode n : crag.nodes()) {
 
 			costs.node[n] = nodeBias;
 			costs.node[n] += dot(weights[crag.type(n)], nodeFeatures[n]);
+
+			if (dismissPositiveCosts && !crag.isLeafNode(n) && costs.node[n] > 0)
+				costs.node[n] = std::numeric_limits<double>::infinity();
 		}
 
 		for (Crag::CragEdge e : crag.edges()) {
 
 			costs.edge[e] = edgeBias;
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
+
+			if (dismissPositiveCosts && !crag.isLeafEdge(e) && costs.edge[e] > 0)
+				costs.edge[e] = std::numeric_limits<double>::infinity();
 		}
 
 		if (!optionReadOnly)
