@@ -95,7 +95,7 @@ RandLoss::RandLoss(
 	}
 
 	if (balance)
-		propagateLeafLoss(crag);
+		propagateLeafValues(crag);
 }
 
 void

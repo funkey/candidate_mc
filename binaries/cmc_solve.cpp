@@ -36,6 +36,10 @@ util::ProgramOption optionLevelAmplification(
 		util::_description_text = "Set parameter a to scale the energies of each node and edge with its level to the power of a.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionPropagateLeafEdgeCosts(
+		util::_long_name        = "propagateLeafEdgeCosts",
+		util::_description_text = "Let higher edge costs be the sum of costs of implied leaf edges.");
+
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
@@ -139,6 +143,12 @@ int main(int argc, char** argv) {
 				double level = crag.getLevel(crag.u(e))*crag.getLevel(crag.v(e))*0.5;
 				costs.edge[e] *= pow(amp, level);
 			}
+		}
+
+		if (optionPropagateLeafEdgeCosts) {
+
+			LOG_USER(logger::out) << "propagating leaf edge costs" << std::endl;
+			costs.propagateLeafEdgeValues(crag);
 		}
 
 		if (!optionReadOnly)

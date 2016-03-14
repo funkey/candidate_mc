@@ -49,7 +49,7 @@ HammingLoss::HammingLoss(
 		}
 
 	if (_balance)
-		propagateLeafLoss(crag);
+		propagateLeafValues(crag);
 }
 
 bool
