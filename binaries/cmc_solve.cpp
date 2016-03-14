@@ -31,6 +31,11 @@ util::ProgramOption optionMergeBias(
 		util::_description_text = "A bias to be added to each edge weight.",
 		util::_default_value    = 0);
 
+util::ProgramOption optionLevelAmplification(
+		util::_long_name        = "levelAmplification",
+		util::_description_text = "Set parameter a to scale the energies of each node and edge with its level to the power of a.",
+		util::_default_value    = 0);
+
 util::ProgramOption optionProjectFile(
 		util::_long_name        = "projectFile",
 		util::_short_name       = "p",
@@ -117,6 +122,23 @@ int main(int argc, char** argv) {
 
 			costs.edge[e] = edgeBias;
 			costs.edge[e] += dot(weights[crag.type(e)], edgeFeatures[e]);
+		}
+
+		if (optionLevelAmplification) {
+
+			double amp = optionLevelAmplification;
+
+			for (Crag::CragNode n : crag.nodes()) {
+
+				double level = crag.getLevel(n);
+				costs.node[n] *= pow(level, amp);
+			}
+
+			for (Crag::CragEdge e : crag.edges()) {
+
+				double level = crag.getLevel(crag.u(e))*crag.getLevel(crag.v(e))*0.5;
+				costs.edge[e] *= pow(level, amp);
+			}
 		}
 
 		if (!optionReadOnly)
