@@ -131,13 +131,13 @@ int main(int argc, char** argv) {
 			for (Crag::CragNode n : crag.nodes()) {
 
 				double level = crag.getLevel(n);
-				costs.node[n] *= pow(level, amp);
+				costs.node[n] *= pow(amp, level);
 			}
 
 			for (Crag::CragEdge e : crag.edges()) {
 
 				double level = crag.getLevel(crag.u(e))*crag.getLevel(crag.v(e))*0.5;
-				costs.edge[e] *= pow(level, amp);
+				costs.edge[e] *= pow(amp, level);
 			}
 		}
 
