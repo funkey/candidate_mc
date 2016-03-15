@@ -113,8 +113,7 @@ util::ProgramOption optionDownsampleCrag(
 
 util::ProgramOption optionMinCandidateSize(
 		util::_long_name        = "minCandidateSize",
-		util::_description_text = "The minimal size for a candidate to keep it during downsampling (see downSampleCrag).",
-		util::_default_value    = 100);
+		util::_description_text = "The minimal size for a candidate to keep it during downsampling (see downSampleCrag).");
 
 std::set<Crag::Node>
 collectLeafNodes(const Crag& crag, Crag::Node n) {
