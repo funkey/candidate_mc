@@ -61,18 +61,24 @@ void
 DownSampler::downSampleCopy(const Crag& source, const CragVolumes& sourceVolumes, Crag::CragNode parent, Crag::CragNode n, bool singleChild, Crag& target) {
 
 	// parent is the last valid parent node, i.e., a node with more than one 
-	// valid children (size >= _minSize) or a root node
+	// valid child or a root node
 	//
 	// n is the current traversal node below parent
 	//
 	// singleChild is true, if n is a single child
 
-	// if n is too small, there is nothing to copy
-	if (!source.isRootNode(n) && size(source, sourceVolumes, n) < _minSize)
+	bool valid;
+	if (_minSize >= 0)
+		valid = (size(source, sourceVolumes, n) >= _minSize || source.isRootNode(n));
+	else
+		valid = (source.isLeafNode(n) || source.isRootNode(n));
+
+	// if n is too small (and we have a size threshold), there is nothing to copy anymore, we can stop
+	if (_minSize >= 0 && !valid)
 		return;
 
 	// n is valid and not a single child -- copy it to the target graph
-	if (!singleChild) {
+	if (valid && !singleChild) {
 
 		Crag::CragNode copy = target.addNode(source.type(n));
 		_copyMap[n] = copy;

@@ -107,8 +107,9 @@ util::ProgramOption optionOffsetZ(
 
 util::ProgramOption optionDownsampleCrag(
 		util::_long_name        = "downSampleCrag",
-		util::_description_text = "Reduce the number of candidates in the CRAG by removing candidates smaller than minCandidateSize, "
-		                          "followed by contraction of single children with their parents.");
+		util::_description_text = "Reduce the number of candidates in the CRAG. If minCandidateSize is given, "
+				"removes candidates smaller than minCandidateSize, followed by contraction of "
+				"single children with their parents. Otherwise, only leaf nodes and root nodes are kept.");
 
 util::ProgramOption optionMinCandidateSize(
 		util::_long_name        = "minCandidateSize",
@@ -320,8 +321,14 @@ int main(int argc, char** argv) {
 			Crag* downSampled = new Crag();
 			CragVolumes* downSampledVolumes = new CragVolumes(*downSampled);
 
-			DownSampler downSampler(optionMinCandidateSize.as<int>());
-			downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
+			if (optionMinCandidateSize) {
+
+				DownSampler downSampler(optionMinCandidateSize.as<int>());
+				downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
+			} else {
+
+
+			}
 
 			delete crag;
 			delete volumes;

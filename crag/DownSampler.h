@@ -14,7 +14,7 @@ public:
 	 * minSize will be removed, and single children contracted with their 
 	 * parents.
 	 */
-	DownSampler(int minSize) :
+	DownSampler(int minSize = -1) :
 		_minSize(minSize) {}
 
 	/**
