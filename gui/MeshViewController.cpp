@@ -134,7 +134,7 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 		}
 	}
 
-	if (signal.key == sg_gui::keys::I) {
+	if (signal.key == sg_gui::keys::C) {
 
 		clearMeshes();
 		send<sg_gui::SetMeshes>(_meshes);
