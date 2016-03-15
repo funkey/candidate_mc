@@ -84,7 +84,7 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 		send<sg_gui::SetMeshes>(_meshes);
 
 	} else
-		showSingleMesh(n);
+		setCurrentMesh(n);
 
 	_path.clear();
 }
@@ -124,7 +124,7 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 			unsigned int id = boost::lexical_cast<unsigned int>(input);
 
 			Crag::CragNode n = _crag.nodeFromId(id);
-			showSingleMesh(n);
+			setCurrentMesh(n);
 			_path.clear();
 
 		} catch (std::exception& e) {
@@ -132,6 +132,12 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 			LOG_ERROR(meshviewcontrollerlog) << "invalid input" << std::endl;
 			return;
 		}
+	}
+
+	if (signal.key == sg_gui::keys::I) {
+
+		clearMeshes();
+		send<sg_gui::SetMeshes>(_meshes);
 	}
 }
 
@@ -148,7 +154,7 @@ MeshViewController::nextVolume() {
 
 	_path.push_back(_current);
 
-	showSingleMesh(parent);
+	replaceCurrentMesh(parent);
 }
 
 void
@@ -163,7 +169,7 @@ MeshViewController::prevVolume() {
 	Crag::CragNode child = _path.back();
 	_path.pop_back();
 
-	showSingleMesh(child);
+	replaceCurrentMesh(child);
 }
 
 void
@@ -195,18 +201,17 @@ MeshViewController::prevNeighbor() {
 }
 
 void
-MeshViewController::showSingleMesh(Crag::CragNode n) {
+MeshViewController::setCurrentMesh(Crag::CragNode n) {
 
 	LOG_USER(meshviewcontrollerlog)
 			<< "showing node with id " << _crag.id(n)
 			<< " at " << _volumes[n]->getBoundingBox() << std::endl;
 
 	_current = n;
-	_meshes->clear();
 
 	if (_solution && _solution->label(n) != 0) {
 
-		// find all other nodes that are in a connected component with n and 
+		// find all other nodes that are in a connected component with n and
 		// show all of them
 		int label = _solution->label(n);
 
@@ -233,6 +238,13 @@ MeshViewController::showSingleMesh(Crag::CragNode n) {
 
 	send<sg_gui::SetMeshes>(_meshes);
 	send<SetCandidate>(n);
+}
+
+void
+MeshViewController::replaceCurrentMesh(Crag::CragNode n) {
+
+	removeMesh(_current);
+	setCurrentMesh(n);
 }
 
 void
@@ -309,6 +321,12 @@ MeshViewController::removeMesh(Crag::CragNode n) {
 
 		_meshes->remove(_crag.id(n));
 	}
+}
+
+void
+MeshViewController::clearMeshes() {
+
+	_meshes->clear();
 }
 
 Crag::CragNode

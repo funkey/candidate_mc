@@ -83,13 +83,17 @@ private:
 
 	void prevNeighbor();
 
-	void showSingleMesh(Crag::CragNode n);
+	void setCurrentMesh(Crag::CragNode n);
+
+	void replaceCurrentMesh(Crag::CragNode n);
 
 	void showNeighbor(Crag::CragNode n);
 
 	void addMesh(Crag::CragNode n);
 
 	void removeMesh(Crag::CragNode n);
+
+	void clearMeshes();
 
 	Crag::CragNode parentOf(Crag::CragNode n);
 
