@@ -54,7 +54,8 @@ CragImport::readCragFromMergeHistory(
 		Crag&                 crag,
 		CragVolumes&          volumes,
 		util::point<float, 3> resolution,
-		util::point<float, 3> offset) {
+		util::point<float, 3> offset,
+		Costs&                mergeCosts) {
 
 	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
 
@@ -68,14 +69,14 @@ CragImport::readCragFromMergeHistory(
 	if (optionMaxMerges)
 		maxMerges = optionMaxMerges;
 
+	bool useScores = optionMergeHistoryWithScores.as<bool>();
+
 	std::ifstream file(mergeHistory);
 	if (file.fail()) {
 
 		LOG_ERROR(logger::out) << "could not read merge history" << std::endl;
 		return;
 	}
-
-	bool useScores = optionMergeHistoryWithScores.as<bool>();
 
 	double maxScore = std::numeric_limits<double>::max();
 	if (optionMaxMergeScore)
@@ -115,6 +116,8 @@ CragImport::readCragFromMergeHistory(
 
 		Crag::Node n = crag.addNode(is2D ? Crag::SliceNode : Crag::VolumeNode);
 		idToNode[c] = n;
+		if (useScores)
+			mergeCosts.node[n] = score;
 
 		if (!idToNode.count(a))
 			std::cerr << "node " << a << " is used for merging, but was not encountered before" << std::endl;

@@ -4,6 +4,7 @@
 #include <map>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
+#include <inference/Costs.h>
 
 class CragImport {
 
@@ -55,6 +56,9 @@ public:
 	 *              The resolution of the volume, to be stored in the volumes.
 	 * @param offset
 	 *              The offset of the volume, to be stored in the volumes.
+	 * @param mergeCosts
+	 *              The merge-score of each candidate, if it was stored in the
+	 *              merge history file.
 	 */
 	void readCragFromMergeHistory(
 			std::string           supervoxels,
@@ -62,7 +66,8 @@ public:
 			Crag&                 crag,
 			CragVolumes&          volumes,
 			util::point<float, 3> resolution,
-			util::point<float, 3> offset);
+			util::point<float, 3> offset,
+			Costs&                mergeCosts);
 
 	/**
 	 * Import a CRAG of depth 1 from a supervoxel image or volume and a 

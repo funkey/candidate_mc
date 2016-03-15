@@ -159,6 +159,7 @@ int main(int argc, char** argv) {
 
 		Crag* crag = new Crag();
 		CragVolumes* volumes = new CragVolumes(*crag);
+		Costs* mergeCosts = new Costs(*crag);
 
 		CragImport import;
 
@@ -261,7 +262,8 @@ int main(int argc, char** argv) {
 						
 						LOG_USER(logger::out) << "reading crag from supervoxel file " << svFiles[i] << " and merge history " << mhFiles[i] << std::endl;
 
-						import.readCragFromMergeHistory(svFiles[i], mhFiles[i], *crags[i], *cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i));
+						Costs mergeCosts(*crags[i]);
+						import.readCragFromMergeHistory(svFiles[i], mhFiles[i], *crags[i], *cragsVolumes[i], resolution, offset + util::point<float, 3>(0, 0, resolution.z()*i), mergeCosts);
 					}
 
 					if (optionDownsampleCrag) {
@@ -295,7 +297,8 @@ int main(int argc, char** argv) {
 
 				} else {
 
-					import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset);
+					import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset, *mergeCosts);
+
 				}
 
 			} else
@@ -382,6 +385,7 @@ int main(int argc, char** argv) {
 
 			store.saveCrag(*crag);
 			store.saveVolumes(*volumes);
+			store.saveCosts(*crag, *mergeCosts, "merge-scores");
 		}
 
 		{
