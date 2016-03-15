@@ -326,7 +326,8 @@ int main(int argc, char** argv) {
 				downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
 			} else {
 
-
+				DownSampler downSampler;
+				downSampler.process(*crag, *volumes, *downSampled, *downSampledVolumes);
 			}
 
 			delete crag;
