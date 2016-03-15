@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
 
 		Crag* crag = new Crag();
 		CragVolumes* volumes = new CragVolumes(*crag);
-		Costs* mergeCosts = new Costs(*crag);
+		Costs* mergeCosts = 0;
 
 		CragImport import;
 
@@ -297,6 +297,7 @@ int main(int argc, char** argv) {
 
 				} else {
 
+					mergeCosts = new Costs(*crag);
 					import.readCragFromMergeHistory(optionSupervoxels, optionMergeHistory, *crag, *volumes, resolution, offset, *mergeCosts);
 
 				}
@@ -332,6 +333,10 @@ int main(int argc, char** argv) {
 
 			delete crag;
 			delete volumes;
+			if (mergeCosts) {
+				delete mergeCosts;
+				mergeCosts = 0;
+			}
 			crag = downSampled;
 			volumes = downSampledVolumes;
 		}
@@ -392,7 +397,8 @@ int main(int argc, char** argv) {
 
 			store.saveCrag(*crag);
 			store.saveVolumes(*volumes);
-			store.saveCosts(*crag, *mergeCosts, "merge-scores");
+			if (mergeCosts)
+				store.saveCosts(*crag, *mergeCosts, "merge-scores");
 		}
 
 		{
@@ -436,6 +442,7 @@ int main(int argc, char** argv) {
 
 		delete crag;
 		delete volumes;
+		delete mergeCosts;
 
 		if (optionImportTrainingResult) {
 
