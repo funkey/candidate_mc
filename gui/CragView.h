@@ -171,6 +171,7 @@ private:
 	double _alpha;
 
 	std::shared_ptr<ExplicitVolume<float>> _overlay;
+	double                                 _overlayContourWidth;
 };
 
 #endif // CANDIDATE_MC_GUI_CRAG_VIEW_H__

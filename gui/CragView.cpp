@@ -17,7 +17,21 @@ CragView::CragView() :
 	_rawView(std::make_shared<sg_gui::VolumeView>()),
 	_labelsView(std::make_shared<sg_gui::VolumeView>()),
 	_volumeRaysView(std::make_shared<VolumeRaysView>()),
-	_alpha(1.0) {
+	_alpha(1.0),
+	_overlayContourWidth(0) {
+
+	if (optionShowOverlayContours) {
+
+		try {
+
+			_overlayContourWidth = optionShowOverlayContours.as<double>();
+
+		} catch (std::exception& e) {
+
+			// well, that didn't work
+			_overlayContourWidth = 1.0;
+		}
+	}
 
 	_rawScope->add(_rawView);
 	_labelsScope->add(_labelsView);
@@ -64,13 +78,14 @@ CragView::setVolumeRays(std::shared_ptr<VolumeRays> rays) {
 void
 CragView::onSignal(sg_gui::Draw& signal) {
 
-	if (!_overlay)
+	if (!_overlay || _overlayContourWidth == 0)
 		return;
 
 	util::point<float, 3> off = _overlay->getOffset();
 	util::point<float, 3> res = _overlay->getResolution();
 
 	glColor3f(1.0, 0.0, 0.0);
+	glLineWidth(_overlayContourWidth);
 	glBegin(GL_LINES);
 	int z = _labelsView->getCurrentZ();
 	for (int x =  0; x < _overlay->width() - 1; x++)
