@@ -5,6 +5,10 @@ util::ProgramOption optionShowNormals(
 		util::_long_name        = "showNormals",
 		util::_description_text = "Show the mesh normals.");
 
+util::ProgramOption optionShowOverlayContours(
+		util::_long_name        = "showOverlayContours",
+		util::_description_text = "If an overlay segmentation was set to show, highlight the contours of regions with the same label.");
+
 CragView::CragView() :
 	_normalsView(std::make_shared<NormalsView>()),
 	_meshView(std::make_shared<sg_gui::MeshView>()),
@@ -48,12 +52,47 @@ void
 CragView::setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 
 	_labelsView->setVolume(volume);
+	_overlay = volume;
 }
 
 void
 CragView::setVolumeRays(std::shared_ptr<VolumeRays> rays) {
 
 	_volumeRaysView->setVolumeRays(rays);
+}
+
+void
+CragView::onSignal(sg_gui::Draw& signal) {
+
+	if (!_overlay)
+		return;
+
+	util::point<float, 3> off = _overlay->getOffset();
+	util::point<float, 3> res = _overlay->getResolution();
+
+	glColor3f(1.0, 0.0, 0.0);
+	glBegin(GL_LINES);
+	int z = _labelsView->getCurrentZ();
+	for (int x =  0; x < _overlay->width() - 1; x++)
+	for (int y =  0; y < _overlay->height() - 1; y++) {
+
+		float c = (*_overlay)(x,   y, z);
+		float r = (*_overlay)(x+1, y, z);
+		float d = (*_overlay)(x, y+1, z);
+
+		if (c != r) {
+
+			glVertex3f(off.x() + (x+1)*res.x(), off.y() +     y*res.y(), off.z() + z*res.z());
+			glVertex3f(off.x() + (x+1)*res.x(), off.y() + (y+1)*res.y(), off.z() + z*res.z());
+		}
+
+		if (c != d) {
+
+			glVertex3f(off.x() +     x*res.x(), off.y() + (y+1)*res.y(), off.z() + z*res.z());
+			glVertex3f(off.x() + (x+1)*res.x(), off.y() + (y+1)*res.y(), off.z() + z*res.z());
+		}
+	}
+	glEnd();
 }
 
 void

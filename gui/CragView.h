@@ -12,6 +12,7 @@ class CragView :
 		public sg::Scope<
 				CragView,
 				sg::Accepts<
+						sg_gui::Draw,
 						sg_gui::KeyDown
 				>,
 				sg::Provides<
@@ -38,6 +39,8 @@ public:
 	void setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume);
 
 	void setVolumeRays(std::shared_ptr<VolumeRays> rays);
+
+	void onSignal(sg_gui::Draw& signal);
 
 	void onSignal(sg_gui::KeyDown& signal);
 
@@ -166,6 +169,8 @@ private:
 	std::shared_ptr<VolumeRaysView>     _volumeRaysView;
 
 	double _alpha;
+
+	std::shared_ptr<ExplicitVolume<float>> _overlay;
 };
 
 #endif // CANDIDATE_MC_GUI_CRAG_VIEW_H__
