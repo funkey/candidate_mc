@@ -206,8 +206,12 @@ int main(int argc, char** argv) {
 
 		try {
 
+			LOG_USER(logger::out) << "reading features..." << std::flush;
+
 			cragStore.retrieveNodeFeatures(crag, nodeFeatures);
 			cragStore.retrieveEdgeFeatures(crag, edgeFeatures);
+
+			LOG_USER(logger::out) << "done." << std::endl;
 
 		} catch (std::exception& e) {
 

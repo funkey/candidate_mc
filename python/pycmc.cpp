@@ -3,6 +3,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <util/exceptions.h>
+#include <util/ProgramOptions.h>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
 #include <io/Hdf5CragStore.h>
@@ -101,6 +102,12 @@ void translateException(const Exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+// ProgramOptions
+void parseConfigFile(std::string configFile) {
+
+	util::ProgramOptions::init(configFile);
+}
+
 /**
  * Defines all the python classes in the module libpycmc. Here we decide 
  * which functions and data members we wish to expose.
@@ -119,6 +126,9 @@ BOOST_PYTHON_MODULE(pycmc) {
 			;
 	boost::python::def("setLogLevel", setLogLevel);
 	boost::python::def("getLogLevel", getLogLevel);
+
+	// ProgramOptions
+	boost::python::def("parseConfigFile", parseConfigFile);
 
 	// NodeType
 	boost::python::enum_<Crag::NodeType>("CragNodeType")
