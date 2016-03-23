@@ -26,7 +26,20 @@ template <typename Map, typename K, typename V>
 void featuresSetter(Map& map, const K& k, const V& value) { map.set(k, value); }
 
 // iterator traits specializations
-#if !defined __clang__ || __clang_major__ < 6
+//
+// if clang
+//   if clang < 6
+//      boost::detail
+//   else
+//      std
+// else if gcc
+//   if gcc < 5
+//      boost::detail
+//   else
+//      std
+// else
+//   std
+#if (defined __clang__ && __clang_major__ < 6) || (defined __GNUC__ && __GNUC__ < 5)
 namespace boost { namespace detail {
 #else
 namespace std {
@@ -77,7 +90,7 @@ struct iterator_traits<Crag::CragIncArcIterator<T>> {
 	typedef typename std::forward_iterator_tag iterator_category;
 };
 
-#if !defined __clang__ || __clang_major__ < 6
+#if (defined __clang__ && __clang_major__ < 6) || (defined __GNUC__ && __GNUC__ < 5)
 }} // namespace boost::detail
 #else
 } // namespace std
