@@ -75,6 +75,10 @@ util::ProgramOption optionInitialWeights(
 		util::_long_name        = "initialWeights",
 		util::_description_text = "A file containing an initial set of weights.");
 
+util::ProgramOption optionNumIterations(
+		util::_long_name        = "numIterations",
+		util::_description_text = "The number of iterations to spend on finding a solution. Depends on used solver.");
+
 util::ProgramOption optionPretrain(
 		util::_long_name        = "pretrain",
 		util::_description_text = "Train on a much simpler version of the original problem to get an "
@@ -153,6 +157,8 @@ int main(int argc, char** argv) {
 		std::unique_ptr<Loss>       trainingLoss;
 
 		CragSolver::Parameters solverParameters;
+		if (optionNumIterations)
+			solverParameters.numIterations = optionNumIterations;
 		if (optionPretrain)
 			solverParameters.noConstraints = true;
 
