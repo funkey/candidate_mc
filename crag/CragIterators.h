@@ -2,7 +2,7 @@
  * This file is meant to be included into the class definition of Crag.
  */
 
-class CragNodeIterator : std::iterator<std::input_iterator_tag, CragNode> {
+class CragNodeIterator : public std::iterator<std::input_iterator_tag, CragNode> {
 
 	const Crag& _crag;
 	RagType::NodeIt _it;
@@ -47,7 +47,7 @@ public:
 	}
 };
 
-class CragEdgeIterator : std::iterator<std::input_iterator_tag, CragEdge> {
+class CragEdgeIterator : public std::iterator<std::input_iterator_tag, CragEdge> {
 
 	const Crag& _crag;
 	RagType::EdgeIt _it;
