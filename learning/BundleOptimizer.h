@@ -378,7 +378,7 @@ BundleOptimizer::optimizeConvex(Oracle& oracle, Weights& weights, const Weights&
 		LOG_USER(bundleoptimizerlog)  << "          ε   is: " << _eps_t << std::endl;
 
 		// converged?
-		if (_eps_t <= _parameter.min_eps)
+		if (_parameter.min_eps > 0 && _eps_t <= _parameter.min_eps)
 			break;
 	}
 
