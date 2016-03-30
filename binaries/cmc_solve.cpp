@@ -61,6 +61,10 @@ util::ProgramOption optionReadOnly(
 		util::_long_name        = "readOnly",
 		util::_description_text = "Don't write the solution or costs to the project file (only export the solution).");
 
+util::ProgramOption optionDryRun(
+		util::_long_name        = "dryRun",
+		util::_description_text = "Compute the costs and store them, but do not run the solver.");
+
 inline double dot(const std::vector<double>& a, const std::vector<double>& b) {
 
 	UTIL_ASSERT_REL(a.size(), ==, b.size());
@@ -153,6 +157,9 @@ int main(int argc, char** argv) {
 
 		if (!optionReadOnly)
 			cragStore.saveCosts(crag, costs, "costs");
+
+		if (optionDryRun)
+			return 0;
 
 		LOG_USER(logger::out) << "solving" << std::endl;
 
