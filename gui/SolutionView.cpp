@@ -12,7 +12,7 @@ void
 SolutionView::onSignal(SetCandidate& signal) {
 
 	std::cout << "current node is part of solution \"" << _solutionName
-			  << ": " << _solution.selected(signal.getCandidate())
+			  << "\": " << _solution.selected(signal.getCandidate())
 			  << std::endl;
 }
 

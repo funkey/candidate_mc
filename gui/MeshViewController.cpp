@@ -258,7 +258,7 @@ MeshViewController::showNeighbor(Crag::CragNode n) {
 	send<SetCandidate>(n);
 
 	for (Crag::CragEdge e : _crag.adjEdges(_current))
-		if (e.opposite(_current) == _neighbors[_currentNeighbor]) {
+		if (e.opposite(_current) == n) {
 
 			send<SetEdge>(e);
 			break;
