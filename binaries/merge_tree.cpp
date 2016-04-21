@@ -52,7 +52,8 @@ util::ProgramOption optionRagFile(
 
 util::ProgramOption optionMergeHistory(
 		util::_long_name        = "mergeHistory",
-		util::_description_text = "A file to write the region adjacency graph and merge history after merging.");
+		util::_description_text = "A file to write the region adjacency graph and merge history after merging.",
+		util::_default_value    = "merge_history.txt");
 
 util::ProgramOption optionSmooth(
 		util::_long_name        = "smooth",
