@@ -85,6 +85,10 @@ util::ProgramOption optionRandomPerturbation(
 		util::_short_name       = "r",
 		util::_description_text = "Randomly (normally distributed) perturb the edge scores for merging.");
 
+util::ProgramOption optionDontConsiderRegionSize(
+		util::_long_name        = "dontConsiderRegionSize",
+		util::_description_text = "By default, the scores are multiplied with the region size to encourage merging of small regions first. This option disables that.");
+
 using namespace logger;
 
 int main(int optionc, char** optionv) {
@@ -249,19 +253,34 @@ int main(int optionc, char** optionv) {
 
 		} else {
 
-			MultiplyMinRegionSize<MedianEdgeIntensity<3>> scoringFunction(
-					merging.getRag(),
-					initialRegions.data(),
-					mei);
+			if (optionDontConsiderRegionSize) {
 
-			if (optionRandomPerturbation) {
+				if (optionRandomPerturbation) {
 
-				RandomPerturbation<MultiplyMinRegionSize<MedianEdgeIntensity<3>>> rp(scoringFunction);
-				merging.createMergeTree(rp);
+					RandomPerturbation<MedianEdgeIntensity<3>> rp(mei);
+					merging.createMergeTree(rp);
+
+				} else {
+
+					merging.createMergeTree(mei);
+				}
 
 			} else {
 
-				merging.createMergeTree(scoringFunction);
+				MultiplyMinRegionSize<MedianEdgeIntensity<3>> scoringFunction(
+						merging.getRag(),
+						initialRegions.data(),
+						mei);
+
+				if (optionRandomPerturbation) {
+
+					RandomPerturbation<MultiplyMinRegionSize<MedianEdgeIntensity<3>>> rp(scoringFunction);
+					merging.createMergeTree(rp);
+
+				} else {
+
+					merging.createMergeTree(scoringFunction);
+				}
 			}
 		}
 
