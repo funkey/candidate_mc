@@ -68,6 +68,32 @@ Crag::leafEdges(CragEdge e) const {
 	return leafEdges;
 }
 
+std::set<Crag::CragEdge>
+Crag::descendantEdges(CragEdge e) const {
+
+	std::set<CragEdge> descendants = descendantEdges(e.u(), e.v());
+	descendants.erase(e);
+
+	return descendants;
+}
+
+std::set<Crag::CragEdge>
+Crag::descendantEdges(CragNode u, CragNode v) const {
+
+	std::set<CragEdge> uEdges;
+	std::set<CragEdge> vEdges;
+	recCollectEdges(u, uEdges);
+	recCollectEdges(v, vEdges);
+
+	std::set<CragEdge> descendants;
+	std::set_intersection(
+		uEdges.begin(), uEdges.end(),
+		vEdges.begin(), vEdges.end(),
+		std::inserter(descendants, descendants.end()));
+
+	return descendants;
+}
+
 void
 Crag::recLeafNodes(CragNode n, std::set<CragNode>& leafNodes) const {
 
@@ -76,4 +102,14 @@ Crag::recLeafNodes(CragNode n, std::set<CragNode>& leafNodes) const {
 	else
 		for (auto a : inArcs(n))
 			recLeafNodes(a.source(), leafNodes);
+}
+
+void
+Crag::recCollectEdges(Crag::CragNode n, std::set<Crag::CragEdge>& edges) const {
+
+	for (Crag::CragEdge e : adjEdges(n))
+		edges.insert(e);
+
+	for (Crag::CragArc a : inArcs(n))
+		recCollectEdges(a.source(), edges);
 }

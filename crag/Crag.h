@@ -502,9 +502,22 @@ public:
 	 */
 	std::set<CragEdge> leafEdges(CragEdge e) const;
 
+	/**
+	 * Get all edges that are descendants of e. These are all edges that are 
+	 * linking descendants of the nodes connected by e.
+	 */
+	std::set<CragEdge> descendantEdges(CragEdge e) const;
+
+	/**
+	 * Get all edges that are linking descendants of u and v.
+	 */
+	std::set<CragEdge> descendantEdges(CragNode u, CragNode v) const;
+
 private:
 
 	void recLeafNodes(CragNode n, std::set<CragNode>& leafNodes) const;
+
+	void recCollectEdges(Crag::CragNode n, std::set<Crag::CragEdge>& edges) const;
 
 	// adjacency graph
 	lemon::ListGraph _rag;

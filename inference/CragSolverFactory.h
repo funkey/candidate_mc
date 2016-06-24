@@ -3,6 +3,7 @@
 
 #include "AssignmentSolver.h"
 #include "MultiCutSolver.h"
+#include "ClosedSetSolver.h"
 
 class CragSolverFactory {
 
