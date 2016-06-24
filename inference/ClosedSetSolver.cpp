@@ -232,7 +232,7 @@ ClosedSetSolver::setInitialConstraints() {
 
 	LOG_USER(closedsetlog)
 			<< "added " << numEdgeEdgeConstraints
-			<< " edge-node constraints" << std::endl;
+			<< " edge-edge constraints" << std::endl;
 }
 
 void
