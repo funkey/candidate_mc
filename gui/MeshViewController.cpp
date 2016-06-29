@@ -326,6 +326,7 @@ MeshViewController::removeMesh(Crag::CragNode n) {
 void
 MeshViewController::clearMeshes() {
 
+	_current = Crag::Invalid;
 	_meshes->clear();
 }
 
