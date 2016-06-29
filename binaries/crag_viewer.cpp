@@ -5,6 +5,7 @@
 #include <io/Hdf5CragStore.h>
 #include <io/Hdf5VolumeStore.h>
 #include <util/ProgramOptions.h>
+#include <util/string.h>
 #include <imageprocessing/ExplicitVolume.h>
 #include <gui/CragView.h>
 #include <gui/MeshViewController.h>
@@ -33,7 +34,8 @@ util::ProgramOption optionOverlay(
 		util::_long_name        = "overlay",
 		util::_description_text = "The type of labels to show as overlay on the volume. 'leaf' shows the CRAG leaf nodes, "
 		                          "any other string connected components of a solution with that name in the project file. "
-		                          "Default is 'leaf'.",
+		                          "Default is 'leaf'. Multiple overlays can be given by separating them with commas. They can "
+		                          "be switched between with the number keys.",
 		util::_default_value    = "leaf");
 
 util::ProgramOption optionCandidates(
@@ -55,6 +57,77 @@ util::ProgramOption optionShowFeatures(
 util::ProgramOption optionShowSolution(
 		util::_long_name        = "showSolution",
 		util::_description_text = "For each selected candidate, show whether it is part of the solution with the given name.");
+
+std::shared_ptr<ExplicitVolume<float>>
+getOverlay(
+		std::string name,
+		const Crag& crag,
+		const CragVolumes& volumes,
+		CragStore& cragStore,
+		VolumeStore& volumeStore,
+		std::shared_ptr<ExplicitVolume<float>> supervoxels) {
+
+	std::shared_ptr<ExplicitVolume<float>> overlay;
+
+	if (name == "leaf") {
+
+		LOG_USER(logger::out) << "showing CRAG leaf node labels in overlay" << std::endl;
+
+		overlay = supervoxels;
+
+	} else {
+
+		LOG_USER(logger::out) << "showing " << name << " labels in overlay" << std::endl;
+
+		try {
+
+			ExplicitVolume<int> tmp;
+			volumeStore.retrieveVolume(tmp, name);
+
+			overlay = std::make_shared<ExplicitVolume<float>>();
+			*overlay = tmp;
+
+		} catch (std::exception e) {
+
+			LOG_USER(logger::out) << "did not find volume with name " << name << std::endl;
+			LOG_USER(logger::out) << "looking for a solution with that name" << std::endl;
+
+			std::shared_ptr<CragSolution> overlaySolution = std::make_shared<CragSolution>(crag);
+			cragStore.retrieveSolution(crag, *overlaySolution, name);
+
+			overlay =
+					std::make_shared<ExplicitVolume<float>>(
+							supervoxels->width(),
+							supervoxels->height(),
+							supervoxels->depth());
+			overlay->setResolution(supervoxels->getResolution());
+			overlay->setOffset(supervoxels->getOffset());
+
+			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+				if (!overlaySolution->selected(n))
+					continue;
+
+				const CragVolume& volume = *volumes[n];
+				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+
+				for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+				for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+
+					if (volume.data()(x, y, z))
+						(*overlay)(
+								offset.x() + x,
+								offset.y() + y,
+								offset.z() + z)
+										= overlaySolution->label(n) + 1;
+				}
+			}
+		}
+	}
+
+	return overlay;
+}
 
 int main(int argc, char** argv) {
 
@@ -124,62 +197,13 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		std::shared_ptr<ExplicitVolume<float>> overlay;
+		std::vector<std::shared_ptr<ExplicitVolume<float>>> overlays;
 		std::shared_ptr<CragSolution>          overlaySolution;
 		std::shared_ptr<CragSolution>          viewSolution;
 
-		if (optionOverlay.as<std::string>() == "leaf") {
-
-			LOG_USER(logger::out) << "showing CRAG leaf node labels in overlay" << std::endl;
-
-			overlay = supervoxels;
-
-		} else if (optionOverlay.as<std::string>() == "ground-truth") {
-
-			overlay = std::make_shared<ExplicitVolume<float>>();
-
-			LOG_USER(logger::out) << "showing ground truth labels in overlay" << std::endl;
-
-			ExplicitVolume<int> tmp;
-			volumeStore.retrieveGroundTruth(tmp);
-			*overlay = tmp;
-
-		} else {
-
-			LOG_USER(logger::out) << "showing " << optionOverlay.as<std::string>() << " labels in overlay" << std::endl;
-
-			overlaySolution = std::make_shared<CragSolution>(crag);
-			cragStore.retrieveSolution(crag, *overlaySolution, optionOverlay.as<std::string>());
-
-			overlay =
-					std::make_shared<ExplicitVolume<float>>(
-							intensities->width(),
-							intensities->height(),
-							intensities->depth());
-			overlay->setResolution(intensities->getResolution());
-			overlay->setOffset(intensities->getOffset());
-
-			for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
-
-				if (!overlaySolution->selected(n))
-					continue;
-
-				const CragVolume& volume = *volumes[n];
-				util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
-
-				for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
-				for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
-				for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
-
-					if (volume.data()(x, y, z))
-						(*overlay)(
-								offset.x() + x,
-								offset.y() + y,
-								offset.z() + z)
-										= overlaySolution->label(n) + 1;
-				}
-			}
-		}
+		if (optionOverlay)
+			for (std::string name : split(optionOverlay, ','))
+				overlays.push_back(getOverlay(name, crag, volumes, cragStore, volumeStore, supervoxels));
 
 		if (optionShowSolution) {
 
@@ -274,7 +298,7 @@ int main(int argc, char** argv) {
 		}
 
 		cragView->setRawVolume(intensities);
-		cragView->setLabelsVolume(overlay);
+		cragView->setLabelVolumes(overlays);
 
 		if (rays)
 			cragView->setVolumeRays(rays);

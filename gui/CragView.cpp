@@ -63,10 +63,15 @@ CragView::setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 }
 
 void
-CragView::setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
+CragView::setLabelVolumes(std::vector<std::shared_ptr<ExplicitVolume<float>>> volumes) {
 
-	_labelsView->setVolume(volume);
-	_overlay = volume;
+	_overlays = volumes;
+	_currentOverlay = 0;
+
+	if (volumes.size() == 0)
+		return;
+
+	_labelsView->setVolume(_overlays[_currentOverlay]);
 }
 
 void
@@ -78,22 +83,24 @@ CragView::setVolumeRays(std::shared_ptr<VolumeRays> rays) {
 void
 CragView::onSignal(sg_gui::Draw& signal) {
 
-	if (!_overlay || _overlayContourWidth == 0)
+	if (_overlays.size() == 0 || _overlayContourWidth == 0)
 		return;
 
-	util::point<float, 3> off = _overlay->getOffset();
-	util::point<float, 3> res = _overlay->getResolution();
+	Overlay overlay = _overlays[_currentOverlay];
+
+	util::point<float, 3> off = overlay->getOffset();
+	util::point<float, 3> res = overlay->getResolution();
 
 	glColor3f(1.0, 0.0, 0.0);
 	glLineWidth(_overlayContourWidth);
 	glBegin(GL_LINES);
 	int z = _labelsView->getCurrentZ();
-	for (int x =  0; x < _overlay->width() - 1; x++)
-	for (int y =  0; y < _overlay->height() - 1; y++) {
+	for (int x =  0; x < overlay->width() - 1; x++)
+	for (int y =  0; y < overlay->height() - 1; y++) {
 
-		float c = (*_overlay)(x,   y, z);
-		float r = (*_overlay)(x+1, y, z);
-		float d = (*_overlay)(x, y+1, z);
+		float c = (*overlay)(x,   y, z);
+		float r = (*overlay)(x+1, y, z);
+		float d = (*overlay)(x, y+1, z);
 
 		if (c != r) {
 
@@ -137,5 +144,14 @@ CragView::onSignal(sg_gui::KeyDown& signal) {
 		_rawScope->toggleZBufferWrites();
 		_labelsScope->toggleVisibility();
 		send<sg_gui::ContentChanged>();
+	}
+
+	if (signal.key >= sg_gui::keys::_1 && signal.key <= sg_gui::keys::_0) {
+
+		int index = signal.key - sg_gui::keys::_1;
+		if (index < _overlays.size()) {
+			_currentOverlay = index;
+			_labelsView->setVolume(_overlays[_currentOverlay]);
+		}
 	}
 }

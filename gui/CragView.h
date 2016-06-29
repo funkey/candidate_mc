@@ -36,7 +36,7 @@ public:
 
 	void setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume);
 
-	void setLabelsVolume(std::shared_ptr<ExplicitVolume<float>> volume);
+	void setLabelVolumes(std::vector<std::shared_ptr<ExplicitVolume<float>>> volumes);
 
 	void setVolumeRays(std::shared_ptr<VolumeRays> rays);
 
@@ -170,8 +170,10 @@ private:
 
 	double _alpha;
 
-	std::shared_ptr<ExplicitVolume<float>> _overlay;
-	double                                 _overlayContourWidth;
+	typedef std::shared_ptr<ExplicitVolume<float>> Overlay;
+	std::vector<Overlay> _overlays;
+	double               _overlayContourWidth;
+	int                  _currentOverlay;
 };
 
 #endif // CANDIDATE_MC_GUI_CRAG_VIEW_H__

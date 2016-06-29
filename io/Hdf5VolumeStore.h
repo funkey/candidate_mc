@@ -32,6 +32,11 @@ public:
 
 	void retrieveLabels(ExplicitVolume<int>& labels) override;
 
+	void retrieveVolume(ExplicitVolume<int>& volume, std::string name) {
+
+		readVolume(volume, std::string("/volumes/") + name);
+	}
+
 private:
 
 	vigra::HDF5File _hdfFile;

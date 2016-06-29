@@ -49,6 +49,11 @@ public:
 	 * Get the label volume.
 	 */
 	virtual void retrieveLabels(ExplicitVolume<int>& labels) = 0;
+
+	/**
+	 * Get a volume by its name.
+	 */
+	virtual void retrieveVolume(ExplicitVolume<int>& volume, std::string name) = 0;
 };
 
 
