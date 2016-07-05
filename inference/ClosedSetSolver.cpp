@@ -283,64 +283,38 @@ ClosedSetSolver::findMinClosedSet(CragSolution& solution) {
 bool
 ClosedSetSolver::findViolatedConstraints(CragSolution& solution) {
 
-	return false;
-
-	// TODO: add path constraints
-
-#if 0
-
-    int treePathConstraintAdded =0;
-    int constraintsAdded = 0;
+	int constraintsAdded = 0;
 
 	if (_parameters.noConstraints)
 		return false;
 
-
-
-
-	// Given the large number of adjacency edges, and that only a small subset 
-	// of them gets selected, it might be more efficient to create a new graph, 
-	// here, consisting only of the selected adjacency edges.
-
+	// Cut graph contains all nodes and all selected leaf edges.
 	typedef lemon::ListGraph Cut;
 	Cut cutGraph;
 	for (unsigned int i = 0; i < _numNodes; i++)
 		cutGraph.addNode();
 
 	for (Crag::CragEdge e : _crag.edges())
-		if (solution.selected(e))
+		if (solution.selected(e) && _crag.isLeafEdge(e))
 			cutGraph.addEdge(_crag.u(e), _crag.v(e));
-
-	// find connected components in cut graph
-	lemon::connectedComponents(cutGraph, _labels);
-
-    if(optionLazyTreePathConstraints.as<bool>()){
-        for(auto & c : _allTreePathConstraints){
-            if(c.isViolated(_solution)){
-                _constraints.add(c);
-                ++treePathConstraintAdded;
-            }
-        }
-    }
-
-	// label rejected nodes with -1
-	for (Crag::CragNode n : _crag.nodes())
-		if (!solution.selected(n))
-			_labels[n] = -1;
 
 	// for each not selected edge with nodes in the same connected component, 
 	// find the shortest path along connected nodes connecting them
 	for (Crag::CragEdge e : _crag.edges()) {
 
-		// not selected
+		// consider only leaf edges
+		if (!_crag.isLeafEdge(e))
+			continue;
+
+		// only not selected edges
 		if (solution.selected(e))
 			continue;
 
 		Crag::CragNode s = e.u();
 		Crag::CragNode t = e.v();
 
-		// in same component
-		if (_labels[s] != _labels[t] || !solution.selected(s))
+		// only with incident nodes of same component
+		if (solution.label(s) != solution.label(t) || !solution.selected(s))
 			continue;
 
 		LOG_ALL(closedsetlog)
@@ -355,18 +329,11 @@ ClosedSetSolver::findViolatedConstraints(CragSolution& solution) {
 		lemon::Dijkstra<Cut, One> dijkstra(cutGraph, one);
 
 		// e = (s, t) was not selected -> there should be no path connecting s 
-		// and t
+		// and t, but there is (at least) one, let's find it
 		if (!dijkstra.run(s, t))
 			LOG_ERROR(closedsetlog)
 					<< "dijkstra could not find a path!"
 					<< std::endl;
-
-		LOG_ALL(closedsetlog)
-				<< "nodes " << _crag.id(s)
-				<< " and " << _crag.id(t)
-				<< " are in same component "
-				<< _labels[_crag.v(e)]
-				<< std::endl;
 
 		LinearConstraint cycleConstraint;
 
@@ -441,32 +408,6 @@ ClosedSetSolver::findViolatedConstraints(CragSolution& solution) {
 			<< "added " << constraintsAdded
 			<< " cycle constraints" << std::endl;
 
-    if(optionLazyTreePathConstraints.as<bool>()){
-    LOG_USER(closedsetlog)
-            << "added " << treePathConstraintAdded
-            << " tree path  constraints" << std::endl;
-    }
-
-	// propagate node labels to subsets
-	for (Crag::CragNode n : _crag.nodes())
-		if (_crag.isRootNode(n))
-			propagateLabel(n, -1);
-
-	return (constraintsAdded + treePathConstraintAdded > 0);
-#endif
+	return constraintsAdded > 0;
 }
-
-#if 0
-void
-ClosedSetSolver::propagateLabel(Crag::CragNode n, int label) {
-
-	if (label == -1)
-		label = _labels[n];
-	else
-		_labels[n] = label;
-
-	for (Crag::CragArc e : _crag.inArcs(n))
-		propagateLabel(e.source(), label);
-}
-#endif
 

@@ -29,6 +29,16 @@ public:
 
 private:
 
+	// a property map returning 1 for every entry
+	struct One {
+
+		typedef int Value;
+
+		template <typename T>
+		int operator[](const T&) const { return 1; }
+
+	};
+
 	void prepareSolver();
 
 	void setVariables();
