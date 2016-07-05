@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
 
 		auto cragView       = std::make_shared<CragView>();
 		auto meshController = std::make_shared<MeshViewController>(crag, volumes, supervoxels);
-		auto costsView      = std::make_shared<CostsView>(crag, costs, optionShowCosts);
+		auto costsView      = std::make_shared<CostsView>(crag, volumes, costs, optionShowCosts);
 		auto featuresView   = std::make_shared<SoltionView>(crag, nodeFeatures, edgeFeatures);
 		auto rotateView     = std::make_shared<RotateView>();
 		auto zoomView       = std::make_shared<ZoomView>(true);

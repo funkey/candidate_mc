@@ -116,6 +116,8 @@ private:
 	int _currentNeighbor;
 
 	std::shared_ptr<CragSolution> _solution;
+
+	bool _showNeighborLinks;
 };
 
 #endif // CANDIDATE_MC_GUI_MESH_VIEW_CONTROLLER_H__
