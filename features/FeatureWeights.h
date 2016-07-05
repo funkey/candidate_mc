@@ -106,6 +106,11 @@ public:
 		UTIL_ASSERT(b == v.end());
 	}
 
+	/**
+	 * Set all weights that are zero in mask to zero.
+	 */
+	void mask(const FeatureWeights& mask);
+
 private:
 
 	std::map<Crag::NodeType, std::vector<double>> _nodeFeatureWeights;

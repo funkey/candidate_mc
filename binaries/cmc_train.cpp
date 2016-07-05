@@ -71,9 +71,9 @@ util::ProgramOption optionInitialWeightValues(
 		util::_description_text = "Uniform values of the weight vectors to start learning with.",
 		util::_default_value    = 0);
 
-util::ProgramOption optionInitialWeights(
-		util::_long_name        = "initialWeights",
-		util::_description_text = "A file containing an initial set of weights.");
+util::ProgramOption optionRestartTraining(
+		util::_long_name        = "restartTraining",
+		util::_description_text = "Use the feature weights in the project file as initial weights.");
 
 util::ProgramOption optionNumIterations(
 		util::_long_name        = "numIterations",
@@ -83,6 +83,10 @@ util::ProgramOption optionPretrain(
 		util::_long_name        = "pretrain",
 		util::_description_text = "Train on a much simpler version of the original problem to get an "
 		                          "SVM-like training of the feature weights.");
+
+util::ProgramOption optionOnlyEdgeWeights(
+		util::_long_name        = "onlyEdgeWeights",
+		util::_description_text = "Train only edge weights.");
 
 util::ProgramOption optionNumSteps(
 		util::_long_name        = "numSteps",
@@ -320,6 +324,22 @@ int main(int argc, char** argv) {
 		// create initial set of weights for the given features
 		FeatureWeights weights(nodeFeatures, edgeFeatures, optionInitialWeightValues.as<double>());
 
+		if (optionRestartTraining) {
+
+			FeatureWeights prevWeights;
+			cragStore->retrieveFeatureWeights(prevWeights);
+
+			// previous weights might be incomplete
+			for (Crag::NodeType type : Crag::NodeTypes)
+				if (prevWeights[type].size() > 0)
+					std::copy(prevWeights[type].begin(), prevWeights[type].end(), weights[type].begin());
+			for (Crag::EdgeType type : Crag::EdgeTypes)
+				if (prevWeights[type].size() > 0)
+					std::copy(prevWeights[type].begin(), prevWeights[type].end(), weights[type].begin());
+
+			LOG_DEBUG(logger::out) << "starting with feature weights " << weights << std::endl;
+		}
+
 		if (optionDryRun) {
 
 			LOG_USER(logger::out) << "dry run -- skip learning" << std::endl;
@@ -354,7 +374,21 @@ int main(int argc, char** argv) {
 			parameters.epsStrategy = BundleOptimizer::EpsFromGap;
 			parameters.steps       = optionNumSteps;
 			BundleOptimizer optimizer(parameters);
-			optimizer.optimize(oracle, weights);
+
+			if (optionOnlyEdgeWeights) {
+
+				FeatureWeights mask(weights);
+				for (Crag::NodeType type : Crag::NodeTypes)
+					std::fill(mask[type].begin(), mask[type].end(), 0);
+				for (Crag::EdgeType type : Crag::EdgeTypes)
+					std::fill(mask[type].begin(), mask[type].end(), 1);
+
+				optimizer.optimize(oracle, weights, mask);
+
+			} else {
+
+				optimizer.optimize(oracle, weights);
+			}
 		}
 
 		cragStore->saveFeatureWeights(weights);

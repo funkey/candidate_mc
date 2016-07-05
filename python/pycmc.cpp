@@ -454,7 +454,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 
 	// BundleOptimizer
 	boost::python::class_<BundleOptimizer>("BundleOptimizer", boost::python::init<const BundleOptimizer::Parameters&>())
-			.def("optimize", &BundleOptimizer::optimize<PyOracle, PyOracleWeights>)
+			.def("optimize", static_cast<BundleOptimizer::OptimizerResult(BundleOptimizer::*)(PyOracle&, PyOracleWeights&)>(&BundleOptimizer::optimize<PyOracle, PyOracleWeights>))
+			.def("optimize", static_cast<BundleOptimizer::OptimizerResult(BundleOptimizer::*)(PyOracle&, PyOracleWeights&, PyOracleWeights&)>(&BundleOptimizer::optimize<PyOracle, PyOracleWeights>))
 			.def("getEps", &BundleOptimizer::getEps)
 			.def("getMinValue", &BundleOptimizer::getMinValue)
 			;

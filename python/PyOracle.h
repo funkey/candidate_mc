@@ -1,9 +1,11 @@
 #ifndef CANDIDATE_MC_PYTHON_PY_ORACLE_H__
 #define CANDIDATE_MC_PYTHON_PY_ORACLE_H__
 
+#include <algorithm>
 #include <vector>
 #include <boost/python.hpp>
 #include <learning/Oracle.h>
+#include <util/assert.h>
 
 /**
  * Simple wrapper around std::vector to use it as weights in the 
@@ -23,6 +25,23 @@ public:
 	const std::vector<double>& exportToVector() const {
 
 		return *this;
+	}
+
+	/**
+	 * Set all weights that are zero in mask to zero.
+	 */
+	void mask(const PyOracleWeights& mask) {
+
+		UTIL_ASSERT_REL(size(), ==, mask.size());
+
+		auto mask_op = [](double x, double m) { return (m == 0 ? 0 : x ); };
+
+		std::transform(
+				begin(),
+				end(),
+				mask.begin(),
+				begin(),
+				mask_op);
 	}
 };
 

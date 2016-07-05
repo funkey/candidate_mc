@@ -133,8 +133,16 @@ public:
 	 * (passed by reference) at point 'current'. Weights has to be copy 
 	 * constructable and has to provide exportToVector() and importFromVector().
 	 */
-    template <typename Oracle, typename Weights>
-    OptimizerResult optimize(Oracle& oracle, Weights& w);
+	template <typename Oracle, typename Weights>
+	OptimizerResult optimize(Oracle& oracle, Weights& w);
+
+	/**
+	 * Same as optimize(oracle, w), but allows to specify a binary mask on the 
+	 * weights. Only non-zero entries will be updated. Use this to perform 
+	 * block-coordinate descents.
+	 */
+	template <typename Oracle, typename Weights>
+	OptimizerResult optimize(Oracle& oracle, Weights& w, Weights& mask);
 
 	/**
 	 * Get the remaining eps after optimization.
@@ -159,9 +167,12 @@ private:
 	 *
 	 * The optimal value can be queried with getMinValue() after the 
 	 * optimization finished.
+	 *
+	 * A binary mask can be provided to optimize only parts of the vector 
+	 * (non-zero in mask).
 	 */
 	template <typename Oracle, typename Weights>
-	OptimizerResult optimizeConvex(Oracle& oracle, Weights& w, const Weights& v_T);
+	OptimizerResult optimizeConvex(Oracle& oracle, Weights& w, const Weights& v_T, const Weights& mask);
 
     void setupQp(const std::vector<double>& w, const std::vector<double>& v_T);
 
@@ -200,13 +211,22 @@ template <typename Oracle, typename Weights>
 BundleOptimizer::OptimizerResult
 BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
+	Weights mask(weights);
+	mask.importFromVector(std::vector<double>(weights.exportToVector().size(), 1));
+	return optimize(oracle, weights, mask);
+}
+
+template <typename Oracle, typename Weights>
+BundleOptimizer::OptimizerResult
+BundleOptimizer::optimize(Oracle& oracle, Weights& weights, Weights& mask) {
+
 	_continuePreviousQp = false;
 
 	if (!oracle.haveConcavePart()) {
 
 		Weights v_T(weights);
 		v_T.importFromVector(std::vector<double>(weights.exportToVector().size(), 0));
-		return optimizeConvex(oracle, weights, v_T);
+		return optimizeConvex(oracle, weights, v_T, mask);
 
 	} else {
 
@@ -226,6 +246,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 			//   i.e., linearize R at w*_T:
 			double r_T;
 			oracle.valueGradientR(weights, r_T, v_T);
+			v_T.mask(mask);
 			double c_T = r_T - dot(weights.exportToVector(), v_T.exportToVector());
 
 			LOG_DEBUG(bundleoptimizerlog) << "   w*     = " << weights.exportToVector() << std::endl;
@@ -234,7 +255,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 			// 4. w*_T = argmin_w ½λ|w|² + P(w) + <v_T,w> + c_T
 			//         = argmin_w ℐ_w*(w)
-			if (optimizeConvex(oracle, weights, v_T) != ReachedMinGap) {
+			if (optimizeConvex(oracle, weights, v_T, mask) != ReachedMinGap) {
 
 				LOG_ERROR(bundleoptimizerlog) << "convex optimization did not converge" << std::endl;
 				return Error;
@@ -266,7 +287,7 @@ BundleOptimizer::optimize(Oracle& oracle, Weights& weights) {
 
 template <typename Oracle, typename Weights>
 BundleOptimizer::OptimizerResult
-BundleOptimizer::optimizeConvex(Oracle& oracle, Weights& weights, const Weights& v_T) {
+BundleOptimizer::optimizeConvex(Oracle& oracle, Weights& weights, const Weights& v_T, const Weights& mask) {
 
 	LOG_ALL(bundleoptimizerlog)
 			<< "starting convex optimization using eps from "
@@ -336,6 +357,7 @@ BundleOptimizer::optimizeConvex(Oracle& oracle, Weights& weights, const Weights&
 
 		// get current value and gradient of P(w)
 		oracle.valueGradientP(weights, P_w_tm1, gradient);
+		gradient.mask(mask);
 		a_t = gradient.exportToVector();
 
 		LOG_DEBUG(bundleoptimizerlog) << "       P(w)              is: " << P_w_tm1 << std::endl;

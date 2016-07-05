@@ -46,7 +46,7 @@ public:
 		_dims = 0;
 
 		bool first = true;
-		int firstId;
+		int firstId = -1;
 		for (auto& p : _features) {
 
 			KeyType n = p.first;

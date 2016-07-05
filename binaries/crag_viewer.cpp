@@ -201,9 +201,8 @@ int main(int argc, char** argv) {
 		std::shared_ptr<CragSolution>          overlaySolution;
 		std::shared_ptr<CragSolution>          viewSolution;
 
-		if (optionOverlay)
-			for (std::string name : split(optionOverlay, ','))
-				overlays.push_back(getOverlay(name, crag, volumes, cragStore, volumeStore, supervoxels));
+		for (std::string name : split(optionOverlay, ','))
+			overlays.push_back(getOverlay(name, crag, volumes, cragStore, volumeStore, supervoxels));
 
 		if (optionShowSolution) {
 
