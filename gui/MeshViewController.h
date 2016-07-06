@@ -75,25 +75,38 @@ public:
 
 private:
 
-	void nextVolume();
+	// replace the current candidate with the next higher one
+	bool higherCandidate();
 
-	void prevVolume();
+	// replace the current candidate with the next lower one
+	bool lowerCandidate();
 
+	// replace the current candidate with the given one
+	void replaceCurrentCandidate(Crag::CragNode n);
+
+	// set the current candidate (adds it to existing meshes)
+	void setCurrentCandidate(Crag::CragNode n);
+
+	// replace the current neighbor with the next one
 	void nextNeighbor();
 
+	// replace the current neighbor with the previous one
 	void prevNeighbor();
 
-	void setCurrentMesh(Crag::CragNode n);
+	// replace the current neighbor with the one given by index
+	void replaceCurrentNeighbor(int index);
 
-	void replaceCurrentMesh(Crag::CragNode n);
-
-	void showNeighbor(Crag::CragNode n);
-
+	// add the mesh of a candidate
 	void addMesh(Crag::CragNode n);
 
+	// remove the mesh of a candidate
 	void removeMesh(Crag::CragNode n);
 
+	void clearCandidates();
+
 	void clearMeshes();
+
+	void clearPath();
 
 	Crag::CragNode parentOf(Crag::CragNode n);
 
@@ -107,7 +120,7 @@ private:
 
 	std::map<Crag::CragNode, std::shared_ptr<sg_gui::Mesh>> _meshCache;
 
-	Crag::CragNode _current;
+	Crag::CragNode _currentCandidate;
 
 	std::vector<Crag::CragNode> _path;
 

@@ -52,41 +52,31 @@ MeshViewController::onSignal(sg_gui::VolumePointSelected& signal) {
 
 	LOG_DEBUG(meshviewcontrollerlog) << "selected node " << _crag.id(n) << std::endl;
 
+	clearPath();
+	setCurrentCandidate(n);
+
 	// n is a leaf node. If we want to show a solution, we have to find the 
 	// candidate above (or equal to) n that is part of the solution and show 
 	// that.
 
 	if (_solution) {
 
-		LOG_DEBUG(meshviewcontrollerlog) << "asking for solution node" << std::endl;
+		LOG_DEBUG(meshviewcontrollerlog) << "going to next solution node" << std::endl;
 
-		while (!_solution->selected(n)) {
+		while (!_solution->selected(_currentCandidate)) {
 
-			LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(n) << " is not part of solution" << std::endl;
+			LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(_currentCandidate) << " is not part of solution" << std::endl;
 
-			n = parentOf(n);
-			if (n == Crag::Invalid) {
+			if (!higherCandidate()) {
 
 				LOG_DEBUG(meshviewcontrollerlog) << "no more parents" << std::endl;
+				setCurrentCandidate(n);
 				return;
 			}
-
-			LOG_DEBUG(meshviewcontrollerlog) << "probing parent node " << _crag.id(n) << std::endl;
 		}
 
-		LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(n) << " is part of solution" << std::endl;
+		LOG_DEBUG(meshviewcontrollerlog) << "node " << _crag.id(_currentCandidate) << " is part of solution" << std::endl;
 	}
-
-	if (_meshes->contains(_crag.id(n))) {
-
-		_current = Crag::CragNode();
-		removeMesh(n);
-		send<sg_gui::SetMeshes>(_meshes);
-
-	} else
-		setCurrentMesh(n);
-
-	_path.clear();
 }
 
 void
@@ -96,9 +86,9 @@ MeshViewController::onSignal(sg_gui::MouseDown& signal) {
 		return;
 
 	if (signal.button == sg_gui::buttons::WheelUp && signal.modifiers & sg_gui::keys::ShiftDown)
-		nextVolume();
+		higherCandidate();
 	else if (signal.button == sg_gui::buttons::WheelDown && signal.modifiers & sg_gui::keys::ShiftDown)
-		prevVolume();
+		lowerCandidate();
 	else if (signal.button == sg_gui::buttons::WheelUp && signal.modifiers & sg_gui::keys::AltDown)
 		nextNeighbor();
 	else if (signal.button == sg_gui::buttons::WheelDown && signal.modifiers & sg_gui::keys::AltDown)
@@ -124,8 +114,8 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 			unsigned int id = boost::lexical_cast<unsigned int>(input);
 
 			Crag::CragNode n = _crag.nodeFromId(id);
-			setCurrentMesh(n);
-			_path.clear();
+			clearPath();
+			setCurrentCandidate(n);
 
 		} catch (std::exception& e) {
 
@@ -136,40 +126,52 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 
 	if (signal.key == sg_gui::keys::C) {
 
-		clearMeshes();
+		clearCandidates();
 		send<sg_gui::SetMeshes>(_meshes);
 	}
 }
 
-void
-MeshViewController::nextVolume() {
+bool
+MeshViewController::higherCandidate() {
 
-	if (_current == Crag::Invalid)
-		return;
+	if (_currentCandidate == Crag::Invalid)
+		return false;
 
-	Crag::CragNode parent = parentOf(_current);
+	Crag::CragNode parent = parentOf(_currentCandidate);
 
 	if (parent == Crag::Invalid)
-		return;
+		return false;
 
-	_path.push_back(_current);
+	_path.push_back(_currentCandidate);
 
-	replaceCurrentMesh(parent);
+	replaceCurrentCandidate(parent);
+
+	return true;
 }
 
-void
-MeshViewController::prevVolume() {
+bool
+MeshViewController::lowerCandidate() {
 
-	if (_current == Crag::Invalid)
-		return;
+	if (_currentCandidate == Crag::Invalid)
+		return false;
 
 	if (_path.size() == 0)
-		return;
+		return false;
 
 	Crag::CragNode child = _path.back();
 	_path.pop_back();
 
-	replaceCurrentMesh(child);
+	replaceCurrentCandidate(child);
+
+	return true;
+}
+
+void
+MeshViewController::replaceCurrentCandidate(Crag::CragNode n) {
+
+	if (_currentCandidate != Crag::Invalid)
+		removeMesh(_currentCandidate);
+	setCurrentCandidate(n);
 }
 
 void
@@ -178,12 +180,8 @@ MeshViewController::nextNeighbor() {
 	if (_neighbors.size() == 0)
 		return;
 
-	if (_currentNeighbor >= 0)
-		removeMesh(_neighbors[_currentNeighbor]);
-
-	_currentNeighbor = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
-
-	showNeighbor(_neighbors[_currentNeighbor]);
+	int n = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
+	replaceCurrentNeighbor(n);
 }
 
 void
@@ -192,22 +190,36 @@ MeshViewController::prevNeighbor() {
 	if (_neighbors.size() == 0)
 		return;
 
-	if (_currentNeighbor >= 0)
-		removeMesh(_neighbors[_currentNeighbor]);
-
-	_currentNeighbor = std::max(0, _currentNeighbor - 1);
-
-	showNeighbor(_neighbors[_currentNeighbor]);
+	int n = std::max(0, _currentNeighbor - 1);
+	replaceCurrentNeighbor(n);
 }
 
 void
-MeshViewController::setCurrentMesh(Crag::CragNode n) {
+MeshViewController::replaceCurrentNeighbor(int index) {
+
+	if (_currentNeighbor >= 0)
+		removeMesh(_neighbors[_currentNeighbor]);
+
+	_currentNeighbor = index;
+
+	addMesh(_neighbors[_currentNeighbor]);
+
+	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
+		if (e.opposite(_currentCandidate) == _neighbors[_currentNeighbor]) {
+
+			send<SetEdge>(e);
+			break;
+		}
+}
+
+void
+MeshViewController::setCurrentCandidate(Crag::CragNode n) {
 
 	LOG_USER(meshviewcontrollerlog)
 			<< "showing node with id " << _crag.id(n)
 			<< " at " << _volumes[n]->getBoundingBox() << std::endl;
 
-	_current = n;
+	_currentCandidate = n;
 
 	if (_solution && _solution->label(n) != 0) {
 
@@ -230,39 +242,14 @@ MeshViewController::setCurrentMesh(Crag::CragNode n) {
 	}
 
 	_neighbors.clear();
-	for (Crag::CragEdge e : _crag.adjEdges(_current))
-		_neighbors.push_back(e.opposite(_current));
+	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
+		_neighbors.push_back(e.opposite(_currentCandidate));
 	_currentNeighbor = -1;
 
 	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
 
 	send<sg_gui::SetMeshes>(_meshes);
 	send<SetCandidate>(n);
-}
-
-void
-MeshViewController::replaceCurrentMesh(Crag::CragNode n) {
-
-	removeMesh(_current);
-	setCurrentMesh(n);
-}
-
-void
-MeshViewController::showNeighbor(Crag::CragNode n) {
-
-	LOG_USER(meshviewcontrollerlog) << "showing neighbor with id " << _crag.id(n) << std::endl;
-
-	addMesh(n);
-
-	send<sg_gui::SetMeshes>(_meshes);
-	send<SetCandidate>(n);
-
-	for (Crag::CragEdge e : _crag.adjEdges(_current))
-		if (e.opposite(_current) == n) {
-
-			send<SetEdge>(e);
-			break;
-		}
 }
 
 void
@@ -324,9 +311,23 @@ MeshViewController::removeMesh(Crag::CragNode n) {
 }
 
 void
+MeshViewController::clearPath() {
+
+	_path.clear();
+}
+
+void
+MeshViewController::clearCandidates() {
+
+	clearPath();
+	_currentCandidate = Crag::Invalid;
+	_currentNeighbor = -1;
+	clearMeshes();
+}
+
+void
 MeshViewController::clearMeshes() {
 
-	_current = Crag::Invalid;
 	_meshes->clear();
 }
 
