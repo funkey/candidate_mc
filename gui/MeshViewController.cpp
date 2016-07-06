@@ -175,44 +175,6 @@ MeshViewController::replaceCurrentCandidate(Crag::CragNode n) {
 }
 
 void
-MeshViewController::nextNeighbor() {
-
-	if (_neighbors.size() == 0)
-		return;
-
-	int n = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
-	replaceCurrentNeighbor(n);
-}
-
-void
-MeshViewController::prevNeighbor() {
-
-	if (_neighbors.size() == 0)
-		return;
-
-	int n = std::max(0, _currentNeighbor - 1);
-	replaceCurrentNeighbor(n);
-}
-
-void
-MeshViewController::replaceCurrentNeighbor(int index) {
-
-	if (_currentNeighbor >= 0)
-		removeMesh(_neighbors[_currentNeighbor]);
-
-	_currentNeighbor = index;
-
-	addMesh(_neighbors[_currentNeighbor]);
-
-	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
-		if (e.opposite(_currentCandidate) == _neighbors[_currentNeighbor]) {
-
-			send<SetEdge>(e);
-			break;
-		}
-}
-
-void
 MeshViewController::setCurrentCandidate(Crag::CragNode n) {
 
 	LOG_USER(meshviewcontrollerlog)
@@ -241,15 +203,62 @@ MeshViewController::setCurrentCandidate(Crag::CragNode n) {
 		addMesh(n);
 	}
 
+	replaceCurrentNeighbor(-1);
 	_neighbors.clear();
 	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
 		_neighbors.push_back(e.opposite(_currentCandidate));
-	_currentNeighbor = -1;
-
-	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
 
 	send<sg_gui::SetMeshes>(_meshes);
 	send<SetCandidate>(n);
+
+	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
+}
+
+void
+MeshViewController::nextNeighbor() {
+
+	if (_neighbors.size() == 0)
+		return;
+
+	int n = std::min((int)(_neighbors.size() - 1), _currentNeighbor + 1);
+	replaceCurrentNeighbor(n);
+}
+
+void
+MeshViewController::prevNeighbor() {
+
+	if (_neighbors.size() == 0)
+		return;
+
+	int n = std::max(0, _currentNeighbor - 1);
+	replaceCurrentNeighbor(n);
+}
+
+void
+MeshViewController::replaceCurrentNeighbor(int index) {
+
+	if (_currentCandidate == Crag::Invalid)
+		return;
+
+	if (_currentNeighbor >= 0)
+		removeMesh(_neighbors[_currentNeighbor]);
+
+	_currentNeighbor = index;
+
+	if (_currentNeighbor == -1)
+		return;
+
+	addMesh(_neighbors[_currentNeighbor]);
+	send<sg_gui::SetMeshes>(_meshes);
+
+	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
+		if (e.opposite(_currentCandidate) == _neighbors[_currentNeighbor]) {
+
+			send<SetEdge>(e);
+			break;
+		}
+
+	LOG_DEBUG(meshviewcontrollerlog) << "new current neighbor is " << index << std::endl;
 }
 
 void
@@ -284,6 +293,8 @@ MeshViewController::addMesh(Crag::CragNode n) {
 	_meshes->add(id, mesh, color);
 
 	_meshCache[n] = mesh;
+
+	LOG_DEBUG(meshviewcontrollerlog) << "mesh for node " << _crag.id(n) << " added" << std::endl;
 }
 
 void
@@ -308,6 +319,8 @@ MeshViewController::removeMesh(Crag::CragNode n) {
 
 		_meshes->remove(_crag.id(n));
 	}
+
+	LOG_DEBUG(meshviewcontrollerlog) << "mesh for node " << _crag.id(n) << " removed" << std::endl;
 }
 
 void

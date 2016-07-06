@@ -84,7 +84,7 @@ private:
 	// replace the current candidate with the given one
 	void replaceCurrentCandidate(Crag::CragNode n);
 
-	// set the current candidate (adds it to existing meshes)
+	// set the current candidate (previous candidates will not be removed)
 	void setCurrentCandidate(Crag::CragNode n);
 
 	// replace the current neighbor with the next one
@@ -94,6 +94,7 @@ private:
 	void prevNeighbor();
 
 	// replace the current neighbor with the one given by index
+	// -1 to set no neighbor
 	void replaceCurrentNeighbor(int index);
 
 	// add the mesh of a candidate
@@ -102,12 +103,16 @@ private:
 	// remove the mesh of a candidate
 	void removeMesh(Crag::CragNode n);
 
+	// remove all meshes, invalidate current candidate and current neighbor
 	void clearCandidates();
 
+	// remove all meshes
 	void clearMeshes();
 
+	// clear the path currently recorded
 	void clearPath();
 
+	// get the parent of node n, or Crag::Invalid
 	Crag::CragNode parentOf(Crag::CragNode n);
 
 	const Crag& _crag;
