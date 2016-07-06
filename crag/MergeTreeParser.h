@@ -22,7 +22,11 @@ public:
 	 *              Don't extract candidates that have a level higher than 
 	 *              maxMerges. Set it to -1 to disable.
 	 */
-	MergeTreeParser(const Image& mergeTree, int maxMerges = -1);
+	MergeTreeParser(
+			const Image& mergeTree,
+			int maxMerges,
+			unsigned int minRegionSize,
+			unsigned int maxRegionSize);
 
 	/**
 	 * Get the candidate region adjacency graph from the given merge tree image. 
@@ -58,7 +62,9 @@ private:
 				const util::point<float, 3>& offset,
 				Crag&                        crag,
 				CragVolumes&                 volumes,
-				int                          maxMerges);
+				int                          maxMerges,
+				unsigned int                 minRegionSize,
+				unsigned int                 maxRegionSize);
 
 		/**
 		 * Set the pixel list that contains the pixel locations of each 
@@ -124,6 +130,8 @@ private:
 	const Image& _mergeTree;
 
 	int _maxMerges;
+	unsigned int _minRegionSize;
+	unsigned int _maxRegionSize;
 };
 
 #endif // CANDIDATE_MC_CRAG_MERGE_TREE_PARSER_H__

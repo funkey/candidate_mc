@@ -19,6 +19,14 @@ util::ProgramOption optionMaxMergeScore(
 		util::_long_name        = "maxMergeScore",
 		util::_description_text = "The maximal score of a merge to add to the CRAG. Scores are read from the merge history file.");
 
+util::ProgramOption optionMinRegionSize(
+		util::_long_name        = "minRegionSize",
+		util::_description_text = "The minimal size of a region in pixels.");
+
+util::ProgramOption optionMaxRegionSize(
+		util::_long_name        = "maxRegionSize",
+		util::_description_text = "The maximal size of a region in pixels.");
+
 util::ProgramOption option2dSupervoxels(
 		util::_long_name        = "2dSupervoxels",
 		util::_description_text = "Indicate that all supervoxels are 2D slices (even though the volume is 3D). This will create "
@@ -37,13 +45,21 @@ CragImport::readCrag(
 	if (optionMaxMerges)
 		maxMerges = optionMaxMerges;
 
+	unsigned int minRegionSize = 0;
+	if (optionMinRegionSize)
+		minRegionSize = optionMinRegionSize;
+
+	unsigned int maxRegionSize = std::numeric_limits<unsigned int>::max();
+	if (optionMaxRegionSize)
+		maxRegionSize = optionMinRegionSize;
+
 	vigra::ImageImportInfo info(filename.c_str());
 	Image mergeTree(info.width(), info.height());
 	importImage(info, vigra::destImage(mergeTree));
 	mergeTree.setResolution(resolution);
 	mergeTree.setOffset(offset);
 
-	MergeTreeParser parser(mergeTree, maxMerges);
+	MergeTreeParser parser(mergeTree, maxMerges, minRegionSize, maxRegionSize);
 	parser.getCrag(crag, volumes);
 }
 
@@ -81,6 +97,13 @@ CragImport::readCragFromMergeHistory(
 	double maxScore = std::numeric_limits<double>::max();
 	if (optionMaxMergeScore)
 		maxScore = optionMaxMergeScore.as<double>();
+
+	if (optionMinRegionSize || optionMaxRegionSize) {
+
+		UTIL_THROW_EXCEPTION(
+				UsageError,
+				"when reading from a merge history, options minRegionSize and maxRegionSize can not be set");
+	}
 
 	while (true) {
 		int a, b, c;

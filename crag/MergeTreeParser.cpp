@@ -3,25 +3,21 @@
 
 logger::LogChannel mergetreeparserlog("mergetreeparserlog", "[MergeTreeParser] ");
 
-util::ProgramOption optionMinRegionSize(
-		util::_long_name        = "minRegionSize",
-		util::_description_text = "The minimal size of a region in pixels.",
-		util::_default_value    = 0);
-
-util::ProgramOption optionMaxRegionSize(
-		util::_long_name        = "maxRegionSize",
-		util::_description_text = "The maximal size of a region in pixels.",
-		util::_default_value    = 10e5);
-
 util::ProgramOption optionSpacedEdgeImage(
 		util::_long_name        = "spacedEdgeImage",
 		util::_description_text = "Indicate that the merge-tree image is 4x the original image size, "
 		                          "with boundary values stored between the pixels. This is used to "
 		                          "create regions without boundary pixels between them.");
 
-MergeTreeParser::MergeTreeParser(const Image& mergeTree, int maxMerges) :
+MergeTreeParser::MergeTreeParser(
+		const Image& mergeTree,
+		int maxMerges,
+		unsigned int minRegionSize,
+		unsigned int maxRegionSize) :
 	_mergeTree(mergeTree),
-	_maxMerges(maxMerges){}
+	_maxMerges(maxMerges),
+	_minRegionSize(minRegionSize),
+	_maxRegionSize(maxRegionSize) {}
 
 void
 MergeTreeParser::getCrag(Crag& crag, CragVolumes& volumes) {
@@ -38,7 +34,9 @@ MergeTreeParser::getCrag(Crag& crag, CragVolumes& volumes) {
 			_mergeTree.getBoundingBox().min(),
 			crag,
 			volumes,
-			_maxMerges);
+			_maxMerges,
+			_minRegionSize,
+			_maxRegionSize);
 
 	parser.parse(visitor);
 }
@@ -48,13 +46,15 @@ MergeTreeParser::MergeTreeVisitor::MergeTreeVisitor(
 		const util::point<float, 3>& offset,
 		Crag&                        crag,
 		CragVolumes&                 volumes,
-		int                          maxMerges) :
+		int                          maxMerges,
+		unsigned int                 minRegionSize,
+		unsigned int                 maxRegionSize) :
 	_resolution(resolution),
 	_offset(offset),
 	_crag(crag),
 	_volumes(volumes),
-	_minSize(optionMinRegionSize),
-	_maxSize(optionMaxRegionSize),
+	_minSize(minRegionSize),
+	_maxSize(maxRegionSize),
 	_extents(_crag),
 	_maxMerges(maxMerges) {}
 
