@@ -33,8 +33,6 @@ CostsView::onSignal(sg_gui::Draw& signal) {
 
 	util::point<float, 3> center = _volumes[_currentNode]->getBoundingBox().center();
 
-	glLineWidth(3);
-
 	// to see links in 2D, move them in front of the image plane
 	float zOffset = -1.5*_volumes[_currentNode]->getResolution().z();
 
@@ -45,8 +43,10 @@ CostsView::onSignal(sg_gui::Draw& signal) {
 
 		util::point<float, 3> neighborCenter = _volumes[neighbor]->getBoundingBox().center();
 
-		float r = std::max(0.0f,  costs)*_costsScale;
-		float g = std::max(0.0f, -costs)*_costsScale;
+		glLineWidth(1 + 10*std::abs(costs)*_costsScale);
+
+		float r = (costs < 0 ? 0 : 1);
+		float g = 1.0 - r;
 		glColor3f(r, g, 0.0);
 
 		glBegin(GL_LINES);
