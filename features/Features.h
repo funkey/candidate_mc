@@ -27,6 +27,25 @@ public:
 	}
 
 	/**
+	 * Record the name of a feature.
+	 */
+	inline void appendFeatureName(std::string name) {
+
+		_featureNames.push_back(name);
+	}
+
+	inline void appendFeatureNames(std::vector<std::string> names) {
+
+		for (auto& n : names)
+			appendFeatureName(n);
+	}
+
+	inline std::vector<std::string> getFeatureNames() const {
+
+		return _featureNames;
+	}
+
+	/**
 	 * Explicitly set a feature vector.
 	 */
 	inline void set(KeyType n, const std::vector<double>& v) {
@@ -190,6 +209,7 @@ private:
 	const Crag& _crag;
 
 	mutable std::map<KeyType, std::vector<double>> _features;
+	mutable std::vector<std::string>               _featureNames;
 
 	std::vector<double> _min, _max;
 

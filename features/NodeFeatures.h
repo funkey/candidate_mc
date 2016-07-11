@@ -19,6 +19,21 @@ public:
 		features(_crag.type(n)).append(n, feature);
 	}
 
+	inline void appendFeatureName(Crag::NodeType type, std::string name) {
+
+		features(type).appendFeatureName(name);
+	}
+
+	inline void appendFeatureNames(Crag::NodeType type, std::vector<std::string> names) {
+
+		features(type).appendFeatureNames(names);
+	}
+
+	inline std::vector<std::string> getFeatureNames(Crag::NodeType type) const {
+
+		return features(type).getFeatureNames();
+	}
+
 	const std::vector<double>& operator[](Crag::CragNode n) const {
 
 		return features(_crag.type(n))[n];

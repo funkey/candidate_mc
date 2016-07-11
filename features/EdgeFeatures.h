@@ -2,6 +2,7 @@
 #define CANDIDATE_MC_FEATURES_EDGE_FEATURES_H__
 
 #include "Features.h"
+#include "FeatureWeights.h"
 
 class EdgeFeatures {
 
@@ -16,6 +17,21 @@ public:
 	inline void append(Crag::CragEdge e, double feature) {
 
 		features(_crag.type(e)).append(e, feature);
+	}
+
+	inline void appendFeatureName(Crag::EdgeType type, std::string name) {
+
+		features(type).appendFeatureName(name);
+	}
+
+	inline void appendFeatureNames(Crag::EdgeType type, std::vector<std::string> names) {
+
+		features(type).appendFeatureNames(names);
+	}
+
+	inline std::vector<std::string> getFeatureNames(Crag::EdgeType type) const {
+
+		return features(type).getFeatureNames();
 	}
 
 	const std::vector<double>& operator[](Crag::CragEdge e) const {

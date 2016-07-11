@@ -151,6 +151,12 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 	util::_default_value    = 16
 );
 
+util::ProgramOption optionDumpFeatureNames(
+	util::_long_name        = "dumpFeatureNames",
+	util::_description_text = "Write the feature names to files. The filenames will be the value of this argument plus 'node_?' or 'edge_?' "
+	                          "for the respective node and edge types."
+);
+
 void
 FeatureExtractor::extract(
 		NodeFeatures& nodeFeatures,
@@ -195,6 +201,16 @@ FeatureExtractor::extractNodeFeatures(
 	LOG_USER(featureextractorlog)
 			<< "extracted " << nodeFeatures.dims(Crag::AssignmentNode)
 			<< " features per assignment node" << std::endl;
+
+	LOG_DEBUG(featureextractorlog)
+			<< "base volume node features: " << nodeFeatures.getFeatureNames(Crag::VolumeNode)
+			<< std::endl;
+	LOG_DEBUG(featureextractorlog)
+			<< "base slice node features: " << nodeFeatures.getFeatureNames(Crag::SliceNode)
+			<< std::endl;
+	LOG_DEBUG(featureextractorlog)
+			<< "base assignment node features: " << nodeFeatures.getFeatureNames(Crag::AssignmentNode)
+			<< std::endl;
 
 	_numOriginalVolumeNodeFeatures     = nodeFeatures.dims(Crag::VolumeNode);
 	_numOriginalSliceNodeFeatures      = nodeFeatures.dims(Crag::SliceNode);
@@ -252,12 +268,35 @@ FeatureExtractor::extractNodeFeatures(
 					nodeFeatures.append(n, features[i]*features[i]);
 			}
 		}
+
+
+		for (auto type : Crag::NodeTypes) {
+
+			std::vector<std::string> baseNames = nodeFeatures.getFeatureNames(type);
+
+			if (optionAddPairwiseFeatureProducts) {
+
+				for (unsigned int i = 0; i < baseNames.size(); i++)
+					for (unsigned int j = i; j < baseNames.size(); j++)
+						nodeFeatures.appendFeatureName(type, baseNames[i] + "*" + baseNames[j]);
+
+			} else {
+
+				for (unsigned int i = 0; i < baseNames.size(); i++)
+					nodeFeatures.appendFeatureName(type, baseNames[i]+"²");
+			}
+		}
+
 	}
 
 	// append a 1 for bias
 	for (Crag::CragNode n : _crag.nodes())
 		if (_crag.type(n) != Crag::NoAssignmentNode)
 			nodeFeatures.append(n, 1);
+
+	for (auto type : Crag::NodeTypes)
+		if (nodeFeatures.getFeatureNames(type).size() > 0)
+			nodeFeatures.appendFeatureName(type, "bias");
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "
@@ -271,6 +310,18 @@ FeatureExtractor::extractNodeFeatures(
 			<< "after postprocessing, we have "
 			<< nodeFeatures.dims(Crag::AssignmentNode)
 			<< " features per assignment node" << std::endl;
+
+	if (optionDumpFeatureNames) {
+
+		for (auto type : Crag::NodeTypes) {
+
+			std::string filename = optionDumpFeatureNames.as<std::string>() + "node_" + boost::lexical_cast<std::string>(type);
+			std::ofstream file(filename);
+			for (auto name : nodeFeatures.getFeatureNames(type))
+				file << name << "\n";
+			file.close();
+		}
+	}
 
 	LOG_USER(featureextractorlog) << "done" << std::endl;
 }
@@ -374,9 +425,21 @@ FeatureExtractor::extractTopologicalNodeFeatures(NodeFeatures& nodeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting topological node features..." << std::endl;
 
+	unsigned int numSliceNodeFeatures = nodeFeatures.dims(Crag::SliceNode);
+	unsigned int numVolumeNodeFeatures = nodeFeatures.dims(Crag::VolumeNode);
+
 	for (Crag::CragNode n : _crag.nodes())
 		if (_crag.isRootNode(n))
 			recExtractTopologicalFeatures(nodeFeatures, n);
+
+	if (numSliceNodeFeatures != nodeFeatures.dims(Crag::SliceNode)) {
+		nodeFeatures.appendFeatureName(Crag::SliceNode, "level");
+		nodeFeatures.appendFeatureName(Crag::SliceNode, "num descendants");
+	}
+	if (numVolumeNodeFeatures != nodeFeatures.dims(Crag::VolumeNode)) {
+		nodeFeatures.appendFeatureName(Crag::VolumeNode, "level");
+		nodeFeatures.appendFeatureName(Crag::VolumeNode, "num descendants");
+	}
 
 	_topoFeatureCache.clear();
 }
@@ -425,15 +488,18 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 	double contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
 	int    numAngleHistBins            = optionFeaturePointinessHistogramBins;
 
+	bool firstSliceNode = true;
+	bool firstVolumeNode = true;
+
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
-
-		if (_crag.type(n) == Crag::NoAssignmentNode)
-			continue;
 
 		if (i%10 == 0)
 			LOG_USER(featureextractorlog) << logger::delline << i << "/" << _crag.numNodes() << std::flush;
 		i++;
+
+		if (_crag.type(n) == Crag::NoAssignmentNode)
+			continue;
 
 		LOG_ALL(featureextractorlog)
 				<< "extracting shape features for node "
@@ -458,9 +524,13 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 			p.shapeFeaturesParameters.numAngleHistBins            = numAngleHistBins;
 			RegionFeatures<2, float, unsigned char> regionFeatures(labelImage.bind<2>(0), p);
 
-			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
-
 			regionFeatures.fill(adaptor);
+
+			if (firstSliceNode) {
+
+				nodeFeatures.appendFeatureNames(Crag::SliceNode, regionFeatures.getFeatureNames());
+				firstSliceNode = false;
+			}
 
 		// volumetric candidates
 		} else {
@@ -473,9 +543,13 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 			p.shapeFeaturesParameters.numAngleHistBins            = numAngleHistBins;
 			RegionFeatures<3, float, unsigned char> regionFeatures(labelImage, p);
 
-			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
-
 			regionFeatures.fill(adaptor);
+
+			if (firstVolumeNode) {
+
+				nodeFeatures.appendFeatureNames(Crag::VolumeNode, regionFeatures.getFeatureNames());
+				firstVolumeNode = false;
+			}
 		}
 	}
 }
@@ -485,15 +559,18 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting node statistics features..." << std::endl;
 
+	bool firstSliceNode = true;
+	bool firstVolumeNode = true;
+
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
-
-		if (_crag.type(n) == Crag::NoAssignmentNode)
-			continue;
 
 		if (i%10 == 0)
 			LOG_USER(featureextractorlog) << logger::delline << i << "/" << _crag.numNodes() << std::flush;
 		i++;
+
+		if (_crag.type(n) == Crag::NoAssignmentNode)
+			continue;
 
 		LOG_ALL(featureextractorlog)
 				<< "extracting statistics features for node "
@@ -555,9 +632,10 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				p.statisticsParameters.computeCoordinateStatistics = false;
 			RegionFeatures<2, float, unsigned char> regionFeatures(rawNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
 
-			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
-
 			regionFeatures.fill(adaptor);
+
+			if (firstSliceNode)
+				nodeFeatures.appendFeatureNames(Crag::SliceNode, regionFeatures.getFeatureNames());
 
 		// volumetric candidates
 		} else {
@@ -571,9 +649,10 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				p.statisticsParameters.computeCoordinateStatistics = false;
 			RegionFeatures<3, float, unsigned char> regionFeatures(rawNodeImage, labelImage, p);
 
-			LOG_ALL(featureextractorlog) << regionFeatures.getFeatureNames() << std::endl;
-
 			regionFeatures.fill(adaptor);
+
+			if (firstVolumeNode)
+				nodeFeatures.appendFeatureNames(Crag::VolumeNode, regionFeatures.getFeatureNames());
 
 			LOG_ALL(featureextractorlog) << "done" << std::endl;
 		}
@@ -605,7 +684,8 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				RegionFeatures<2, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage.bind<2>(0), labelImage.bind<2>(0), p);
 				boundariesRegionFeatures.fill(adaptor);
 
-				LOG_ALL(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+				if (firstSliceNode)
+					nodeFeatures.appendFeatureNames(Crag::SliceNode, boundariesRegionFeatures.getFeatureNames());
 
 			} else {
 
@@ -617,7 +697,8 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				RegionFeatures<3, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage, labelImage, p);
 				boundariesRegionFeatures.fill(adaptor);
 
-				LOG_ALL(featureextractorlog) << boundariesRegionFeatures.getFeatureNames() << std::endl;
+				if (firstVolumeNode)
+					nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundariesRegionFeatures.getFeatureNames());
 			}
 
 			if (optionBoundariesBoundaryFeatures) {
@@ -674,7 +755,8 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					RegionFeatures<2, float, unsigned char> boundaryFeatures(boundariesNodeImage.bind<2>(0), boundaryImage.bind<2>(0), p);
 					boundaryFeatures.fill(adaptor);
 
-					LOG_ALL(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+					if (firstSliceNode)
+						nodeFeatures.appendFeatureNames(Crag::SliceNode, boundaryFeatures.getFeatureNames());
 
 				} else {
 
@@ -686,10 +768,16 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					RegionFeatures<3, float, unsigned char> boundaryFeatures(boundariesNodeImage, boundaryImage, p);
 					boundaryFeatures.fill(adaptor);
 
-					LOG_ALL(featureextractorlog) << boundaryFeatures.getFeatureNames() << std::endl;
+					if (firstVolumeNode)
+						nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundaryFeatures.getFeatureNames());
 				}
 			}
 		}
+
+		if (_crag.type(n) == Crag::SliceNode)
+			firstSliceNode = false;
+		if (_crag.type(n) == Crag::VolumeNode)
+			firstVolumeNode = false;
 	}
 
 	LOG_USER(featureextractorlog) << std::endl;
