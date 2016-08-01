@@ -14,15 +14,24 @@ CostsView::CostsView(
 	_currentNode(Crag::Invalid) {
 
 	std::vector<double> c;
+
 	for (auto e : _crag.edges())
 		c.push_back(_costs.edge[e]);
-	std::nth_element(
-			c.begin(),
-			c.begin() + c.size()/2,
-			c.end());
-	double medianCost = *(c.begin() + c.size()/2);
 
-	_costsScale = 1.0/medianCost;
+	if (c.size() > 0) {
+
+		std::nth_element(
+				c.begin(),
+				c.begin() + c.size()/2,
+				c.end());
+		double medianCost = *(c.begin() + c.size()/2);
+
+		_costsScale = 1.0/medianCost;
+
+	} else {
+
+		_costsScale = 1.0;
+	}
 }
 
 void
