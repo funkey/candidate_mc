@@ -63,6 +63,10 @@ private:
 
 	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
+	void extractTopologicalEdgeFeatures(EdgeFeatures& edgeFeatures);
+
+	void extractShapeEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
+
 	void extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures);
 
     void extractAccumulatedEdgeFeatures(EdgeFeatures& edgeFeatures);
