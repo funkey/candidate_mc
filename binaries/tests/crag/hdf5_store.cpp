@@ -36,8 +36,6 @@ void hdf5_store() {
 					crag.nodeFromId(j+1));
 	}
 
-	volumes.fillEmptyVolumes();
-
 	Hdf5CragStore store("test.hdf");
 
 	store.saveCrag(crag);

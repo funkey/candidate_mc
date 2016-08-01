@@ -316,7 +316,6 @@ BOOST_PYTHON_MODULE(pycmc) {
 	// CragVolumes
 	boost::python::class_<CragVolumes, boost::noncopyable>("CragVolumes", boost::python::init<const Crag&>())
 			.def("setVolume", &CragVolumes::setVolume)
-			.def("fillEmptyVolumes", &CragVolumes::fillEmptyVolumes)
 			.def("getVolume", &CragVolumes::operator[])
 			;
 

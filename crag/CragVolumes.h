@@ -3,8 +3,10 @@
 
 #include <memory>
 #include <imageprocessing/ExplicitVolume.h>
+#include <util/cache.hpp>
 #include "Crag.h"
 #include "CragVolume.h"
+#include "UnionVolume.h"
 
 /**
  * A node property map for Crags that provides the volumes of candidates as 
@@ -16,12 +18,14 @@ public:
 
 	/**
 	 * Create an empty volume map for the given Crag. Populate it using 
-	 * setVolume() for each node or setVolume() for each leaf node and 
-	 * fillEmptyVolumes().
+	 * setVolume() for each leaf node.
 	 */
 	CragVolumes(const Crag& crag) :
 		_crag(crag),
-		_volumes(crag) {}
+		_volumes(crag) {
+	
+		_cache.set_max_size(4048);
+	}
 
 	virtual ~CragVolumes() {}
 
@@ -32,22 +36,14 @@ public:
 		for (Crag::CragNode n : _crag.nodes()) {
 
 			_volumes[n] = other._volumes[n];
-			other._volumes[n].reset();
+			other._volumes[n].clear();
 		}
 	}
 
 	/**
-	 * Set the volume of a node.
+	 * Set the volume of a leaf node.
 	 */
 	void setVolume(Crag::CragNode n, std::shared_ptr<CragVolume> volume);
-
-	/**
-	 * Fill empty volumes with the unions of their child volumes. If the child 
-	 * volumes are empty, too, this function is invoked recursively. Assumes 
-	 * that all leaf nodes have a volume and that empty volumes have only empty 
-	 * parents.
-	 */
-	void fillEmptyVolumes();
 
 	/**
 	 * Get the volume of a candidate. Don't use this operator to set volumes, 
@@ -76,7 +72,7 @@ protected:
 
 		util::box<float, 3> bb;
 		for (Crag::CragNode n : _crag.nodes())
-			if (_volumes[n])
+			if (!_volumes[n].getBoundingBox().isZero())
 				bb += operator[](n)->getBoundingBox();
 
 		return bb;
@@ -84,13 +80,10 @@ protected:
 
 private:
 
-	// Fill the volume of each empty node under (including) n with the union of 
-	// the nodes ancestors.
-	void recFill(Crag::CragNode n);
-
 	const Crag& _crag;
 
-	Crag::NodeMap<std::shared_ptr<CragVolume>> _volumes;
+	mutable Crag::NodeMap<UnionVolume> _volumes;
+	mutable cache<Crag::CragNode, std::shared_ptr<CragVolume>> _cache;
 };
 
 #endif // CANDIDATE_MC_CRAG_CRAG_VOLUMES_H__

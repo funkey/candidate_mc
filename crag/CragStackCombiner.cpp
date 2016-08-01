@@ -122,8 +122,6 @@ CragStackCombiner::combine(
 	}
 
 	LOG_USER(cragstackcombinerlog) << "added " << nodesAdded << " link nodes" << std::endl;
-
-	targetVolumes.fillEmptyVolumes();
 }
 
 std::map<Crag::CragNode, Crag::CragNode>

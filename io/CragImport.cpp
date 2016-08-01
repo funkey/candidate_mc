@@ -157,8 +157,6 @@ CragImport::readCragFromMergeHistory(
 				n);
 	}
 
-	volumes.fillEmptyVolumes();
-
 	if (option2dSupervoxels) {
 
 		for (Crag::CragNode n : crag.nodes()) {
@@ -245,8 +243,6 @@ CragImport::readCragFromCandidateSegmentation(
 
 		crag.addSubsetArc(svIdToNode[svId], segIdToNode[maxSegmentId]);
 	}
-
-	volumes.fillEmptyVolumes();
 }
 
 std::map<int, Crag::Node>
@@ -295,7 +291,6 @@ CragImport::readSupervoxels(
 		volumes.setVolume(n, volume);
 		idToNode[id] = n;
 	}
-	volumes.fillEmptyVolumes();
 
 	for (unsigned int z = 0; z < ids.depth();  z++)
 	for (unsigned int y = 0; y < ids.height(); y++)

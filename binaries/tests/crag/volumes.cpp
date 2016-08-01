@@ -45,8 +45,6 @@ void volumes() {
 	volumes.setVolume(crag.nodeFromId(3), v3);
 	volumes.setVolume(crag.nodeFromId(4), v4);
 
-	volumes.fillEmptyVolumes();
-
 	BOOST_CHECK_EQUAL(volumes[crag.nodeFromId(5)]->getBoundingBox(), v0->getBoundingBox() + v1->getBoundingBox());
 	BOOST_CHECK_EQUAL(volumes[crag.nodeFromId(6)]->getBoundingBox(), v2->getBoundingBox() + v4->getBoundingBox());
 	BOOST_CHECK_EQUAL(volumes[crag.nodeFromId(7)]->getBoundingBox(), v0->getBoundingBox() + v4->getBoundingBox());

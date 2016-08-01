@@ -70,9 +70,6 @@ void hausdorff() {
 	volumesB.setVolume(b1, volumeB1);
 	volumesB.setVolume(b2, volumeB2);
 
-	volumesA.fillEmptyVolumes();
-	volumesB.fillEmptyVolumes();
-
 	HausdorffDistance hausdorff(100);
 
 	double a_b, b_a;
@@ -169,9 +166,6 @@ void hausdorff_anisotropic() {
 	volumesA.setVolume(a2, volumeA2);
 	volumesB.setVolume(b1, volumeB1);
 	volumesB.setVolume(b2, volumeB2);
-
-	volumesA.fillEmptyVolumes();
-	volumesB.fillEmptyVolumes();
 
 	{
 		HausdorffDistance hausdorff(100);
