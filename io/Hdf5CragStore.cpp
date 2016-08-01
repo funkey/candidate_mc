@@ -187,6 +187,10 @@ Hdf5CragStore::saveVolumes(const CragVolumes& volumes) {
 	int numNodes = 0;
 	for (Crag::NodeIt n(volumes.getCrag()); n != lemon::INVALID; ++n) {
 
+		// only store leaf node volumes
+		if (!volumes.getCrag().isLeafNode(n))
+			continue;
+
 		if (numNodes%100 == 0)
 			LOG_USER(hdf5storelog) << logger::delline << numNodes << " node volumes prepared for writing" << std::flush;
 
