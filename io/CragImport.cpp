@@ -105,6 +105,9 @@ CragImport::readCragFromMergeHistory(
 				"when reading from a merge history, options minRegionSize and maxRegionSize can not be set");
 	}
 
+	LOG_USER(logger::out) << "parsing merge history..." << std::endl;
+
+	int numAdded = 0;
 	while (true) {
 		int a, b, c;
 		file >> a;
@@ -155,7 +158,10 @@ CragImport::readCragFromMergeHistory(
 		crag.addSubsetArc(
 				idToNode[b],
 				n);
+		numAdded++;
 	}
+
+	LOG_USER(logger::out) << "history parsed, " << numAdded << " candidates added" << std::endl;
 
 	if (option2dSupervoxels) {
 
@@ -169,6 +175,8 @@ CragImport::readCragFromMergeHistory(
 						"option '2dSupervoxels' was given, but after import, CRAG contains a node with depth " << volume.depth() << ". Check if the initial supervoxels are really 2D, and that the merge history only merges in 2D.");
 		}
 	}
+
+	LOG_USER(logger::out) << "merge history imported" << std::endl;
 }
 
 void
@@ -278,6 +286,8 @@ CragImport::readSupervoxels(
 						x+1, y+1, z+1));
 	}
 
+	LOG_USER(logger::out) << "allocating candidates..." << std::endl;
+
 	std::map<int, Crag::Node> idToNode;
 	for (const auto& p : bbs) {
 
@@ -305,6 +315,8 @@ CragImport::readSupervoxels(
 
 		(*volumes[n])(x - bbs[id].min().x(), y - bbs[id].min().y(), z - bbs[id].min().z()) = 1;
 	}
+
+	LOG_USER(logger::out) << "supervoxels parsed" << std::endl;
 
 	return idToNode;
 }
