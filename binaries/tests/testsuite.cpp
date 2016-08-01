@@ -13,6 +13,7 @@ BEGIN_TEST_MODULE(candidate_mc)
 	ADD_TEST_SUITE(learning);
 	ADD_TEST_SUITE(io);
 	ADD_TEST_SUITE(third_party);
+	ADD_TEST_SUITE(util);
 
 END_TEST_MODULE()
 
