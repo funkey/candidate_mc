@@ -10,6 +10,7 @@
 #include <util/geometry.hpp>
 #include "FeatureExtractor.h"
 #include "VolumeRayFeature.h"
+#include "ContactFeature.h"
 #include <vigra/multi_impex.hxx>
 #include <vigra/flatmorphology.hxx>
 #include <vigra/multi_morphology.hxx>
@@ -86,6 +87,12 @@ util::ProgramOption optionEdgeVolumeRayFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "volumeRayFeatures",
 	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
+);
+
+util::ProgramOption optionEdgeContactFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "contactFeatures",
+	util::_description_text = "Compute contact features as in Gala."
 );
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
@@ -361,6 +368,9 @@ FeatureExtractor::extractEdgeFeatures(
 
 	if (optionEdgeVolumeRayFeatures)
 		extractVolumeRaysEdgeFeatures(edgeFeatures);
+
+	if (optionEdgeContactFeatures)
+		extractEdgeContactFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
@@ -976,6 +986,25 @@ FeatureExtractor::extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures) {
 
 		edgeFeatures.append(e, mutualPiercingScore);
 		edgeFeatures.append(e, normalizedMutualPiercingScore);
+	}
+}
+
+void
+FeatureExtractor::extractEdgeContactFeatures(EdgeFeatures& edgeFeatures) {
+
+	LOG_DEBUG(featureextractorlog) << "extracting contact features..." << std::endl;
+
+	ContactFeature contactFeature(_crag, _volumes, _boundaries);
+
+	for (Crag::CragEdge e : _crag.edges()) {
+
+		if (_crag.type(e) != Crag::AdjacencyEdge)
+			continue;
+
+		UTIL_TIME_SCOPE("extract edge contact features");
+
+		for (double f : contactFeature.compute(e))
+			edgeFeatures.append(e, f);
 	}
 }
 

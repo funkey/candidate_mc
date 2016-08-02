@@ -77,6 +77,8 @@ private:
 
 	void extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures);
 
+	void extractEdgeContactFeatures(EdgeFeatures& edgeFeatures);
+
 	std::pair<int, int> recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::CragNode n);
 
 	Crag&        _crag;
