@@ -18,7 +18,8 @@ public:
 			const std::vector<float>& thresholds = {0.1, 0.5, 0.9}) :
 		_crag(crag),
 		_volumes(volumes),
-		_boundaries(boundaries) {}
+		_boundaries(boundaries),
+		_thresholds(thresholds) {}
 
 	std::vector<double> compute(Crag::CragEdge e);
 

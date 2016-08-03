@@ -1,9 +1,15 @@
 #include "ContactFeature.h"
+#include <util/Logger.h>
+#include <util/helpers.hpp>
+
+logger::LogChannel contactfeaturelog("contactfeaturelog", "[ContactFeature] ");
 
 std::vector<double>
 ContactFeature::compute(Crag::CragEdge e) {
 
 	std::vector<double> features(_thresholds.size()*4*2 + 4);
+
+	LOG_ALL(contactfeaturelog) << "computing contact feature for thresholds " << _thresholds << std::endl;
 
 	// number of voxels brighter than thresholds in contact, plus size
 	std::vector<int> contactCounts(_thresholds.size() + 1);
@@ -11,11 +17,12 @@ ContactFeature::compute(Crag::CragEdge e) {
 	// get all unique voxels adjacent to contact
 	std::set<vigra::GridGraph<3>::Node> contactVoxels;
 	const auto& gridGraph = _crag.getGridGraph();
-	for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(e)) {
+	for (Crag::CragEdge leafEdge : _crag.leafEdges(e))
+		for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(leafEdge)) {
 
-		contactVoxels.insert(gridGraph.u(ae));
-		contactVoxels.insert(gridGraph.v(ae));
-	}
+			contactVoxels.insert(gridGraph.u(ae));
+			contactVoxels.insert(gridGraph.v(ae));
+		}
 
 	// count voxels above thresholds
 	for (auto n : contactVoxels) {
