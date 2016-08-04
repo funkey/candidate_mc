@@ -12,7 +12,11 @@ ContactFeature::compute(Crag::CragEdge e) {
 	LOG_ALL(contactfeaturelog) << "computing contact feature for thresholds " << _thresholds << std::endl;
 
 	// number of voxels brighter than thresholds in contact, plus size
-	std::vector<int> contactCounts(_thresholds.size() + 1);
+	//
+	// initialize threshold counts with 1 for numerical stability (and because 
+	// this is how it's done in Gala)
+	std::vector<int> contactCounts(_thresholds.size() + 1, 1);
+	(*contactCounts.rbegin()) = 0;
 
 	// get all unique voxels adjacent to contact
 	std::set<vigra::GridGraph<3>::Node> contactVoxels;
@@ -60,6 +64,8 @@ ContactFeature::compute(Crag::CragEdge e) {
 		contactScores.push_back(normalizedContactRatio);
 	}
 
+	LOG_ALL(contactfeaturelog) << "contanct scores of edge " << _crag.id(e.u()) << ", " << _crag.id(e.v()) << ": " << contactScores << std::endl;
+
 	// copy flattened contact matrix and its log into feature vector
 	for (int i = 0; i < contactScores.size(); i++) {
 
@@ -99,7 +105,10 @@ ContactFeature::countVoxels(Crag::CragNode n) {
 							nodeDiscreteOffset.y() + nodeSize.y(),
 							nodeDiscreteOffset.z() + nodeSize.z()));
 
-	std::vector<int> counts = std::vector<int>(_thresholds.size() + 1);
+	// initialize all threshold counts with 1 for numerical stability (and also 
+	// because this is how it's done in Gala)
+	std::vector<int> counts = std::vector<int>(_thresholds.size() + 1, 1);
+	(*counts.rbegin()) = 0;
 
 	for (unsigned int z = 0; z < volume.depth(); z++)
 	for (unsigned int y = 0; y < volume.height(); y++)
