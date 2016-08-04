@@ -816,6 +816,37 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 
 	LOG_DEBUG(featureextractorlog) << "extracting derived edge features..." << std::endl;
 
+	if (_crag.edges().size() == 0)
+		return;
+
+	int numOriginalNodeFeatures = 0;
+	for (Crag::CragEdge e : _crag.edges()) {
+
+		if (_crag.type(e) != Crag::AdjacencyEdge)
+			continue;
+
+		switch (_crag.type(e.u())) {
+
+			case Crag::VolumeNode:
+				numOriginalNodeFeatures = _numOriginalVolumeNodeFeatures;
+				break;
+			case Crag::SliceNode:
+				numOriginalNodeFeatures = _numOriginalSliceNodeFeatures;
+				break;
+			default:
+				numOriginalNodeFeatures = _numOriginalAssignmentNodeFeatures;
+		}
+		break;
+	}
+
+	for (size_t i = 0; i < numOriginalNodeFeatures; i++) {
+
+		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_abs_") + boost::lexical_cast<std::string>(i));
+		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_min_") + boost::lexical_cast<std::string>(i));
+		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_max_") + boost::lexical_cast<std::string>(i));
+		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_sum_") + boost::lexical_cast<std::string>(i));
+	}
+
 	////////////////////////
 	// Edge Features      //
 	// from Node Features //
@@ -834,19 +865,6 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 		// feature vectors from node u/v
 		const auto & featsU = nodeFeatures[u];
 		const auto & featsV = nodeFeatures[v];
-
-		int numOriginalNodeFeatures;
-		switch (_crag.type(u)) {
-
-			case Crag::VolumeNode:
-				numOriginalNodeFeatures = _numOriginalVolumeNodeFeatures;
-				break;
-			case Crag::SliceNode:
-				numOriginalNodeFeatures = _numOriginalSliceNodeFeatures;
-				break;
-			default:
-				numOriginalNodeFeatures = _numOriginalAssignmentNodeFeatures;
-		}
 
 		UTIL_ASSERT(_crag.type(u) == _crag.type(v));
 		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
@@ -872,6 +890,15 @@ void
 FeatureExtractor::extractTopologicalEdgeFeatures(EdgeFeatures& edgeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting topological edge features..." << std::endl;
+
+	for (auto type : Crag::EdgeTypes) {
+
+		edgeFeatures.appendFeatureName(type, "min_level");
+		edgeFeatures.appendFeatureName(type, "max_level");
+		edgeFeatures.appendFeatureName(type, "siblings");
+		edgeFeatures.appendFeatureName(type, "root_edge");
+		edgeFeatures.appendFeatureName(type, "leaf_edge");
+	}
 
 	for (Crag::CragEdge e : _crag.edges()) {
 
@@ -902,6 +929,14 @@ FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
 	LOG_DEBUG(featureextractorlog) << "extracting accumulated edge features..." << std::endl;
 
 	const auto & gridGraph = _crag.getGridGraph();
+
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "num_affiliated_edges");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_mean_boundary");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_stddev_boundary");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_skey_boundary");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_mean_raw");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_stddev_raw");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_skey_raw");
 
 	// iterate over all edges
 	for (Crag::CragEdge e : _crag.edges()) {
@@ -964,6 +999,9 @@ FeatureExtractor::extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures) {
 
 	VolumeRayFeature volumeRayFeature(_volumes, _rays);
 
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "mutual_piercing");
+	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "normalized_mutual_piercing");
+
 	for (Crag::CragEdge e : _crag.edges()) {
 
 		if (_crag.type(e) != Crag::AdjacencyEdge)
@@ -993,6 +1031,9 @@ void
 FeatureExtractor::extractEdgeContactFeatures(EdgeFeatures& edgeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting contact features..." << std::endl;
+
+	for (int i = 0; i < 16; i++)
+		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("contact_feature_") + boost::lexical_cast<std::string>(i));
 
 	ContactFeature contactFeature(_crag, _volumes, _boundaries);
 
