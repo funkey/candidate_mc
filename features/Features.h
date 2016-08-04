@@ -21,6 +21,14 @@ public:
 		if (feature != feature)
 			feature = 0;
 
+		if (feature == std::numeric_limits<double>::infinity() || feature == -std::numeric_limits<double>::infinity()) {
+
+			std::string name = "(not known yet)";
+			if (_featureNames.size() > _features[n].size())
+				name = _featureNames[_features[n].size()];
+			std::cout << "Warning: feature " << _features[n].size() << " " << name << " of element " << _crag.id(n) << " is " << feature << std::endl;
+		}
+
 		_features[n].push_back(feature);
 
 		_dimsDirty = true;
