@@ -75,6 +75,49 @@ getOverlay(
 
 		overlay = supervoxels;
 
+	} else if (name.size() > 0 && name[0] == '*') {
+
+		std::string subname(name.begin() + 1, name.end());
+
+		LOG_USER(logger::out) << "looking for a solution with name " << subname << std::endl;
+
+		std::shared_ptr<CragSolution> overlaySolution = std::make_shared<CragSolution>(crag);
+		cragStore.retrieveSolution(crag, *overlaySolution, subname);
+
+		overlay =
+				std::make_shared<ExplicitVolume<float>>(
+						supervoxels->width(),
+						supervoxels->height(),
+						supervoxels->depth());
+		overlay->setResolution(supervoxels->getResolution());
+		overlay->setOffset(supervoxels->getOffset());
+
+		for (Crag::NodeIt n(crag); n != lemon::INVALID; ++n) {
+
+			// only selected
+			if (!overlaySolution->selected(n))
+				continue;
+
+			// only highest selected
+			if (!crag.isRootNode(n) && overlaySolution->selected((*crag.outArcs(n).begin()).target()))
+				continue;
+
+			const CragVolume& volume = *volumes[n];
+			util::point<int, 3> offset = volume.getOffset()/volume.getResolution();
+
+			for (unsigned int z = 0; z < volume.getDiscreteBoundingBox().depth();  z++)
+			for (unsigned int y = 0; y < volume.getDiscreteBoundingBox().height(); y++)
+			for (unsigned int x = 0; x < volume.getDiscreteBoundingBox().width();  x++) {
+
+				if (volume.data()(x, y, z))
+					(*overlay)(
+							offset.x() + x,
+							offset.y() + y,
+							offset.z() + z)
+									= crag.id(n);
+			}
+		}
+
 	} else {
 
 		LOG_USER(logger::out) << "showing " << name << " labels in overlay" << std::endl;
