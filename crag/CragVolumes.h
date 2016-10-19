@@ -20,12 +20,7 @@ public:
 	 * Create an empty volume map for the given Crag. Populate it using 
 	 * setVolume() for each leaf node.
 	 */
-	CragVolumes(const Crag& crag) :
-		_crag(crag),
-		_volumes(crag) {
-	
-		_cache.set_max_size(4048);
-	}
+	CragVolumes(const Crag& crag);
 
 	virtual ~CragVolumes() {}
 
@@ -46,8 +41,8 @@ public:
 	void setVolume(Crag::CragNode n, std::shared_ptr<CragVolume> volume);
 
 	/**
-	 * Get the volume of a candidate. Don't use this operator to set volumes, 
-	 * use setVolume() instead.
+	 * Get the volume of a candidate. If the candidate is a higher candidate, 
+	 * it's volume will be materialized from the leaf node volume it merges.
 	 */
 	std::shared_ptr<CragVolume> operator[](Crag::CragNode n) const;
 
@@ -55,6 +50,16 @@ public:
 	 * Get the bounding box of all volumes combined.
 	 */
 	using Volume::getBoundingBox;
+
+	/**
+	 * Get the bounding box of a volume.
+	 *
+	 * This does not materialize the volume and should be preferred over 
+	 * volumes[n].getBoundingBox().
+	 */
+	util::box<float,3> getBoundingBox(Crag::CragNode n) const {
+		return _volumes[n].getBoundingBox();
+	}
 
 	/**
 	 * Get the Crag associated to the volumes.
@@ -65,6 +70,12 @@ public:
 	 * Return true if all the volumes are 2D slices.
 	 */
 	bool is2D() const;
+
+	/**
+	 * Clear volumes of higher-order nodes that have been generated on-the-fly 
+	 * by operator[]().
+	 */
+	void clearCache();
 
 protected:
 

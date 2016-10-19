@@ -31,7 +31,16 @@ public:
 		_union = volumes;
 	}
 
-	void clear() { _union.clear(); setDiscreteBoundingBoxDirty(); }
+	bool clear() {
+
+		if (numUnionVolumes() == 0)
+			return false;
+
+		_union.clear();
+		setDiscreteBoundingBoxDirty();
+
+		return true;
+	}
 
 	size_t numUnionVolumes() const { return _union.size(); }
 

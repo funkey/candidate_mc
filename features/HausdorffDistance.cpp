@@ -16,7 +16,7 @@ HausdorffDistance::operator()(const CragVolume& i, const CragVolume& j, double& 
 
 	if (_cache.count(std::make_pair(&i, &j))) {
 
-		LOG_DEBUG(hausdorffdistancelog) << "reuse cached values" << std::endl;
+		LOG_ALL(hausdorffdistancelog) << "reuse cached values" << std::endl;
 
 		i_j = _cache[std::make_pair(&i, &j)].first;
 		j_i = _cache[std::make_pair(&i, &j)].second;
@@ -45,8 +45,8 @@ HausdorffDistance::volumesDistance(
 	const util::box<int, 2>& bb_i = (volume_i.getBoundingBox()/volume_i.getResolution()).project<2>();
 	const util::box<int, 2>& bb_j = (volume_j.getBoundingBox()/volume_j.getResolution()).project<2>();
 
-	LOG_DEBUG(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i.getBoundingBox() << std::endl;
-	LOG_DEBUG(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j.getBoundingBox() << std::endl;
+	LOG_ALL(hausdorffdistancelog) << "bb_i: " << bb_i << " " << volume_i.getBoundingBox() << std::endl;
+	LOG_ALL(hausdorffdistancelog) << "bb_j: " << bb_j << " " << volume_j.getBoundingBox() << std::endl;
 
 	vigra::MultiArray<2, double>& distances_j = getDistanceMap(volume_j);
 
@@ -90,7 +90,7 @@ HausdorffDistance::volumesDistance(
 
 	i_j = maxDistance;
 
-	LOG_DEBUG(hausdorffdistancelog) << "distance: " << i_j << std::endl;
+	LOG_ALL(hausdorffdistancelog) << "distance: " << i_j << std::endl;
 }
 
 double
@@ -113,8 +113,6 @@ HausdorffDistance::lowerBound(const CragVolume& a, const CragVolume& b) {
 
 vigra::MultiArray<2, double>&
 HausdorffDistance::getDistanceMap(const CragVolume& volume) {
-
-	UTIL_TIME_METHOD;
 
 	if (_distanceMaps.count(&volume))
 		return _distanceMaps[&volume];
