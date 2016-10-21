@@ -15,20 +15,29 @@ public:
 
 	CragStackCombiner();
 
+	/**
+	 * Combine a stack of 2D CRAGS into one 3D CRAG. Adds hyperedges between the 
+	 * candidates of two successive source CRAGS in the target CRAG.
+	 *
+	 * This delallocates the source CRAGs.
+	 */
 	void combine(
-			const std::vector<std::unique_ptr<Crag>>&        sourcesCrags,
-			const std::vector<std::unique_ptr<CragVolumes>>& sourcesVolumes,
-			Crag&                                            targetCrag,
-			CragVolumes&                                     targetVolumes);
+			std::vector<std::unique_ptr<Crag>>&        sourcesCrags,
+			std::vector<std::unique_ptr<CragVolumes>>& sourcesVolumes,
+			Crag&                                      targetCrag,
+			CragVolumes&                               targetVolumes);
 
 private:
 
 	std::map<Crag::CragNode, Crag::CragNode> copyNodes(
 			unsigned int       z,
 			const Crag&        source,
+			Crag&              target);
+
+	void copyVolumes(
 			const CragVolumes& sourceVolumes,
-			Crag&              target,
-			CragVolumes&       targetVolumes);
+			CragVolumes& targetVolumes,
+			const std::map<Crag::CragNode, Crag::CragNode>& sourceTargetNodeMap);
 
 	std::vector<std::pair<Crag::CragNode, Crag::CragNode>> findLinks(const Crag& a, const Crag& b);
 

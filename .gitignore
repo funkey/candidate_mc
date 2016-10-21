@@ -1,4 +1,5 @@
 *.sw[po]
 build
+build_pycmc
 *.hdf
 *.kdev4

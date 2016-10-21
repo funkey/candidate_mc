@@ -4,6 +4,13 @@
 
 logger::LogChannel cragvolumeslog("cragvolumeslog", "[CragVolumes] ");
 
+CragVolumes::CragVolumes(const Crag& crag) :
+	_crag(crag),
+	_volumes(crag) {
+
+	_cache.set_max_size(1024);
+}
+
 void
 CragVolumes::setVolume(Crag::CragNode n, std::shared_ptr<CragVolume> volume) {
 
@@ -47,4 +54,10 @@ CragVolumes::is2D() const {
 			return false;
 
 	return true;
+}
+
+void
+CragVolumes::clearCache() {
+
+	_cache.clear();
 }
