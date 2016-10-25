@@ -121,7 +121,32 @@ Start the CRAG viewer with
 ./crag_viewer
 ```
 
-to inspect the created CRAG. Use `CTRL` and mouse drag/wheel to pan/zoom. For 3D volumes, scrolling without `CTRL` will move the visible section through the volume, and dragging rotates the volume. Double clicking on a point on the section will show the smallest candidate at this point. Scrolling with `SHIFT` will let you go up and down the candidate hierarchy. Scrolling with `ALT` will let you cycle through the adjacent candidates of the currently selected candidate.
+to inspect the created CRAG.
+
+#### Keybindings
+
+Use `CTRL` and mouse drag/wheel to pan/zoom. For 3D volumes, scrolling without
+`CTRL` will move the visible section through the volume, and dragging rotates
+the volume. Key 'r' resets the view.
+
+Double clicking on a point on the visible section will show and select the
+smallest candidate covering this point. Scrolling with `SHIFT` will show and
+select candidates below and above in the candidate hierarchy. Scrolling with
+`ALT` will show adjacent candidates of the currently selected candidate. In
+assignment models, this shows possible assignments of candidates across
+sections. Key `c` clears the current selection.
+
+#### Usefull Options
+
+| Option            | Description                                                                            |
+|-------------------|----------------------------------------------------------------------------------------|
+| `--showCosts`     | Show the costs of selected candidates and edges.                                       |
+| `--showFeatures`  | Show the features of selected candidates and edges.                                    |
+| `--showSolution`  | For the selected candidates and edges, show if they are part of the solution.          |
+| `--overlay`       | If set to `solution`, the solution is shown instead of the leaf candidates of the CRAG.|
+| `--cubeSize`      | Set the cube size for the mesh visualization (in world units).                         |
+
+For more options, see `--help`.
 
 ### Extract Features
 
