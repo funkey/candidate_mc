@@ -21,16 +21,16 @@ Dependencies
   * libxrandr-dev
   * libxi-dev
   * freeglut3-dev
-  * libglew1.6-dev
+  * libglew-dev
   * libpng12-dev
-  * libtiff4-dev
+  * libtiff5-dev
   * libhdf5-serial-dev
   * Gurobi (optional)
 
   On Ubuntu, you can get these packages via
 
   ```
-  sudo apt-get install libboost-all-dev liblapack-dev libfftw3-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxi-dev freeglut3-dev libglew1.6-dev libpng12-dev libtiff4-dev libhdf5-serial-dev
+  sudo apt-get install libboost-all-dev liblapack-dev libfftw3-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxi-dev freeglut3-dev libglew-dev libpng12-dev libtiff5-dev libhdf5-serial-dev
   ```
 
   Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
