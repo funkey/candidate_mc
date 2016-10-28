@@ -251,6 +251,8 @@ MeshViewController::replaceCurrentNeighbor(int index) {
 	addMesh(_neighbors[_currentNeighbor]);
 	send<sg_gui::SetMeshes>(_meshes);
 
+	send<SetCandidate>(_neighbors[_currentNeighbor]);
+
 	for (Crag::CragEdge e : _crag.adjEdges(_currentCandidate))
 		if (e.opposite(_currentCandidate) == _neighbors[_currentNeighbor]) {
 
