@@ -134,15 +134,15 @@ smallest candidate covering this point. Scrolling with `SHIFT` will show and
 select candidates below and above in the candidate hierarchy. Scrolling with
 `ALT` will show adjacent candidates of the currently selected candidate. In
 assignment models, this shows possible assignments of candidates across
-sections. Key `c` clears the current selection.
+sections. The firs two adjacent candidates are invisible, they are noAssignmentNodes. Key `c` clears the current selection.
 
 #### Usefull Options
 
 | Option            | Description                                                                            |
 |-------------------|----------------------------------------------------------------------------------------|
-| `--showCosts`     | Show the costs of selected candidates and edges.                                       |
+| `--showCosts`     | Show the costs of selected candidates and edges. The default value is `cost`            |
 | `--showFeatures`  | Show the features of selected candidates and edges.                                    |
-| `--showSolution`  | For the selected candidates and edges, show if they are part of the solution.          |
+| `--showSolution`  | For the selected candidates and edges, show if they are part of the solution. The default value is `solution`  |
 | `--overlay`       | If set to `solution`, the solution is shown instead of the leaf candidates of the CRAG.|
 | `--cubeSize`      | Set the cube size for the mesh visualization (in world units).                         |
 
