@@ -268,7 +268,7 @@ CragImport::readSupervoxels(
 	int minId, maxId;
 	ids.data().minmax(&minId, &maxId);
 
-	LOG_USER(logger::out) << "sopervoxels stack contains ids between " << minId << " and " << maxId << std::endl;
+	LOG_USER(logger::out) << "supervoxels stack contains ids between " << minId << " and " << maxId << std::endl;
 
 	std::map<int, util::box<int, 3>> bbs;
 	for (unsigned int z = 0; z < ids.depth();  z++)
