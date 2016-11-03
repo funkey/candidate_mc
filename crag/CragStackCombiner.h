@@ -47,7 +47,8 @@ private:
 			const Crag&        cragB,
 			const CragVolumes& volsB);
 
-	double _maxDistance;
+	double _maxHausdorffDistance;
+	double _maxBbDistance;
 
 	bool _requireBbOverlap;
 

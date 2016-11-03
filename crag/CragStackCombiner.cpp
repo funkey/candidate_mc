@@ -24,10 +24,21 @@ util::ProgramOption optionMaxZLinkHausdorffDistance(
 		                          "considered adjacent. For that, the maximal "
 		                          "value of the two directions are taken as "
 		                          "distance.",
-		util::_default_value    = 50);
+		util::_default_value    = 0);
+
+util::ProgramOption optionMaxZLinkBoundingBoxDistance(
+		util::_long_name        = "maxZLinkBoundingBoxDistance",
+		util::_module           = "crag.combine",
+		util::_description_text = "The maximal bounding box distance between two "
+		                          "superpixels in subsequent z-section to be "
+		                          "considered adjacent. For that, the maximal "
+		                          "value of the two directions are taken as "
+		                          "distance.",
+		util::_default_value    = 0);
 
 CragStackCombiner::CragStackCombiner() :
-	_maxDistance(optionMaxZLinkHausdorffDistance),
+	_maxHausdorffDistance(optionMaxZLinkHausdorffDistance),
+	_maxBbDistance(optionMaxZLinkBoundingBoxDistance),
 	_requireBbOverlap(optionRequireBoundingBoxOverlap) {}
 
 void
@@ -215,7 +226,7 @@ CragStackCombiner::findLinks(
 	double maxResolution = std::max(
 			volsA[*cragA.nodes().begin()]->getResolutionX(),
 			volsA[*cragA.nodes().begin()]->getResolutionY());
-	HausdorffDistance hausdorff(_maxDistance + maxResolution);
+	HausdorffDistance hausdorff(_maxHausdorffDistance + maxResolution);
 
 	for (Crag::CragNode i : cragA.nodes()) {
 
@@ -225,7 +236,7 @@ CragStackCombiner::findLinks(
 					<< "check linking of nodes " << cragA.id(i)
 					<< " and " << cragB.id(j) << std::endl;
 
-			if (_requireBbOverlap) {
+			if (_requireBbOverlap || _maxBbDistance > 0) {
 
 				util::box<float, 2> bb_i = volsA.getBoundingBox(i).project<2>();
 				util::box<float, 2> bb_j = volsB.getBoundingBox(j).project<2>();
@@ -233,29 +244,38 @@ CragStackCombiner::findLinks(
 				LOG_ALL(cragstackcombinerlog)
 						<< "bounding boxes are " << bb_i << " and " << bb_j << std::endl;
 
-				if (!bb_i.intersects(bb_j))
+				if (_requireBbOverlap && !bb_i.intersects(bb_j))
 					continue;
 
-				LOG_ALL(cragstackcombinerlog)
-						<< "bounding boxes overlap" << std::endl;
+				if (_maxBbDistance > 0) {
+
+					float du = std::abs(bb_i.min().y() - bb_j.min().y());
+					float dl = std::abs(bb_i.min().x() - bb_j.min().x());
+					float db = std::abs(bb_i.max().y() - bb_j.max().y());
+					float dr = std::abs(bb_i.max().x() - bb_j.max().x());
+
+					float bbDistance = std::max(du, std::max(dl, std::max(db, dr)));
+
+					LOG_ALL(cragstackcombinerlog)
+							<< "bounding boxes distance is " << bbDistance << std::endl;
+
+					if (bbDistance > _maxBbDistance)
+						continue;
+				}
 			}
 
-			double i_j, j_i;
-			hausdorff(*volsA[i], *volsB[j], i_j, j_i);
+			if (_maxHausdorffDistance > 0) {
 
-			LOG_ALL(cragstackcombinerlog)
-					<< "Hausdorff distances are: " << i_j << " and " << j_i << std::endl;
+				double i_j, j_i;
+				hausdorff(*volsA[i], *volsB[j], i_j, j_i);
 
-			double distance = std::max(i_j, j_i);
+				double distance = std::max(i_j, j_i);
 
-			if (distance <= _maxDistance) {
-
-				LOG_ALL(cragstackcombinerlog)
-						<< "smaller than " << _maxDistance
-						<< ", adding link" << std::endl;
-
-				links.push_back(std::make_pair(i, j));
+				if (distance > _maxHausdorffDistance)
+					continue;
 			}
+
+			links.push_back(std::make_pair(i, j));
 		}
 	}
 
