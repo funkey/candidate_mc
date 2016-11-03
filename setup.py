@@ -24,7 +24,7 @@ class cmake_lib(build_py):
             call(["./compile_wrapper.sh", source_dir, build_dir, 'rename_pycmc_lib'])
 
             target_dir = self.build_lib
-            print "target_dir: " + target_dir
+            print("target_dir: " + target_dir)
             module_dir = os.path.join(target_dir, module_name)
 
             # make sure the module dir exists

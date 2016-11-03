@@ -37,6 +37,15 @@ Dependencies
 
   * XQuartz (only on OS X, http://xquartz.macosforge.org/)
 
+Install the Python wrappers
+---------------------------
+
+  ```
+  mkvirtualenv -p python3.5 ~/.virtualenvs/candidate_mc
+  workon candidate_mc
+  python setup.py install
+  ```
+
 Configure:
 ----------
 
@@ -56,6 +65,7 @@ Compile:
   ```
   make
   ```
+
 Usage:
 ------
 
