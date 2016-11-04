@@ -42,7 +42,7 @@ CragVolumes::operator[](Crag::CragNode n) const {
 		_volumes[n] = UnionVolume(leafVolumes);
 	}
 
-	UnionVolume v = _volumes[n];
+	UnionVolume& v = _volumes[n];
 	return _cache.get(n, [v]{ return v.materialize(); });
 }
 
