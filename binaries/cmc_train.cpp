@@ -152,9 +152,12 @@ int main(int argc, char** argv) {
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
 
-		LOG_USER(logger::out) << "reading features" << std::endl;
-		cragStore->retrieveNodeFeatures(crag, nodeFeatures);
-		cragStore->retrieveEdgeFeatures(crag, edgeFeatures);
+		if (!optionDryRun) {
+
+			LOG_USER(logger::out) << "reading features" << std::endl;
+			cragStore->retrieveNodeFeatures(crag, nodeFeatures);
+			cragStore->retrieveEdgeFeatures(crag, edgeFeatures);
+		}
 
 		std::unique_ptr<BestEffort> bestEffort;
 		std::unique_ptr<Loss>       bestEffortLoss;

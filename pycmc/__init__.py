@@ -1,1 +1,1 @@
-from pycmc import *
+from .pycmc import *
