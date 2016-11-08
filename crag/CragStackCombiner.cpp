@@ -101,6 +101,13 @@ CragStackCombiner::combine(
 	}
 
 	unsigned int nodesAdded = 0;
+
+	if (sourcesCrags.size() == 1)
+	{
+		_prevNodeMap = copyNodes(0, *sourcesCrags[0], targetCrag);
+		copyVolumes(*sourcesVolumes[0], targetVolumes, _prevNodeMap);
+	}
+
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
