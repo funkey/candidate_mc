@@ -81,6 +81,8 @@ private:
 	// when considering overlap with gt regions, scale the overlap with 
 	// background by this value
 	double _bgOverlapWeight;
+
+	bool _onlySliceNode;
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
