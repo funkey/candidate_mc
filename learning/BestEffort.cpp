@@ -1,6 +1,9 @@
 #include <inference/CragSolverFactory.h>
 #include <util/ProgramOptions.h>
+#include <util/Logger.h>
 #include "BestEffort.h"
+
+logger::LogChannel bestEffortlog("bestEffortlog", "[BestEffort] ");
 
 util::ProgramOption optionFullBestEffort(
 		util::_long_name        = "fullBestEffort",
@@ -52,8 +55,13 @@ BestEffort::BestEffort(
 	_bgOverlapWeight(optionBackgroundOverlapWeight),
 	_onlySliceNode(optionSliceNodes) {
 
+	int i = 0;
 	for (Crag::CragNode n : crag.nodes())
+	{
+		i++;
 		setSelected(n, false);
+	}
+
 	for (Crag::CragEdge e : crag.edges())
 		setSelected(e, false);
 
@@ -131,7 +139,7 @@ BestEffort::getGroundTruthAssignments(
 
 	for (Crag::CragNode i : crag.nodes()) {
 
-		if (crag.type(i) == Crag::NoAssignmentNode)
+		if (crag.type(i) == Crag::NoAssignmentNode || crag.type(i) == Crag::AssignmentNode )
 			continue;
 
 		if (_onlySliceNode)
@@ -158,6 +166,7 @@ BestEffort::getGroundTruthAssignments(
 		}
 
 		gtAssignments[i] = bestGtLabel;
+		LOG_ALL(bestEffortlog) << "\tassigning node " <<  crag.id(i) << " with label: " << bestGtLabel << std::endl;
 	}
 }
 
