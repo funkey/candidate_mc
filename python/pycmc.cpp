@@ -22,8 +22,24 @@ const V& genericGetter(const Map& map, const K& k) { return map[k]; }
 template <typename Map, typename K, typename V>
 void genericSetter(Map& map, const K& k, const V& value) { map[k] = value; }
 
-template <typename Map, typename K, typename V>
-void featuresSetter(Map& map, const K& k, const V& value) { map.set(k, value); }
+template <typename V>
+std::vector<V> list_to_vec(boost::python::list l) {
+	std::vector<V> vec;
+	for (int i = 0; i < boost::python::len(l); ++i) {
+		vec.push_back(boost::python::extract<V>(l[i]));
+	}
+	return vec;
+}
+
+template <typename Map, typename K, typename V, typename D>
+void featuresSetter(Map& map, const K& k, const V& value) { 
+	map.set(k, list_to_vec<D>(value));
+}
+
+template <typename Map, typename K, typename V, typename D>
+void weightSetter(Map& map, const K& k, const V& value) { 
+	map[k] = list_to_vec<D>(value);
+}
 
 // iterator traits specializations
 //
@@ -298,11 +314,22 @@ BOOST_PYTHON_MODULE(pycmc) {
 					util::point<int,3>, int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
+	// ExplicitVolume<float>
+	boost::python::class_<ExplicitVolume<float>>("ExplicitVolume_f")
+			.def("getBoundingBox", &ExplicitVolume<float>::getBoundingBox, boost::python::return_internal_reference<>())
+			.def("getDiscreteBoundingBox", &ExplicitVolume<float>::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
+			.def("getResolution", &ExplicitVolume<float>::getResolution, boost::python::return_internal_reference<>())
+			.def("cut", &ExplicitVolume<float>::cut)
+			.def("__getitem__", &genericGetter<ExplicitVolume<float>,
+					util::point<float,3>, float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			;
+
 	// CragVolume
 	boost::python::class_<CragVolume, std::shared_ptr<CragVolume>>("CragVolume")
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
 			.def("getDiscreteBoundingBox", &CragVolume::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &CragVolume::getResolution, boost::python::return_internal_reference<>())
+			.def("cut", &CragVolume::cut)
 			.def("__getitem__", &genericGetter<ExplicitVolume<unsigned char>, util::point<int,3>, unsigned char>,
 					boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
@@ -310,6 +337,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 	// volume io
 	boost::python::def("readVolume", readVolume<unsigned char>);
 	boost::python::def("saveVolume", saveVolume<unsigned char>);
+	boost::python::def("readVolume", readVolume<float>);
+	boost::python::def("saveVolume", saveVolume<float>);
 	boost::python::def("readVolume", readVolume<int>);
 	boost::python::def("saveVolume", saveVolume<int>);
 
@@ -363,7 +392,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 	boost::python::class_<NodeFeatures>("NodeFeatures", boost::python::init<const Crag&>())
 			.def("__getitem__", &genericGetter<NodeFeatures, Crag::CragNode, std::vector<double>>,
 					boost::python::return_internal_reference<>())
-			.def("__setitem__", &featuresSetter<NodeFeatures, Crag::CragNode, std::vector<double>>)
+			.def("__setitem__", &featuresSetter<NodeFeatures, Crag::CragNode, boost::python::list, double>)
 			.def("dims", &NodeFeatures::dims)
 			.def("append", &NodeFeatures::append)
 			;
@@ -372,7 +401,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 	boost::python::class_<EdgeFeatures>("EdgeFeatures", boost::python::init<const Crag&>())
 			.def("__getitem__", &genericGetter<EdgeFeatures, Crag::CragEdge, std::vector<double>>,
 					boost::python::return_internal_reference<>())
-			.def("__setitem__", &featuresSetter<EdgeFeatures, Crag::CragEdge, std::vector<double>>)
+			.def("__setitem__", &featuresSetter<EdgeFeatures, Crag::CragEdge, boost::python::list, double>)
 			.def("dims", &EdgeFeatures::dims)
 			.def("append", &EdgeFeatures::append)
 			;
@@ -383,10 +412,10 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def(boost::python::init<const NodeFeatures&, const EdgeFeatures&, double>())
 			.def("__getitem__", &genericGetter<FeatureWeights, Crag::NodeType, std::vector<double>>,
 					boost::python::return_internal_reference<>())
-			.def("__setitem__", &genericSetter<FeatureWeights, Crag::NodeType, std::vector<double>>)
+			.def("__setitem__", &weightSetter<FeatureWeights, Crag::NodeType, boost::python::list, double>)
 			.def("__getitem__", &genericGetter<FeatureWeights, Crag::EdgeType, std::vector<double>>,
 					boost::python::return_internal_reference<>())
-			.def("__setitem__", &genericSetter<FeatureWeights, Crag::EdgeType, std::vector<double>>)
+			.def("__setitem__", &weightSetter<FeatureWeights, Crag::EdgeType, boost::python::list, double>)
 			;
 
 	// CragSolution
