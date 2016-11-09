@@ -28,10 +28,6 @@ util::ProgramOption optionMajorityOverlap(
 		                          "truth region, the adjacency edge is also selected. If this option is not set, the largest candidate that "
 		                          "has leaf nodes that are all assigned to the same ground-truth region is selected and assigned to this region.");
 
-util::ProgramOption optionSliceNodes(
-		util::_long_name        = "sliceNodes",
-		util::_description_text = "When finding the best-effort, try to match just the slices nodes with the ground truth");
-
 BestEffort::BestEffort(
 		const Crag&                   crag,
 		const CragVolumes&            volumes,
@@ -52,15 +48,10 @@ BestEffort::BestEffort(
 		const ExplicitVolume<int>&    groundTruth) :
 	CragSolution(crag),
 	_fullBestEffort(optionFullBestEffort),
-	_bgOverlapWeight(optionBackgroundOverlapWeight),
-	_onlySliceNode(optionSliceNodes) {
+	_bgOverlapWeight(optionBackgroundOverlapWeight){
 
-	int i = 0;
 	for (Crag::CragNode n : crag.nodes())
-	{
-		i++;
 		setSelected(n, false);
-	}
 
 	for (Crag::CragEdge e : crag.edges())
 		setSelected(e, false);
@@ -79,6 +70,9 @@ BestEffort::BestEffort(
 		findMajorityOverlapCandidates(crag, overlaps, gtAssignments);
 	else
 		findConcordantLeafNodeCandidates(crag, gtAssignments);
+
+    // For the Assignment Model, select the assignment nodes
+    selectAssignmentNodes( crag, gtAssignments );
 
 	// find all edges connecting switched on candidates assigned to the same 
 	// ground-truth region
@@ -104,12 +98,9 @@ BestEffort::getGroundTruthOverlaps(
 
 	for (Crag::CragNode n : crag.nodes()) {
 
-		if (crag.type(n) == Crag::NoAssignmentNode)
+		if (crag.type(n) == Crag::NoAssignmentNode ||
+			crag.type(n) == Crag::AssignmentNode)
 			continue;
-
-		if (_onlySliceNode)
-			if (crag.type(n) != Crag::SliceNode)
-				continue;
 
 		const CragVolume& region = *volumes[n];
 
@@ -139,12 +130,9 @@ BestEffort::getGroundTruthAssignments(
 
 	for (Crag::CragNode i : crag.nodes()) {
 
-		if (crag.type(i) == Crag::NoAssignmentNode || crag.type(i) == Crag::AssignmentNode )
+		if (crag.type(i) == Crag::NoAssignmentNode ||
+			crag.type(i) == Crag::AssignmentNode)
 			continue;
-
-		if (_onlySliceNode)
-			if (crag.type(i) != Crag::SliceNode)
-				continue;
 
 		// find most overlapping ground truth region
 		double maxOverlap = 0;
@@ -181,7 +169,6 @@ BestEffort::getLeafAssignments(
 
 	// add all our children's assignments
 	for (Crag::CragArc childArc : crag.inArcs(n)) {
-
 		getLeafAssignments(crag, childArc.source(), gtAssignments, leafAssignments);
 		leafAssignments[n].insert(leafAssignments[childArc.source()].begin(), leafAssignments[childArc.source()].end());
 	}
@@ -198,9 +185,9 @@ BestEffort::findMajorityOverlapCandidates(
   
 	for (Crag::CragNode n : crag.nodes())
 	{
-		if (_onlySliceNode)
-			if (crag.type(n) != Crag::SliceNode)
-				continue;
+		if (crag.type(n) == Crag::NoAssignmentNode ||
+			crag.type(n) == Crag::AssignmentNode)
+			continue;
 
 		if (crag.isRootNode(n))
 			labelMajorityOverlapCandidate(crag, n, overlaps, gtAssignments);
@@ -213,22 +200,15 @@ BestEffort::findConcordantLeafNodeCandidates(
 		const Crag::NodeMap<int>&                gtAssignments) {
 
 	Crag::NodeMap<std::set<int>> leafAssignments(crag);
+
 	for (Crag::CragNode n : crag.nodes())
 	{
-		if (_onlySliceNode)
-			if (crag.type(n) != Crag::SliceNode)
-				continue;
-
 		if (crag.isRootNode(n))
 			getLeafAssignments(crag, n, gtAssignments, leafAssignments);
 	}
 
 	for (Crag::CragNode n : crag.nodes())
 	{
-		if (_onlySliceNode)
-			if (crag.type(n) != Crag::SliceNode)
-				continue;
-
 		if (crag.isRootNode(n))
 			labelSingleAssignmentCandidate(crag, n, leafAssignments);
 	}
@@ -271,13 +251,49 @@ BestEffort::labelSingleAssignmentCandidate(
 
 	if (leafAssignments[n].size() == 1 && (*leafAssignments[n].begin()) != 0) {
 
-		setSelected(n, true);
+		if(crag.type(n) != Crag::AssignmentNode || crag.type(n) != Crag::NoAssignmentNode )
+		{
+			setSelected(n, true);
 
-		// for the full best-effort, we continue going down
-		if (!_fullBestEffort)
-			return;
+			// for the full best-effort, we continue going down
+			if (!_fullBestEffort)
+				return;
+		}
 	}
 
 	for (Crag::CragArc childArc : crag.inArcs(n))
 		labelSingleAssignmentCandidate(crag, childArc.source(), leafAssignments);
 }
+
+void BestEffort::selectAssignmentNodes(
+		const Crag&     crag,
+		Crag::NodeMap<int>&  gtAssignments)
+{
+    // For all assignment nodes, check if it links two selected candidates with the same label
+    for (Crag::CragNode n : crag.nodes()) {
+        if (crag.type(n) == Crag::AssignmentNode) {
+
+            int label = -1;
+            for (Crag::CragEdge edge : crag.adjEdges(n)) {
+
+                Crag::CragNode child = edge.u();
+
+                // If the candidate is not select, go to the next
+                if (!selected(child))
+                    break;
+
+                if (label == -1) {
+                    label = gtAssignments[child];
+                } else if (label == gtAssignments[child]) {
+                    // Set the assignment node with the same label
+                    gtAssignments[n] = label;
+                    setSelected(n, true);
+                }
+            }
+        }
+    }
+
+    // Todo: For all selected sliceNodes, check if they have more than one assignment node selected
+    // Todo: After that, check if there is a selected candidate without assignment
+}
+

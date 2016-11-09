@@ -75,14 +75,16 @@ private:
 			const Crag::NodeMap<std::map<int, int>>& overlaps,
 			const Crag::NodeMap<int>&                gtAssignments);
 
+	void selectAssignmentNodes(
+			const Crag&          crag,
+			Crag::NodeMap<int>&  gtAssignments);
+
 	// include children and child edges of best-effort candidates and edges
 	bool _fullBestEffort;
 
 	// when considering overlap with gt regions, scale the overlap with 
 	// background by this value
 	double _bgOverlapWeight;
-
-	bool _onlySliceNode;
 };
 
 #endif // CANDIDATE_MC_LEARNING_BEST_EFFORT_H__
