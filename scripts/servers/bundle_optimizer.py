@@ -39,79 +39,86 @@ class BundleMethodServer:
         self.oracle.setValueGradientRCallback(self.valueGradientR)
         self.running = True
 
+    def send_message(self, message_type, message_payload):
+
+        message = json.dumps({
+                'type': message_type,
+                'payload': message_payload
+        })
+        print("sending " + message)
+        self.socket.send(message.encode('ascii'))
+
+    def receive_message(self):
+
+        message = json.loads(self.socket.recv().decode())
+        return (message['type'], message['payload'])
+
     # callback for bundle method, concave part of objective
     def valueGradientR(self, w, value, gradient):
 
-        print [ x for x in w ]
+        print([ x for x in w ])
 
-        self.socket.send(chr(EVALUATE_R_RES) + json.dumps({ "x" : [ x for x in w] }))
-        reply = self.socket.recv()
+        self.send_message(EVALUATE_R_RES, { "x" : [ x for x in w] })
+        (message_type, reply) = self.receive_message()
 
-        t = ord(reply[0])
-        if t != CONTINUATION_REQ:
-            raise "Error: expected client to send CONTINUATION_REQ (" + str(CONTINUATION_REQ) + ", sent " + str(t) + " instead"
+        if message_type != CONTINUATION_REQ:
+            raise RuntimeError("Error: expected client to send CONTINUATION_REQ (= " + str(CONTINUATION_REQ) + "), sent " + str(message_type) + " instead")
 
-        data = json.loads(reply[1:])
-        value.v = data["value"]
+        value.v = reply["value"]
         for i in range(self.dims):
-            gradient[i] = data["gradient"][i]
+            gradient[i] = reply["gradient"][i]
 
     # callback for bundle method, convex part of objective
     def valueGradientP(self, w, value, gradient):
 
-        print [ x for x in w ]
+        print([ x for x in w ])
 
-        self.socket.send(chr(EVALUATE_P_RES) + json.dumps({ "x" : [ x for x in w], "eps" : self.bundle_method.getEps() }))
-        reply = self.socket.recv()
+        self.send_message(EVALUATE_P_RES, { "x" : [ x for x in w], "eps" : self.bundle_method.getEps() })
+        (message_type, reply) = self.receive_message()
 
-        t = ord(reply[0])
-        if t != CONTINUATION_REQ:
-            raise "Error: expected client to send CONTINUATION_REQ (" + str(CONTINUATION_REQ) + ", sent " + str(t) + " instead"
+        if message_type != CONTINUATION_REQ:
+            raise RuntimeError("Error: expected client to send CONTINUATION_REQ (= " + str(CONTINUATION_REQ) + "), sent " + str(message_type) + " instead")
 
-        data = json.loads(reply[1:])
-        value.v = data["value"]
+        value.v = reply["value"]
         for i in range(self.dims):
-            gradient[i] = data["gradient"][i]
+            gradient[i] = reply["gradient"][i]
 
     def run(self):
 
-        print "Setting up zmq socket"
+        print("Setting up zmq socket")
 
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:4711")
 
-        print "Waiting for client..."
+        print("Waiting for client...")
 
-        request = self.socket.recv()
+        (message_type, request) = self.receive_message()
 
-        t = ord(request[0])
+        if message_type != INITIAL_REQ:
+            raise RuntimeError("Error: expected client to send INITIAL_REQ (= " + str(INITIAL_REQ) + "), sent " + str(message_type) + " instead")
 
-        if t != INITIAL_REQ:
-            raise "Error: expected client to send INITIAL_REQ (" + str(INITIAL_REQ) + ", sent " + str(t) + " instead"
+        self.dims = request["dims"]
 
-        data = json.loads(request[1:])
-        self.dims = data["dims"]
-
-        print "Got initial request for optimization with " + str(self.dims) + " variables"
+        print("Got initial request for optimization with " + str(self.dims) + " variables")
 
         parameters = BundleOptimizerParameters()
 
-        if data.has_key("parameters"):
+        if 'parameters' in request:
 
-            if data["parameters"].has_key("lambda"):
-                parameters.lambada = data["parameters"]["lambda"]
-            if data["parameters"].has_key("steps"):
-                parameters.steps = data["parameters"]["steps"]
-            if data["parameters"].has_key("min_eps"):
-                parameters.min_eps = data["parameters"]["min_eps"]
-            if data["parameters"].has_key("eps_strategy"):
-                if data["parameters"]["eps_strategy"] == "eps_from_gap":
+            if 'lambda' in request["parameters"]:
+                parameters.lambada = request["parameters"]["lambda"]
+            if 'steps' in request["parameters"]:
+                parameters.steps = request["parameters"]["steps"]
+            if 'min_eps' in request["parameters"]:
+                parameters.min_eps = request["parameters"]["min_eps"]
+            if 'eps_strategy' in request["parameters"]:
+                if request["parameters"]["eps_strategy"] == "eps_from_gap":
                     parameters.eps_strategy = EpsStrategy.EpsFromGap
-                elif data["parameters"]["eps_strategy"] == "eps_from_change":
+                elif request["parameters"]["eps_strategy"] == "eps_from_change":
                     parameters.eps_strategy = EpsStrategy.EpsFromChange
                 else:
-                    raise "Unknown eps strategy: " + str(data["parameters"]["eps_strategy"])
+                    raise RuntimeError("Unknown eps strategy: " + str(request["parameters"]["eps_strategy"]))
 
         self.bundle_method = BundleOptimizer(parameters)
 
@@ -119,28 +126,28 @@ class BundleMethodServer:
         # receiving a request)
         w = PyOracleWeights(self.dims)
 
-        if data.has_key("initial_x"):
+        if 'initial_x' in request:
             for i in range(len(w)):
-                w[i] = data["initial_x"][i]
+                w[i] = request["initial_x"][i]
 
         result = self.bundle_method.optimize(self.oracle, w)
 
         if result == BundleOptimizerResult.ReachedMinGap:
-            print "Optimal solution found at " + str([x for x in w])
+            print("Optimal solution found at " + str([x for x in w]))
             result = "reached_min_eps"
         elif result == BundleOptimizerResult.ReachedMaxSteps:
-            print "Maximal number of iterations reached"
+            print("Maximal number of iterations reached")
             result = "reached_max_steps"
         else:
-            print "Optimal solution NOT found"
+            print("Optimal solution NOT found")
             result = "error"
 
-        self.socket.send(chr(FINAL_RES) + json.dumps({
+        self.send_message(FINAL_RES, {
             "x" : [x for x in w],
             "value" : self.bundle_method.getMinValue(),
             "eps" : self.bundle_method.getEps(),
             "status" : result
-        }))
+        })
 
 if __name__ == "__main__":
 

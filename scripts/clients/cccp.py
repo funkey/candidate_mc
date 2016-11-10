@@ -20,21 +20,37 @@ class Client:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://127.0.0.1:4711")
+        print("connected to server")
+
+    def send_message(self, message_type, message_payload):
+
+        message = json.dumps({
+                'type': message_type,
+                'payload': message_payload
+        })
+        print("sending " + message)
+        self.socket.send(message.encode('ascii'))
+
+    def receive_message(self):
+
+        message = json.loads(self.socket.recv().decode())
+        return (message['type'], message['payload'])
 
     def run(self):
 
-        self.socket.send(chr(INITIAL_REQ) + json.dumps({ "dims" : 1, "initial_x" : [ 00.1 ], "parameters" : { "lambda" : 0.0001 } }))
+        print("sending initial request")
+        self.send_message(INITIAL_REQ, { "dims" : 1, "initial_x" : [ 00.1 ], "parameters" : { "lambda" : 0.0001 } })
 
         while True:
 
-            reply = self.socket.recv()
+            print("waiting for reply")
+            (message_type, data) = self.receive_message()
 
-            t = ord(reply[0])
-            if t == EVALUATE_P_RES:
-                self.evaluate_P([x for x in json.loads(reply[1:])["x"]])
-            if t == EVALUATE_R_RES:
-                self.evaluate_R([x for x in json.loads(reply[1:])["x"]])
-            if t == FINAL_RES:
+            if message_type == EVALUATE_P_RES:
+                self.evaluate_P([x for x in data["x"]])
+            if message_type == EVALUATE_R_RES:
+                self.evaluate_R([x for x in data["x"]])
+            if message_type == FINAL_RES:
                 break
 
     def evaluate_P(self, w):
@@ -51,7 +67,7 @@ class Client:
         if x < 0:
             gradient[0] = -gradient[0]
 
-        self.socket.send(chr(CONTINUATION_REQ) + json.dumps({ "value" : value, "gradient" : [ x for x in gradient] }))
+        self.send_message(CONTINUATION_REQ, { "value" : value, "gradient" : [ x for x in gradient] })
 
     def evaluate_R(self, w):
 
@@ -63,7 +79,7 @@ class Client:
         if x < 0:
             gradient[0] = -gradient[0]
 
-        self.socket.send(chr(CONTINUATION_REQ) + json.dumps({ "value" : value, "gradient" : [ x for x in gradient] }))
+        self.send_message(CONTINUATION_REQ, { "value" : value, "gradient" : [ x for x in gradient] })
 
 if __name__ == "__main__":
     client = Client()
