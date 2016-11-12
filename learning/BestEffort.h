@@ -13,7 +13,10 @@ public:
 	/**
 	 * Crate a new uninitialized best-effort solution.
 	 */
-	BestEffort(const Crag& crag) : CragSolution(crag) {}
+	BestEffort(const Crag& crag) :
+	    CragSolution(crag),
+	    _fullBestEffort(false),
+	    _bgOverlapWeight(1.0) {}
 
 	/**
 	 * Create a best-effort solution by solving the CRAG with the given costs.
@@ -58,7 +61,7 @@ private:
 	void findConcordantLeafNodeCandidates(
 			const Crag&               crag,
 			const Crag::NodeMap<int>& gtAssignments);
-	
+
 	void findMajorityOverlapCandidates(
 			const Crag&                              crag,
 			const Crag::NodeMap<std::map<int, int>>& overlaps,
@@ -76,8 +79,15 @@ private:
 			const Crag::NodeMap<int>&                gtAssignments);
 
 	void selectAssignmentNodes(
-			const Crag&          crag,
-			Crag::NodeMap<int>&  gtAssignments);
+			const Crag&                 crag,
+	        const CragVolumes&          volumes,
+	        const ExplicitVolume<int>&  groundTruth,
+			Crag::NodeMap<int>&         gtAssignments,
+			Crag::NodeMap<std::map<int, int>>& overlaps);
+
+	void unselectChildren(
+	        const Crag&    crag,
+	        Crag::CragNode n);
 
 	// include children and child edges of best-effort candidates and edges
 	bool _fullBestEffort;
