@@ -88,8 +88,8 @@ BestEffort::BestEffort(
 			setSelected(e, true);
 	}
 
-    // For the Assignment Model, select the assignment nodes
-    selectAssignmentNodes( crag, volumes, groundTruth, gtAssignments, overlaps );
+    // For the Assignment Model, select the assignment nodes and edges
+    selectAssignments( crag, volumes, groundTruth, gtAssignments, overlaps );
 
 }
 
@@ -263,18 +263,7 @@ BestEffort::labelSingleAssignmentCandidate(
 	    labelSingleAssignmentCandidate(crag, childArc.source(), leafAssignments);
 }
 
-void BestEffort::unselectChildren(
-        const Crag&    crag,
-        Crag::CragNode n)
-{
-    for (Crag::CragArc arc : crag.inArcs(n))
-    {
-        setSelected(arc.source(), false);
-        unselectChildren( crag, arc.source() );
-    }
-}
-
-void BestEffort::selectAssignmentNodes(
+void BestEffort::selectAssignments(
 		const Crag&                 crag,
         const CragVolumes&          volumes,
         const ExplicitVolume<int>&  groundTruth,
@@ -339,151 +328,9 @@ void BestEffort::selectAssignmentNodes(
         }
     }
 
-    // For all selected sliceNodes, check if they have more than one assignment node selected per section
-    for (Crag::CragNode n : crag.nodes())
-    {
-        if (crag.type(n) != Crag::SliceNode)
-            continue;
+    checkConstraint( crag, volumes, groundTruth, gtAssignments, overlaps );
 
-        if (!selected(n))
-            continue;
-
-        int assignmentSelected = 0;
-        int section = -1;
-        Crag::CragNode previous;
-        for (Crag::CragEdge edge : crag.adjEdges(n)) {
-
-            if (crag.type(edge) != Crag::AssignmentEdge)
-                continue;
-
-            Crag::CragNode child = edge.v();
-
-            if (!selected(edge))
-                continue;
-
-            // Identify the assignment node section
-            const CragVolume& region = *volumes[child];
-
-            util::point<unsigned int, 3> offset =
-                    (region.getOffset() - groundTruth.getOffset())/
-                    groundTruth.getResolution();
-
-            // If the edge is selected, so is the assignmentNode
-            assignmentSelected++;
-
-            if(section == -1)
-            {
-                previous = child;
-                section = offset.z();
-            }
-
-            if (assignmentSelected > 1) {
-
-                if (section == offset.z())
-                {
-                    assignmentSelected--;
-                    // keep selected only the one with the most overlaping gt area
-                    Crag::CragNode removed = (overlaps[previous] > overlaps[child]) ? child : previous;
-
-                    setSelected(removed, false);
-                    LOG_ALL(bestEffortlog) << "\tunselecting assignment node: " << crag.id(child) << std::endl;
-                    // unselect all edges from the assignment node
-                    for (Crag::CragEdge e : crag.adjEdges(removed))
-                    {
-                        setSelected(e, false);
-                        LOG_ALL(bestEffortlog) << "\tunselecting edges between: " <<  crag.id(crag.u(e)) << " and " << crag.id(crag.v(e)) << std::endl;
-                    }
-                }
-                else
-                {
-                    section = offset.z();
-                    assignmentSelected--;
-                }
-            }
-        }
-    }
-
-    // Count sections
-    int sections = -1;
-    for (Crag::CragNode n : crag.nodes())
-        if (crag.type(n) == Crag::NoAssignmentNode)
-            sections++;
-
-    // Check if there is a selected candidate missing assignment
-    for (Crag::CragNode n : crag.nodes()) {
-
-        if (crag.type(n) != Crag::SliceNode)
-            continue;
-
-        if (!selected(n))
-            continue;
-
-        int assignmentSelected = 0;
-        for (Crag::CragEdge edge : crag.adjEdges(n))
-            if (crag.type(edge) == Crag::AssignmentEdge)
-                if(selected(edge))
-                    assignmentSelected++;
-
-        // Check in which section the selected node is
-        const CragVolume& region = *volumes[n];
-
-        util::point<unsigned int, 3> offset =
-                (region.getOffset() - groundTruth.getOffset())/
-                groundTruth.getResolution();
-
-
-        // No one assignment node selected, should select the noAssignmentEdge
-        if (assignmentSelected == 0)
-        {
-
-            for (Crag::CragEdge edge : crag.adjEdges(n))
-            {
-                if (crag.type(edge) != Crag::NoAssignmentEdge)
-                    continue;
-
-                // select the noAssignmentEdge before the section
-                if ((crag.id(edge.v()) == offset.z()))
-                    setSelected(edge, true);
-
-                // selecte the noAssignmentEdge after the section
-                if ((crag.id(edge.v()) == offset.z() + 1) )
-                    setSelected(edge, true);
-            }
-        }
-        else if(assignmentSelected == 1)
-        {
-            int section = 0;
-            // First or last section
-            if( offset.z() == 0 || (offset.z() == (sections - 1)))
-            {
-                section = (offset.z() == 0) ? 0 : sections;
-            }
-            else
-            {
-                // Search for the position of the assignmentNode selected
-                util::point<unsigned int, 3> assignmentOffset;
-                for (Crag::CragEdge edge : crag.adjEdges(n))
-                {
-                    if (crag.type(edge.v()) != Crag::AssignmentNode)
-                        continue;
-                    if(!selected(edge.v()))
-                        continue;
-
-                    const CragVolume& region = *volumes[edge.v()];
-
-                    assignmentOffset = (region.getOffset() - groundTruth.getOffset())/
-                                        groundTruth.getResolution();
-                }
-
-                section = (offset.z() == assignmentOffset.z()) ? offset.z() : offset.z() + 1;
-            }
-
-            for (Crag::CragEdge edge : crag.adjEdges(n))
-                if (crag.type(edge) == Crag::NoAssignmentEdge)
-                    if(crag.id(edge.v()) == section )
-                        setSelected(edge, true);
-        }
-    }
+    selectNoAssignmentEdges( crag, volumes, groundTruth );
 
 #ifdef DEBUG
     LOG_DEBUG(bestEffortlog) << "\tChecking results: selected edges for each selected slice node" <<  std::endl;
@@ -524,5 +371,168 @@ void BestEffort::selectAssignmentNodes(
         LOG_DEBUG(bestEffortlog) << "\tOK" <<  std::endl;
 
 #endif
+}
+
+void BestEffort::unselectChildren(
+        const Crag&    crag,
+        Crag::CragNode n)
+{
+    for (Crag::CragArc arc : crag.inArcs(n))
+    {
+        setSelected(arc.source(), false);
+        unselectChildren( crag, arc.source() );
+    }
+}
+
+void BestEffort::checkConstraint(
+        const Crag&                 crag,
+        const CragVolumes&          volumes,
+        const ExplicitVolume<int>&  groundTruth,
+        Crag::NodeMap<int>&         gtAssignments,
+        Crag::NodeMap<std::map<int, int>>& overlaps)
+{
+    // For all selected sliceNodes, check if they have more than one assignment node selected per section
+    for (Crag::CragNode n : crag.nodes()) {
+        if (crag.type(n) != Crag::SliceNode)
+            continue;
+
+        if (!selected(n))
+            continue;
+
+        int assignmentSelected = 0;
+        int section = -1;
+        Crag::CragNode previous;
+        for (Crag::CragEdge edge : crag.adjEdges(n)) {
+
+            if (crag.type(edge) != Crag::AssignmentEdge)
+                continue;
+
+            Crag::CragNode child = edge.v();
+
+            if (!selected(edge))
+                continue;
+
+            // Identify the assignment node section
+            const CragVolume& region = *volumes[child];
+
+            util::point<unsigned int, 3> offset = (region.getOffset()
+                    - groundTruth.getOffset()) / groundTruth.getResolution();
+
+            // If the edge is selected, so is the assignmentNode
+            assignmentSelected++;
+
+            if (section == -1) {
+                previous = child;
+                section = offset.z();
+            }
+
+            if (assignmentSelected > 1) {
+
+                if (section == offset.z()) {
+                    assignmentSelected--;
+                    // keep selected only the one with the most overlaping gt area
+                    Crag::CragNode removed =
+                            (overlaps[previous] > overlaps[child]) ?
+                                    child : previous;
+
+                    setSelected(removed, false);
+                    LOG_ALL(bestEffortlog) << "\tunselecting assignment node: "
+                            << crag.id(child) << std::endl;
+                    // unselect all edges from the assignment node
+                    for (Crag::CragEdge e : crag.adjEdges(removed)) {
+                        setSelected(e, false);
+                        LOG_ALL(bestEffortlog)
+                                << "\tunselecting edges between: "
+                                << crag.id(crag.u(e)) << " and "
+                                << crag.id(crag.v(e)) << std::endl;
+                    }
+                } else {
+                    section = offset.z();
+                    assignmentSelected--;
+                }
+            }
+        }
+    }
+}
+
+void BestEffort::selectNoAssignmentEdges(
+        const Crag&                 crag,
+        const CragVolumes&          volumes,
+        const ExplicitVolume<int>&  groundTruth){
+
+    // Count sections
+    int sections = -1;
+    for (Crag::CragNode n : crag.nodes())
+        if (crag.type(n) == Crag::NoAssignmentNode)
+            sections++;
+
+    // Check if there is a selected candidate missing assignment
+    for (Crag::CragNode n : crag.nodes()) {
+
+        if (crag.type(n) != Crag::SliceNode)
+            continue;
+
+        if (!selected(n))
+            continue;
+
+        int assignmentSelected = 0;
+        for (Crag::CragEdge edge : crag.adjEdges(n))
+            if (crag.type(edge) == Crag::AssignmentEdge)
+                if (selected(edge))
+                    assignmentSelected++;
+
+        // Check in which section the selected node is
+        const CragVolume& region = *volumes[n];
+
+        util::point<unsigned int, 3> offset = (region.getOffset()
+                - groundTruth.getOffset()) / groundTruth.getResolution();
+
+        // No one assignment node selected, should select the noAssignmentEdge
+        if (assignmentSelected == 0) {
+
+            for (Crag::CragEdge edge : crag.adjEdges(n)) {
+                if (crag.type(edge) != Crag::NoAssignmentEdge)
+                    continue;
+
+                // select the noAssignmentEdge before the section
+                if ((crag.id(edge.v()) == offset.z()))
+                    setSelected(edge, true);
+
+                // selecte the noAssignmentEdge after the section
+                if ((crag.id(edge.v()) == offset.z() + 1))
+                    setSelected(edge, true);
+            }
+        } else if (assignmentSelected == 1) {
+            int section = 0;
+            // First or last section
+            if (offset.z() == 0 || (offset.z() == (sections - 1))) {
+                section = (offset.z() == 0) ? 0 : sections;
+            } else {
+                // Search for the position of the assignmentNode selected
+                util::point<unsigned int, 3> assignmentOffset;
+                for (Crag::CragEdge edge : crag.adjEdges(n)) {
+                    if (crag.type(edge.v()) != Crag::AssignmentNode)
+                        continue;
+                    if (!selected(edge.v()))
+                        continue;
+
+                    const CragVolume& region = *volumes[edge.v()];
+
+                    assignmentOffset = (region.getOffset()
+                            - groundTruth.getOffset())
+                            / groundTruth.getResolution();
+                }
+
+                section =
+                        (offset.z() == assignmentOffset.z()) ?
+                                offset.z() : offset.z() + 1;
+            }
+
+            for (Crag::CragEdge edge : crag.adjEdges(n))
+                if (crag.type(edge) == Crag::NoAssignmentEdge)
+                    if (crag.id(edge.v()) == section)
+                        setSelected(edge, true);
+        }
+    }
 }
 
