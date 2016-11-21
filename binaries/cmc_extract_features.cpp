@@ -15,6 +15,10 @@
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
 #include <features/VolumeRays.h>
+#include <features/CompositeFeatureProvider.h>
+#include <features/ShapeFeatureProvider.h>
+#include <features/StatisticsFeatureProvider.h>
+#include <features/TopologicalFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -35,6 +39,70 @@ util::ProgramOption optionNoFeatures(
 		util::_description_text = "Perform a dry run and don't extract any features (except for "
 		                          "best-effort features, if set). Used for testing the learning "
 		                          "method.");
+
+util::ProgramOption optionNodeShapeFeatures(
+		util::_module           = "features.nodes",
+		util::_long_name        = "shapeFeatures",
+		util::_description_text = "Compute shape features for each candidate. Enabled by default.",
+		util::_default_value    = true
+);
+
+util::ProgramOption optionNodeTopologicalFeatures(
+		util::_module           = "features.nodes",
+		util::_long_name        = "topologicalFeatures",
+		util::_description_text = "Compute topological features for each candidate (like level in the subset graph). "
+								  "Enabled by default.",
+		util::_default_value    = true
+);
+
+util::ProgramOption optionNodeStatisticsFeatures(
+		util::_module           = "features.nodes",
+		util::_long_name        = "statisticsFeatures",
+		util::_description_text = "Compute statistics features for each candidate (like mean and stddev of intensity, "
+								  "and many more). By default, this computes the statistics over all voxels of the "
+								  "candidate on the raw image. Enabled by default.",
+		util::_default_value    = true
+);
+
+/////////////////////////
+// STATISTICS FEATURES //
+/////////////////////////
+
+util::ProgramOption optionNoCoordinatesStatistics(
+		util::_module           = "features.statistics",
+		util::_long_name        = "noCoordinatesStatistics",
+		util::_description_text = "Do not include statistics features over voxel coordinates."
+);
+
+////////////////////
+// SHAPE FEATURES //
+////////////////////
+
+util::ProgramOption optionFeaturePointinessAnglePoints(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "numAnglePoints",
+		util::_description_text = "The number of points to sample equidistantly on the contour of nodes. Default is 50.",
+		util::_default_value    = 50
+);
+
+util::ProgramOption optionFeaturePointinessVectorLength(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "angleVectorLength",
+		util::_description_text = "The amount to walk on the contour from a sample point in either direction, to estimate the angle. Values are between "
+								  "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
+		util::_default_value    = 0.1
+);
+
+util::ProgramOption optionFeaturePointinessHistogramBins(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "numHistogramBins",
+		util::_description_text = "The number of histogram bins for the measured angles. Default is 16.",
+		util::_default_value    = 16
+);
+
+//////////////////////////
+// MORE GENERAL OPTIONS //
+//////////////////////////
 
 util::ProgramOption optionMinMaxFromProject(
 		util::_long_name        = "minMaxFromProject",
@@ -117,8 +185,24 @@ int main(int argc, char** argv) {
 				cragStore.retrieveFeaturesMax(max);
 			}
 
+			CompositeFeatureProvider featureProvider;
+
+			if (optionNodeShapeFeatures)
+				featureProvider.emplace_back<ShapeFeatureProvider>(crag, volumes);
+
+			if (optionNodeStatisticsFeatures) {
+
+				StatisticsFeatureProvider::Parameters p;
+				p.wholeVolume = false;
+				p.computeCoordinateStatistics = !!!optionNoCoordinatesStatistics;
+				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
+			}
+
+			if (optionNodeTopologicalFeatures)
+				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
+
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
-			featureExtractor.extract(nodeFeatures, edgeFeatures, min, max);
+			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
 
 			if (!optionMinMaxFromProject) {
 

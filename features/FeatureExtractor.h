@@ -5,6 +5,7 @@
 #include <features/VolumeRays.h>
 #include "NodeFeatures.h"
 #include "EdgeFeatures.h"
+#include "FeatureProvider.h"
 
 class FeatureExtractor {
 
@@ -31,6 +32,7 @@ public:
 	 * normalized in the same way as in the training dataset.
 	 */
 	void extract(
+			FeatureProviderBase& featureProvider,
 			NodeFeatures& nodeFeatures,
 			EdgeFeatures& edgeFeatures,
 			FeatureWeights& min,
@@ -55,11 +57,13 @@ private:
 		NodeFeatures&  _features;
 	};
 
-	void extractNodeFeatures(NodeFeatures& nodeFeatures, FeatureWeights& min, FeatureWeights& max);
+	void extractNodeFeatures(
+			FeatureProviderBase& featureProvider,
+			NodeFeatures& nodeFeatures,
+			FeatureWeights& min,
+			FeatureWeights& max);
 
 	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, FeatureWeights& min, FeatureWeights& max);
-
-	void extractNodeShapeFeatures(NodeFeatures& nodeFeatures);
 
 	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
@@ -73,13 +77,7 @@ private:
 
 	void extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures);
 
-	void extractTopologicalNodeFeatures(NodeFeatures& nodeFeatures);
-
-	void extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures);
-
 	void extractEdgeContactFeatures(EdgeFeatures& edgeFeatures);
-
-	std::pair<int, int> recExtractTopologicalFeatures(NodeFeatures& nodeFeatures, Crag::CragNode n);
 
 	Crag&        _crag;
 	CragVolumes& _volumes;
@@ -98,8 +96,6 @@ private:
 	int _numOriginalEdgeFeatures;
 
 	bool _useProvidedMinMax;
-
-	std::map<Crag::CragNode, std::pair<int, int>> _topoFeatureCache;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__
