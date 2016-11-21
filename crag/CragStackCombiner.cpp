@@ -11,7 +11,7 @@ logger::LogChannel cragstackcombinerlog("cragstackcombinerlog", "[CragStackCombi
 util::ProgramOption optionRequireBoundingBoxOverlap(
 		util::_long_name        = "requireBoundingBoxOverlap",
 		util::_module           = "crag.combine",
-		util::_description_text = "To consider two superpixels in subsequent z-secitons "
+		util::_description_text = "To consider two fragments in subsequent z-sections "
 		                          "to be linked, require their bounding boxes to overlap. "
 		                          "Default is true.",
 		util::_default_value    = true);
@@ -20,7 +20,7 @@ util::ProgramOption optionMaxZLinkHausdorffDistance(
 		util::_long_name        = "maxZLinkHausdorffDistance",
 		util::_module           = "crag.combine",
 		util::_description_text = "The maximal Hausdorff distance between two "
-		                          "superpixels in subsequent z-section to be "
+		                          "fragments in subsequent z-section to be "
 		                          "considered adjacent. For that, the maximal "
 		                          "value of the two directions are taken as "
 		                          "distance.",
@@ -101,6 +101,13 @@ CragStackCombiner::combine(
 	}
 
 	unsigned int nodesAdded = 0;
+
+	if (sourcesCrags.size() == 1)
+	{
+		_prevNodeMap = copyNodes(0, *sourcesCrags[0], targetCrag);
+		copyVolumes(*sourcesVolumes[0], targetVolumes, _prevNodeMap);
+	}
+
 	for (unsigned int z = 1; z < sourcesCrags.size(); z++) {
 
 		LOG_USER(cragstackcombinerlog) << "linking CRAG " << (z-1) << " and " << z << std::endl;
@@ -163,7 +170,7 @@ CragStackCombiner::copyNodes(
 
 		nodeMap[i] = n;
 
-		// add adjacencies to NoAssignmentNodes befor and after
+		// add adjacencies to NoAssignmentNodes before and after
 		target.addAdjacencyEdge(n, _noAssignmentNodes[z], Crag::NoAssignmentEdge);
 		target.addAdjacencyEdge(n, _noAssignmentNodes[z+1], Crag::NoAssignmentEdge);
 	}

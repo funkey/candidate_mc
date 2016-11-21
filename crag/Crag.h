@@ -10,7 +10,7 @@
 /**
  * Candidate region adjacency graph.
  *
- * This datastructure holds two graphs on the same set of nodes: An undirected 
+ * This data structure holds two graphs on the same set of nodes: An undirected
  * region adjacency graph (rag) and a directed subset graph (subset).
  *
  * Each node and adjacency edge has a type (which defaults to Volume and 

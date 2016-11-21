@@ -21,16 +21,16 @@ Dependencies
   * libxrandr-dev
   * libxi-dev
   * freeglut3-dev
-  * libglew1.6-dev
+  * libglew-dev
   * libpng12-dev
-  * libtiff4-dev
+  * libtiff5-dev
   * libhdf5-serial-dev
   * Gurobi (optional)
 
   On Ubuntu, you can get these packages via
 
   ```
-  sudo apt-get install libboost-all-dev liblapack-dev libfftw3-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxi-dev freeglut3-dev libglew1.6-dev libpng12-dev libtiff4-dev libhdf5-serial-dev
+  sudo apt-get install libboost-all-dev liblapack-dev libfftw3-dev libx11-dev libx11-xcb-dev libxcb1-dev libxrandr-dev libxi-dev freeglut3-dev libglew-dev libpng12-dev libtiff5-dev libhdf5-serial-dev
   ```
 
   Get the gurobi solver from http://www.gurobi.com. Academic licenses are free.
@@ -144,15 +144,15 @@ smallest candidate covering this point. Scrolling with `SHIFT` will show and
 select candidates below and above in the candidate hierarchy. Scrolling with
 `ALT` will show adjacent candidates of the currently selected candidate. In
 assignment models, this shows possible assignments of candidates across
-sections. Key `c` clears the current selection.
+sections. The firs two adjacent candidates are invisible, they are noAssignmentNodes. Key `c` clears the current selection.
 
 #### Usefull Options
 
 | Option            | Description                                                                            |
 |-------------------|----------------------------------------------------------------------------------------|
-| `--showCosts`     | Show the costs of selected candidates and edges.                                       |
+| `--showCosts`     | Show the costs of selected candidates and edges. The default value is `cost`            |
 | `--showFeatures`  | Show the features of selected candidates and edges.                                    |
-| `--showSolution`  | For the selected candidates and edges, show if they are part of the solution.          |
+| `--showSolution`  | For the selected candidates and edges, show if they are part of the solution. The default value is `solution`  |
 | `--overlay`       | If set to `solution`, the solution is shown instead of the leaf candidates of the CRAG.|
 | `--cubeSize`      | Set the cube size for the mesh visualization (in world units).                         |
 

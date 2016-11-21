@@ -336,6 +336,10 @@ FeatureExtractor::extractNodeFeatures(
 
 			std::string filename = optionDumpFeatureNames.as<std::string>() + "node_" + boost::lexical_cast<std::string>(type);
 			std::ofstream file(filename);
+
+			file << "number of features: " << nodeFeatures.dims(type) << "\n";
+			file << "number of names: " << nodeFeatures.getFeatureNames(type).size() << "\n";
+
 			for (auto name : nodeFeatures.getFeatureNames(type))
 				file << name << "\n";
 			file.close();
@@ -446,6 +450,20 @@ FeatureExtractor::extractEdgeFeatures(
 			<< "after postprocessing, we have "
 			<< edgeFeatures.dims(Crag::NoAssignmentEdge)
 			<< " features per no-assignment edge" << std::endl;
+
+    if (optionDumpFeatureNames) {
+
+        for (auto type : Crag::EdgeTypes) {
+
+            std::string filename = optionDumpFeatureNames.as<std::string>() + "edge_" + boost::lexical_cast<std::string>(type);
+            std::ofstream file(filename);
+            for (auto name : edgeFeatures.getFeatureNames(type))
+                file << name << "\n";
+            file.close();
+        }
+    }
+
+    LOG_USER(featureextractorlog) << "done" << std::endl;
 }
 
 void
@@ -518,6 +536,7 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 
 	bool firstSliceNode = true;
 	bool firstVolumeNode = true;
+	bool firstAssignmentNode = true;
 
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
@@ -555,7 +574,6 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 			regionFeatures.fill(adaptor);
 
 			if (firstSliceNode) {
-
 				nodeFeatures.appendFeatureNames(Crag::SliceNode, regionFeatures.getFeatureNames());
 				firstSliceNode = false;
 			}
@@ -573,11 +591,16 @@ FeatureExtractor::extractNodeShapeFeatures(NodeFeatures& nodeFeatures) {
 
 			regionFeatures.fill(adaptor);
 
-			if (firstVolumeNode) {
-
+			if (firstVolumeNode && _crag.type(n) == Crag::VolumeNode) {
 				nodeFeatures.appendFeatureNames(Crag::VolumeNode, regionFeatures.getFeatureNames());
 				firstVolumeNode = false;
 			}
+
+            if (firstAssignmentNode && _crag.type(n) == Crag::AssignmentNode) {
+                nodeFeatures.appendFeatureNames(Crag::AssignmentNode, regionFeatures.getFeatureNames());
+                firstAssignmentNode = false;
+            }
+
 		}
 	}
 }
@@ -589,6 +612,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 
 	bool firstSliceNode = true;
 	bool firstVolumeNode = true;
+	bool firstAssignmentNode = true;
 
 	int i = 0;
 	for (Crag::CragNode n : _crag.nodes()) {
@@ -663,7 +687,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 			regionFeatures.fill(adaptor);
 
 			if (firstSliceNode)
-				nodeFeatures.appendFeatureNames(Crag::SliceNode, regionFeatures.getFeatureNames());
+			    nodeFeatures.appendFeatureNames(Crag::SliceNode, regionFeatures.getFeatureNames());
 
 		// volumetric candidates
 		} else {
@@ -679,8 +703,11 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 
 			regionFeatures.fill(adaptor);
 
-			if (firstVolumeNode)
-				nodeFeatures.appendFeatureNames(Crag::VolumeNode, regionFeatures.getFeatureNames());
+			if (firstVolumeNode && _crag.type(n) == Crag::VolumeNode)
+			    nodeFeatures.appendFeatureNames(Crag::VolumeNode, regionFeatures.getFeatureNames());
+
+			if (firstAssignmentNode && _crag.type(n) == Crag::AssignmentNode)
+			    nodeFeatures.appendFeatureNames(Crag::AssignmentNode, regionFeatures.getFeatureNames());
 
 			LOG_ALL(featureextractorlog) << "done" << std::endl;
 		}
@@ -713,7 +740,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				boundariesRegionFeatures.fill(adaptor);
 
 				if (firstSliceNode)
-					nodeFeatures.appendFeatureNames(Crag::SliceNode, boundariesRegionFeatures.getFeatureNames());
+				    nodeFeatures.appendFeatureNames(Crag::SliceNode, boundariesRegionFeatures.getFeatureNames());
 
 			} else {
 
@@ -725,8 +752,11 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 				RegionFeatures<3, float, unsigned char> boundariesRegionFeatures(boundariesNodeImage, labelImage, p);
 				boundariesRegionFeatures.fill(adaptor);
 
-				if (firstVolumeNode)
-					nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundariesRegionFeatures.getFeatureNames());
+				if (firstVolumeNode && _crag.type(n) == Crag::VolumeNode)
+				    nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundariesRegionFeatures.getFeatureNames());
+
+				if (firstAssignmentNode && _crag.type(n) == Crag::AssignmentNode)
+				    nodeFeatures.appendFeatureNames(Crag::AssignmentNode, boundariesRegionFeatures.getFeatureNames());
 			}
 
 			if (optionBoundariesBoundaryFeatures) {
@@ -784,7 +814,7 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					boundaryFeatures.fill(adaptor);
 
 					if (firstSliceNode)
-						nodeFeatures.appendFeatureNames(Crag::SliceNode, boundaryFeatures.getFeatureNames());
+					    nodeFeatures.appendFeatureNames(Crag::SliceNode, boundaryFeatures.getFeatureNames());
 
 				} else {
 
@@ -796,8 +826,11 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 					RegionFeatures<3, float, unsigned char> boundaryFeatures(boundariesNodeImage, boundaryImage, p);
 					boundaryFeatures.fill(adaptor);
 
-					if (firstVolumeNode)
-						nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundaryFeatures.getFeatureNames());
+					if (firstVolumeNode && _crag.type(n) == Crag::VolumeNode)
+					    nodeFeatures.appendFeatureNames(Crag::VolumeNode, boundaryFeatures.getFeatureNames());
+
+					if (firstAssignmentNode && _crag.type(n) == Crag::AssignmentNode)
+					    nodeFeatures.appendFeatureNames(Crag::AssignmentNode, boundaryFeatures.getFeatureNames());
 				}
 			}
 		}
@@ -806,6 +839,8 @@ FeatureExtractor::extractNodeStatisticsFeatures(NodeFeatures& nodeFeatures) {
 			firstSliceNode = false;
 		if (_crag.type(n) == Crag::VolumeNode)
 			firstVolumeNode = false;
+        if (_crag.type(n) == Crag::AssignmentNode)
+            firstAssignmentNode = false;
 	}
 
 	LOG_USER(featureextractorlog) << std::endl;

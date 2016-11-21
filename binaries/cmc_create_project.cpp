@@ -308,7 +308,7 @@ int main(int argc, char** argv) {
 		} else {
 
 			LOG_ERROR(logger::out)
-					<< "at least one of mergtree or (supervoxels && mergeHistory) "
+					<< "at least one of mergetree or (supervoxels && mergeHistory) "
 					<< "have to be given to create a CRAG" << std::endl;
 
 			return 1;
