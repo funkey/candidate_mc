@@ -39,6 +39,9 @@ private:
 
 	std::pair<int, int> recExtractTopologicalFeatures(Crag::CragNode n) {
 
+		if (!_features[n].empty())
+			return std::make_pair(_features[n][0], _features[n][1]);
+
 		int numChildren    = 0;
 		int numDescendants = 0;
 		int level          = 1; // level of leaf nodes
@@ -63,7 +66,7 @@ private:
 
 	const Crag& _crag;
 
-	Crag::NodeMap<std::vector<double>> _features;
+	Crag::NodeMap<std::vector<int>> _features;
 };
 
 #endif // CANDIDATE_MC_FEATURES_TOPOLOGICAL_FEATURE_PROVIDER_H__
