@@ -346,24 +346,18 @@ void BestEffort::selectAssignments(
 
         int assignmentSelected = 0;
         for (Crag::CragEdge edge : crag.adjEdges(n))
-        {
             if (crag.type(edge) == Crag::AssignmentEdge || crag.type(edge) == Crag::NoAssignmentEdge)
-            {
                 if(selected(edge))
-                {
                     assignmentSelected++;
-                }
-            }
-        }
 
         if (assignmentSelected == 0){
-            LOG_DEBUG(bestEffortlog) << "\tslice node without assignmentEdges selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node without assignmentEdges selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }else if (assignmentSelected == 1){
-            LOG_DEBUG(bestEffortlog) << "\tslice node with one assignmentEdge selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node with one assignmentEdge selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }else if (assignmentSelected > 2){
-            LOG_DEBUG(bestEffortlog) << "\tslice node with more than two assignmentEdge selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node with more than two assignmentEdge selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }
     }
@@ -420,11 +414,10 @@ void BestEffort::checkConstraint(
 
             // If the edge is selected, so is the assignmentNode
             assignmentSelected++;
+            previous = child;
 
-            if (section == -1) {
-                previous = child;
+            if (section == -1)
                 section = offset.z();
-            }
 
             if (assignmentSelected > 1) {
 
