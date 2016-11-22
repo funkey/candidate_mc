@@ -332,8 +332,8 @@ void BestEffort::selectAssignments(
 
     selectNoAssignmentEdges( crag, volumes, groundTruth );
 
-#ifdef DEBUG
-    LOG_DEBUG(bestEffortlog) << "\tChecking results: selected edges for each selected slice node" <<  std::endl;
+//#ifdef DEBUG
+    LOG_DEBUG(bestEffortlog) << "\tChecking results: selected edges for each selected slice node::" <<  std::endl;
     // Check if there is a selected candidate with more than two assignment edges selected
     bool OK = true;
     for (Crag::CragNode n : crag.nodes()) {
@@ -346,31 +346,25 @@ void BestEffort::selectAssignments(
 
         int assignmentSelected = 0;
         for (Crag::CragEdge edge : crag.adjEdges(n))
-        {
             if (crag.type(edge) == Crag::AssignmentEdge || crag.type(edge) == Crag::NoAssignmentEdge)
-            {
                 if(selected(edge))
-                {
                     assignmentSelected++;
-                }
-            }
-        }
 
         if (assignmentSelected == 0){
-            LOG_DEBUG(bestEffortlog) << "\tslice node without assignmentEdges selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node without assignmentEdges selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }else if (assignmentSelected == 1){
-            LOG_DEBUG(bestEffortlog) << "\tslice node with one assignmentEdge selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node with one assignmentEdge selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }else if (assignmentSelected > 2){
-            LOG_DEBUG(bestEffortlog) << "\tslice node with more than two assignmentEdge selected" <<  std::endl;
+            LOG_DEBUG(bestEffortlog) << "\tslice node with more than two assignmentEdge selected - id: " << crag.id(n) <<  std::endl;
             OK = false;
         }
     }
     if(OK)
         LOG_DEBUG(bestEffortlog) << "\tOK" <<  std::endl;
 
-#endif
+//#endif
 }
 
 void BestEffort::unselectChildren(
@@ -420,9 +414,9 @@ void BestEffort::checkConstraint(
 
             // If the edge is selected, so is the assignmentNode
             assignmentSelected++;
+            previous = child;
 
             if (section == -1) {
-                previous = child;
                 section = offset.z();
             }
 
