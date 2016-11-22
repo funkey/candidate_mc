@@ -19,6 +19,7 @@
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
+#include <features/ContactFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -98,6 +99,17 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 		util::_long_name        = "numHistogramBins",
 		util::_description_text = "The number of histogram bins for the measured angles. Default is 16.",
 		util::_default_value    = 16
+);
+
+///////////////////
+// EDGE FEATURES //
+///////////////////
+
+
+util::ProgramOption optionEdgeContactFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "contactFeatures",
+	util::_description_text = "Compute contact features as in Gala."
 );
 
 //////////////////////////
@@ -187,8 +199,14 @@ int main(int argc, char** argv) {
 
 			CompositeFeatureProvider featureProvider;
 
-			if (optionNodeShapeFeatures)
-				featureProvider.emplace_back<ShapeFeatureProvider>(crag, volumes);
+			if (optionNodeShapeFeatures){
+				ShapeFeatureProvider::Parameters p;
+				p.numAnglePoints = optionFeaturePointinessAnglePoints;
+				p.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
+				p.numAngleHistBins = optionFeaturePointinessHistogramBins;
+
+				featureProvider.emplace_back<ShapeFeatureProvider>(crag, volumes, p);
+			}
 
 			if (optionNodeStatisticsFeatures) {
 
@@ -200,6 +218,11 @@ int main(int argc, char** argv) {
 
 			if (optionNodeTopologicalFeatures)
 				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
+
+			if (optionEdgeContactFeatures)
+				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries);
+//				extractEdgeContactFeatures(edgeFeatures);
+
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
