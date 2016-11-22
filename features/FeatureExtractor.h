@@ -63,7 +63,12 @@ private:
 			FeatureWeights& min,
 			FeatureWeights& max);
 
-	void extractEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures, FeatureWeights& min, FeatureWeights& max);
+	void extractEdgeFeatures(
+			FeatureProviderBase& featureProvider,
+			const NodeFeatures& nodeFeatures,
+			EdgeFeatures& edgeFeatures,
+			FeatureWeights& min,
+			FeatureWeights& max);
 
 	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
 
