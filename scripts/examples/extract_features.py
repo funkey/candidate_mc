@@ -1,0 +1,19 @@
+import pycmc
+
+# open project, get Crag, CragVolumes, and intensity images
+crag = ...
+cragVolumes = ...
+raw = ...
+membrane = ...
+nodeFeatures = ...
+edgeFeatures = ...
+
+statisticsFeatureProvider = pycmc.StatisticsFeatureProvider(cragVolumes, raw, "raw")
+shapeFeatureProvider      = pycmc.ShapeFeatureProvider(cragVolumes)
+
+featureProvider = pycmc.CompositeFeatureProvider()
+featureProvider.add(shapeFeatureProvider)
+featureProvider.add(statisticsFeatureProvider)
+
+featureExtractor = pycmc.FeatureExtractor(crag)
+featureExtractor.extractFeatures(nodeFeatures, edgeFeatures, featureProvider)

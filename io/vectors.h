@@ -1,6 +1,7 @@
 #ifndef CANDIDATE_MC_IO_VECTORS_H__
 #define CANDIDATE_MC_IO_VECTORS_H__
 
+#include <vector>
 #include <fstream>
 
 template <typename T>
