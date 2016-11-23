@@ -29,8 +29,43 @@ public:
 
 		names[Crag::SliceNode].push_back("level");
 		names[Crag::SliceNode].push_back("num descendants");
+		//TODO: AssignmentNode?
 		names[Crag::VolumeNode].push_back("level");
 		names[Crag::VolumeNode].push_back("num descendants");
+
+		return names;
+	}
+
+	template <typename ContainerT>
+	void appendEdgeFeatures(const Crag::CragEdge e, ContainerT& adaptor) {
+
+		Crag::CragNode u = e.u();
+		Crag::CragNode v = e.v();
+
+		adaptor.append(std::min(_crag.getLevel(u), _crag.getLevel(v)));
+		adaptor.append(std::max(_crag.getLevel(u), _crag.getLevel(v)));
+
+		Crag::CragNode pu = (_crag.outArcs(u).size() > 0 ? (*_crag.outArcs(u).begin()).target() : Crag::Invalid);
+		Crag::CragNode pv = (_crag.outArcs(v).size() > 0 ? (*_crag.outArcs(v).begin()).target() : Crag::Invalid);
+
+		adaptor.append(int(pu != Crag::Invalid && pu == pv));
+		adaptor.append(int(_crag.isRootNode(u) && _crag.isRootNode(v)));
+		adaptor.append(int(_crag.isLeafEdge(e)));
+
+	}
+
+	std::map<Crag::EdgeType, std::vector<std::string>> getEdgeFeatureNames() const override {
+
+		std::map<Crag::EdgeType, std::vector<std::string>> names;
+
+		for (auto type : Crag::EdgeTypes) {
+
+			names[type].push_back("min_level");
+			names[type].push_back("max_level");
+			names[type].push_back("siblings");
+			names[type].push_back("root_edge");
+			names[type].push_back("leaf_edge");
+		}
 
 		return names;
 	}

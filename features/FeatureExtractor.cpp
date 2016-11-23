@@ -249,9 +249,6 @@ FeatureExtractor::extractEdgeFeatures(
 
 	featureProvider.appendFeatures(_crag, edgeFeatures);
 
-	if (optionEdgeTopologicalFeatures)
-		extractTopologicalEdgeFeatures(edgeFeatures);
-
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
 
@@ -424,37 +421,6 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 			edgeFeatures.append(e, std::max(fu,fv));
 			edgeFeatures.append(e, fu+fv);
 		}
-	}
-}
-
-void
-FeatureExtractor::extractTopologicalEdgeFeatures(EdgeFeatures& edgeFeatures) {
-
-	LOG_DEBUG(featureextractorlog) << "extracting topological edge features..." << std::endl;
-
-	for (auto type : Crag::EdgeTypes) {
-
-		edgeFeatures.appendFeatureName(type, "min_level");
-		edgeFeatures.appendFeatureName(type, "max_level");
-		edgeFeatures.appendFeatureName(type, "siblings");
-		edgeFeatures.appendFeatureName(type, "root_edge");
-		edgeFeatures.appendFeatureName(type, "leaf_edge");
-	}
-
-	for (Crag::CragEdge e : _crag.edges()) {
-
-		Crag::CragNode u = e.u();
-		Crag::CragNode v = e.v();
-
-		edgeFeatures.append(e, std::min(_crag.getLevel(u), _crag.getLevel(v)));
-		edgeFeatures.append(e, std::max(_crag.getLevel(u), _crag.getLevel(v)));
-
-		Crag::CragNode pu = (_crag.outArcs(u).size() > 0 ? (*_crag.outArcs(u).begin()).target() : Crag::Invalid);
-		Crag::CragNode pv = (_crag.outArcs(v).size() > 0 ? (*_crag.outArcs(v).begin()).target() : Crag::Invalid);
-
-		edgeFeatures.append(e, int(pu != Crag::Invalid && pu == pv));
-		edgeFeatures.append(e, int(_crag.isRootNode(u) && _crag.isRootNode(v)));
-		edgeFeatures.append(e, int(_crag.isLeafEdge(e)));
 	}
 }
 

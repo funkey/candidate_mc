@@ -231,6 +231,7 @@ int main(int argc, char** argv) {
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
 			}
 
+			//TODO: New composite feature provider for edges. So we can separet node and edge features
 			if (optionNodeTopologicalFeatures)
 				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
 
