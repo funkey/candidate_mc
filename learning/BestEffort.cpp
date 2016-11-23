@@ -416,9 +416,8 @@ void BestEffort::checkConstraint(
             assignmentSelected++;
             previous = child;
 
-            if (section == -1) {
+            if (section == -1)
                 section = offset.z();
-            }
 
             if (assignmentSelected > 1) {
 
