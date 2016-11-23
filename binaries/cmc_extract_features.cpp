@@ -15,11 +15,12 @@
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
 #include <features/VolumeRays.h>
+#include <features/AccumulatedFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
+#include <features/ContactFeatureProvider.h>
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
-#include <features/ContactFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -105,11 +106,18 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 // EDGE FEATURES //
 ///////////////////
 
-
 util::ProgramOption optionEdgeContactFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "contactFeatures",
 	util::_description_text = "Compute contact features as in Gala."
+);
+
+util::ProgramOption optionEdgeAccumulatedFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "accumulatedFeatures",
+	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
+	                          "(mean, 1-moment, 2-moment). Enabled by default.",
+	util::_default_value    = true
 );
 
 //////////////////////////
@@ -221,8 +229,12 @@ int main(int argc, char** argv) {
 
 			if (optionEdgeContactFeatures)
 				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries);
-//				extractEdgeContactFeatures(edgeFeatures);
 
+			if (optionEdgeAccumulatedFeatures)
+			{
+				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, boundaries, "membranes");
+				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, raw, "raw");
+			}
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);

@@ -11,14 +11,6 @@
 #include "VolumeRayFeature.h"
 #include <vigra/multi_impex.hxx>
 
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/moment.hpp>
-
-
-
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
 
 /////////////////////
@@ -32,14 +24,6 @@ util::ProgramOption optionEdgeDerivedFeatures(
 	util::_long_name        = "derivedFeatures",
 	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
 							  "(difference, sum, min, max). Enabled by default.",
-	util::_default_value    = true
-);
-
-util::ProgramOption optionEdgeAccumulatedFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "accumulatedFeatures",
-	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
-	                          "(mean, 1-moment, 2-moment). Enabled by default.",
 	util::_default_value    = true
 );
 
@@ -273,9 +257,6 @@ FeatureExtractor::extractEdgeFeatures(
 
 	featureProvider.appendFeatures(_crag, edgeFeatures);
 
-	if(optionEdgeAccumulatedFeatures)
-		extractAccumulatedEdgeFeatures(edgeFeatures);
-
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
 
@@ -492,75 +473,6 @@ void
 FeatureExtractor::extractShapeEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting shape edge features..." << std::endl;
-}
-
-void
-FeatureExtractor::extractAccumulatedEdgeFeatures(EdgeFeatures & edgeFeatures){
-
-	LOG_DEBUG(featureextractorlog) << "extracting accumulated edge features..." << std::endl;
-
-	const auto & gridGraph = _crag.getGridGraph();
-
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "num_affiliated_edges");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_mean_boundary");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_stddev_boundary");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_skey_boundary");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_mean_raw");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_stddev_raw");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "affiliated_edges_skey_raw");
-
-	// iterate over all edges
-	for (Crag::CragEdge e : _crag.edges()) {
-
-		if (_crag.type(e) != Crag::AdjacencyEdge)
-			continue;
-
-		LOG_ALL(featureextractorlog) << "extracting features for adjacency edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
-
-		UTIL_TIME_SCOPE("extract accumulated edge features");
-
-		// accumulate statistics
-		
-		// Define an accumulator set for calculating the mean and the
-		// 2nd moment .
-		using namespace boost::accumulators;
-		typedef  stats<
-			tag::mean, 
-			tag::moment<1>,
-			tag::moment<2> 
-		> Stats;
-		accumulator_set<double, Stats> accBoundary;
-		accumulator_set<double, Stats> accRaw;
-
-		// push data into the accumulator
-		unsigned int numAffiliatedEdges = 0;
-		for (Crag::CragEdge leafEdge : _crag.leafEdges(e))
-			for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(leafEdge)) {
-				const auto ggU = gridGraph.u(ae);
-				const auto ggV = gridGraph.v(ae);
-
-				accBoundary(_boundaries[ggU]);
-				accBoundary(_boundaries[ggV]);
-
-				accRaw(_raw[ggU]);
-				accRaw(_raw[ggV]);
-
-				numAffiliatedEdges++;
-			}
-
-		LOG_ALL(featureextractorlog) << "collecting features over " << numAffiliatedEdges << " affiliated edges" << std::endl;
-
-		edgeFeatures.append(e, numAffiliatedEdges);
-
-		// extract the features from the accumulator
-		edgeFeatures.append(e, mean(accBoundary));
-		edgeFeatures.append(e, moment<1>(accBoundary));
-		edgeFeatures.append(e, moment<2>(accBoundary));
-
-		edgeFeatures.append(e, mean(accRaw));
-		edgeFeatures.append(e, moment<1>(accRaw));
-		edgeFeatures.append(e, moment<2>(accRaw));
-	}
 }
 
 void
