@@ -209,12 +209,12 @@ public:
 		CragEdge(const Crag& g, RagType::Edge e)
 			: _crag(g), _edge(e) {}
 
-		CragNode u() {
+		CragNode u() const {
 
 			return CragNode(_crag.getAdjacencyGraph().u(_edge));
 		}
 
-		CragNode v() {
+		CragNode v() const {
 
 			return CragNode(_crag.getAdjacencyGraph().v(_edge));
 		}

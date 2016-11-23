@@ -21,6 +21,7 @@
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
+#include <features/VolumeRayFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -118,6 +119,12 @@ util::ProgramOption optionEdgeAccumulatedFeatures(
 	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
 	                          "(mean, 1-moment, 2-moment). Enabled by default.",
 	util::_default_value    = true
+);
+
+util::ProgramOption optionEdgeVolumeRayFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "volumeRayFeatures",
+	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
 );
 
 //////////////////////////
@@ -235,6 +242,10 @@ int main(int argc, char** argv) {
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, boundaries, "membranes");
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, raw, "raw");
 			}
+
+			if (optionEdgeVolumeRayFeatures)
+				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
+
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);

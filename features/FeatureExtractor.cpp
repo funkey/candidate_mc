@@ -6,9 +6,7 @@
 #include <util/helpers.hpp>
 #include <util/timing.h>
 #include <util/assert.h>
-#include <util/geometry.hpp>
 #include "FeatureExtractor.h"
-#include "VolumeRayFeature.h"
 #include <vigra/multi_impex.hxx>
 
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
@@ -37,12 +35,6 @@ util::ProgramOption optionEdgeShapeFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "shapeFeatures",
 	util::_description_text = "Compute shape features for edges."
-);
-
-util::ProgramOption optionEdgeVolumeRayFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "volumeRayFeatures",
-	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
 );
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
@@ -257,17 +249,14 @@ FeatureExtractor::extractEdgeFeatures(
 
 	featureProvider.appendFeatures(_crag, edgeFeatures);
 
-	if (optionEdgeDerivedFeatures)
-		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
-
 	if (optionEdgeTopologicalFeatures)
 		extractTopologicalEdgeFeatures(edgeFeatures);
 
+	if (optionEdgeDerivedFeatures)
+		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
+
 	if (optionEdgeShapeFeatures)
 		extractShapeEdgeFeatures(nodeFeatures, edgeFeatures);
-
-	if (optionEdgeVolumeRayFeatures)
-		extractVolumeRaysEdgeFeatures(edgeFeatures);
 
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
@@ -473,40 +462,5 @@ void
 FeatureExtractor::extractShapeEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
 
 	LOG_DEBUG(featureextractorlog) << "extracting shape edge features..." << std::endl;
-}
-
-void
-FeatureExtractor::extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures) {
-
-	LOG_DEBUG(featureextractorlog) << "extracting volume ray edge features..." << std::endl;
-
-	VolumeRayFeature volumeRayFeature(_volumes, _rays);
-
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "mutual_piercing");
-	edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, "normalized_mutual_piercing");
-
-	for (Crag::CragEdge e : _crag.edges()) {
-
-		if (_crag.type(e) != Crag::AdjacencyEdge)
-			continue;
-
-		UTIL_TIME_SCOPE("extract volume rays edge features");
-
-		// the longest piece of a ray from one node inside the other node
-		util::ray<float, 3> uvRay;
-		util::ray<float, 3> vuRay;
-		double uvMaxPiercingDepth = volumeRayFeature.maxVolumeRayPiercingDepth(e.u(), e.v(), uvRay);
-		double vuMaxPiercingDepth = volumeRayFeature.maxVolumeRayPiercingDepth(e.v(), e.u(), vuRay);
-
-		// the largest mutual piercing distance
-		double mutualPiercingScore = std::min(uvMaxPiercingDepth, vuMaxPiercingDepth);
-
-		// normalize piercing dephts
-		double norm = std::max(length(uvRay.direction()), length(vuRay.direction()));
-		double normalizedMutualPiercingScore = mutualPiercingScore/norm;
-
-		edgeFeatures.append(e, mutualPiercingScore);
-		edgeFeatures.append(e, normalizedMutualPiercingScore);
-	}
 }
 
