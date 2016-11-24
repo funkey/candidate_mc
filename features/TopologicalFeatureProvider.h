@@ -29,7 +29,7 @@ public:
 
 		names[Crag::SliceNode].push_back("level");
 		names[Crag::SliceNode].push_back("num descendants");
-		//TODO: AssignmentNode?
+		//TODO: AssignmentNode && NoAssignmentNode?
 		names[Crag::VolumeNode].push_back("level");
 		names[Crag::VolumeNode].push_back("num descendants");
 

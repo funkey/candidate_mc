@@ -25,18 +25,6 @@ util::ProgramOption optionEdgeDerivedFeatures(
 	util::_default_value    = true
 );
 
-util::ProgramOption optionEdgeTopologicalFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "topologicalFeatures",
-	util::_description_text = "Compute topological features for edges."
-);
-
-util::ProgramOption optionEdgeShapeFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "shapeFeatures",
-	util::_description_text = "Compute shape features for edges."
-);
-
 // FEATURE NORMALIZATION AND POST-PROCESSING
 
 util::ProgramOption optionAddPairwiseFeatureProducts(
@@ -252,9 +240,6 @@ FeatureExtractor::extractEdgeFeatures(
 	if (optionEdgeDerivedFeatures)
 		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
 
-	if (optionEdgeShapeFeatures)
-		extractShapeEdgeFeatures(nodeFeatures, edgeFeatures);
-
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
 			<< " features per adjacency edge" << std::endl;
@@ -423,10 +408,3 @@ FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, E
 		}
 	}
 }
-
-void
-FeatureExtractor::extractShapeEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
-
-	LOG_DEBUG(featureextractorlog) << "extracting shape edge features..." << std::endl;
-}
-

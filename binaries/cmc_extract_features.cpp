@@ -127,6 +127,19 @@ util::ProgramOption optionEdgeVolumeRayFeatures(
 	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
 );
 
+util::ProgramOption optionEdgeTopologicalFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "topologicalFeatures",
+	util::_description_text = "Compute topological features for edges."
+);
+
+util::ProgramOption optionEdgeShapeFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "shapeFeatures",
+	util::_description_text = "Compute shape features for edges."
+);
+
+
 //////////////////////////
 // MORE GENERAL OPTIONS //
 //////////////////////////
@@ -212,9 +225,10 @@ int main(int argc, char** argv) {
 				cragStore.retrieveFeaturesMax(max);
 			}
 
+			// TODO: Is it needed a feature provider for edges?
 			CompositeFeatureProvider featureProvider;
 
-			if (optionNodeShapeFeatures){
+			if (optionNodeShapeFeatures /* || optionEdgeShapeFeatures*/){
 				ShapeFeatureProvider::Parameters p;
 				p.numAnglePoints = optionFeaturePointinessAnglePoints;
 				p.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
@@ -231,8 +245,7 @@ int main(int argc, char** argv) {
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
 			}
 
-			//TODO: New composite feature provider for edges. So we can separet node and edge features
-			if (optionNodeTopologicalFeatures)
+			if (optionNodeTopologicalFeatures /* || optionEdgeTopologicalFeatures */)
 				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
 
 			if (optionEdgeContactFeatures)
@@ -246,7 +259,6 @@ int main(int argc, char** argv) {
 
 			if (optionEdgeVolumeRayFeatures)
 				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
-
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
