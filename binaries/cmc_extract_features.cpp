@@ -23,6 +23,8 @@
 #include <features/SquareFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
 #include <features/VolumeRayFeatureProvider.h>
+#include <features/ContactFeatureProvider.h>
+#include <features/AssignmentFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -102,6 +104,12 @@ util::ProgramOption optionFeaturePointinessHistogramBins(
 		util::_long_name        = "numHistogramBins",
 		util::_description_text = "The number of histogram bins for the measured angles. Default is 16.",
 		util::_default_value    = 16
+);
+
+util::ProgramOption optionAssignmentFeatures(
+	util::_module           = "features.nodes",
+	util::_long_name        = "assignmentFeatures",
+	util::_description_text = "Compute assignment node features."
 );
 
 ///////////////////
@@ -270,6 +278,10 @@ int main(int argc, char** argv) {
 
 			if (optionAddFeatureSquares)
 				featureProvider.emplace_back<SquareFeatureProvider>(crag);
+
+			if (optionAssignmentFeatures)
+				// TODO: replace boundaries with actual z-affinities
+				featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
