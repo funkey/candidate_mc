@@ -21,17 +21,17 @@ public:
 
 		for (double feature : _features[n])
 			adaptor.append(feature);
+
 	}
 
 	std::map<Crag::NodeType, std::vector<std::string>> getNodeFeatureNames() const override {
 
 		std::map<Crag::NodeType, std::vector<std::string>> names;
 
-		names[Crag::SliceNode].push_back("level");
-		names[Crag::SliceNode].push_back("num descendants");
-		//TODO: AssignmentNode && NoAssignmentNode?
-		names[Crag::VolumeNode].push_back("level");
-		names[Crag::VolumeNode].push_back("num descendants");
+		for (auto type : Crag::NodeTypes){
+			names[type].push_back("level");
+			names[type].push_back("num descendants");
+		}
 
 		return names;
 	}
