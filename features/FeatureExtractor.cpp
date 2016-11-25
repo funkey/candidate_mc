@@ -39,12 +39,6 @@ util::ProgramOption optionNoFeatureProductsForEdges(
 	util::_description_text = "Don't add feature products for edges (which can result in too many features)."
 );
 
-util::ProgramOption optionAddFeatureSquares(
-	util::_module           = "features",
-	util::_long_name        = "addSquares",
-	util::_description_text = "For each feature f_i add the square f_i*f_i to the feature vector as well (implied by addPairwiseFeatureProducts)."
-);
-
 util::ProgramOption optionNormalize(
 	util::_module           = "features",
 	util::_long_name        = "normalize",
@@ -140,7 +134,7 @@ FeatureExtractor::extractNodeFeatures(
 	//// POSTPROCESSING //
 	//////////////////////
 
-	if (optionAddFeatureSquares || optionAddPairwiseFeatureProducts) {
+	if (optionAddPairwiseFeatureProducts) {
 
 		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
@@ -155,12 +149,6 @@ FeatureExtractor::extractNodeFeatures(
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
 					for (unsigned int j = i; j < numOriginalFeatures; j++)
 						nodeFeatures.append(n, features[i]*features[j]);
-			} else {
-
-				// compute all squares of all features and add them as well
-				unsigned int numOriginalFeatures = features.size();
-				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					nodeFeatures.append(n, features[i]*features[i]);
 			}
 		}
 
@@ -175,10 +163,6 @@ FeatureExtractor::extractNodeFeatures(
 					for (unsigned int j = i; j < baseNames.size(); j++)
 						nodeFeatures.appendFeatureName(type, baseNames[i] + "*" + baseNames[j]);
 
-			} else {
-
-				for (unsigned int i = 0; i < baseNames.size(); i++)
-					nodeFeatures.appendFeatureName(type, baseNames[i]+"²");
 			}
 		}
 
@@ -190,7 +174,7 @@ FeatureExtractor::extractNodeFeatures(
 			nodeFeatures.append(n, 1);
 
 	for (auto type : Crag::NodeTypes)
-		if (nodeFeatures.getFeatureNames(type).size() > 0)
+		if (type != Crag::NoAssignmentNode)
 			nodeFeatures.appendFeatureName(type, "bias");
 
 	LOG_USER(featureextractorlog)
@@ -276,7 +260,7 @@ FeatureExtractor::extractEdgeFeatures(
 	//// POSTPROCESSING //
 	//////////////////////
 
-	if ((optionAddFeatureSquares || optionAddPairwiseFeatureProducts) && !optionNoFeatureProductsForEdges) {
+	if ((optionAddPairwiseFeatureProducts) && !optionNoFeatureProductsForEdges) {
 
 		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
 
@@ -291,12 +275,6 @@ FeatureExtractor::extractEdgeFeatures(
 				for (unsigned int i = 0; i < numOriginalFeatures; i++)
 					for (unsigned int j = i; j < numOriginalFeatures; j++)
 						edgeFeatures.append(e, features[i]*features[j]);
-			} else {
-
-				// compute all squares of all features and add them as well
-				unsigned int numOriginalFeatures = features.size();
-				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					edgeFeatures.append(e, features[i]*features[i]);
 			}
 		}
 	}
@@ -305,6 +283,11 @@ FeatureExtractor::extractEdgeFeatures(
 	for (Crag::CragEdge e : _crag.edges())
 		if (_crag.type(e) != Crag::AssignmentEdge && _crag.type(e) != Crag::SeparationEdge)
 			edgeFeatures.append(e, 1);
+
+
+	for (auto type : Crag::EdgeTypes)
+		if (type != Crag::AssignmentEdge && type != Crag::SeparationEdge)
+				edgeFeatures.appendFeatureName(type, "bias");
 
 	LOG_USER(featureextractorlog)
 			<< "after postprocessing, we have "

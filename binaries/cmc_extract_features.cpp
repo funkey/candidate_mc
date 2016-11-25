@@ -20,6 +20,7 @@
 #include <features/ContactFeatureProvider.h>
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
+#include <features/SquareFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
 #include <features/VolumeRayFeatureProvider.h>
 #include <learning/RandLoss.h>
@@ -139,6 +140,13 @@ util::ProgramOption optionEdgeShapeFeatures(
 	util::_description_text = "Compute shape features for edges."
 );
 
+// FEATURE NORMALIZATION AND POST-PROCESSING
+
+util::ProgramOption optionAddFeatureSquares(
+	util::_module           = "features",
+	util::_long_name        = "addSquares",
+	util::_description_text = "For each feature f_i add the square f_i*f_i to the feature vector as well (implied by addPairwiseFeatureProducts)."
+);
 
 //////////////////////////
 // MORE GENERAL OPTIONS //
@@ -259,6 +267,9 @@ int main(int argc, char** argv) {
 
 			if (optionEdgeVolumeRayFeatures)
 				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
+
+			if (optionAddFeatureSquares)
+				featureProvider.emplace_back<SquareFeatureProvider>(crag);
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);

@@ -77,6 +77,8 @@ private:
 
 		inline void append(double value)                           { _features.append(_n, value); }
 		inline void append(unsigned int /*ignored*/, double value) { _features.append(_n, value); }
+		inline const std::vector<double>& getFeatures(){ return _features[_n]; }
+		inline const std::vector<std::string> getFeatureNames(Crag::NodeType type){ return _features.getFeatureNames(type); }
 
 	private:
 
@@ -95,6 +97,8 @@ private:
 
 		inline void append(double value)                           { _features.append(_e, value); }
 		inline void append(unsigned int /*ignored*/, double value) { _features.append(_e, value); }
+		inline const std::vector<double>& getFeatures(){ return _features[_e]; }
+		inline const std::vector<std::string> getFeatureNames(Crag::EdgeType type){ return _features.getFeatureNames(type); }
 
 	private:
 
