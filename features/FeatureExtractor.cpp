@@ -26,19 +26,6 @@ util::ProgramOption optionEdgeDerivedFeatures(
 );
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
-
-util::ProgramOption optionAddPairwiseFeatureProducts(
-	util::_module           = "features",
-	util::_long_name        = "addPairwiseProducts",
-	util::_description_text = "For each pair of features f_i and f_j, add the product f_i*f_j to the feature vector as well."
-);
-
-util::ProgramOption optionNoFeatureProductsForEdges(
-	util::_module           = "features",
-	util::_long_name        = "noFeatureProductsForEdges",
-	util::_description_text = "Don't add feature products for edges (which can result in too many features)."
-);
-
 util::ProgramOption optionNormalize(
 	util::_module           = "features",
 	util::_long_name        = "normalize",
@@ -130,44 +117,6 @@ FeatureExtractor::extractNodeFeatures(
 		}
 	}
 
-	//////////////////////
-	//// POSTPROCESSING //
-	//////////////////////
-
-	if (optionAddPairwiseFeatureProducts) {
-
-		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
-
-		for (Crag::CragNode n : _crag.nodes()) {
-
-			const std::vector<double>& features = nodeFeatures[n];
-
-			if (optionAddPairwiseFeatureProducts) {
-
-				// compute all products of all features and add them as well
-				unsigned int numOriginalFeatures = features.size();
-				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					for (unsigned int j = i; j < numOriginalFeatures; j++)
-						nodeFeatures.append(n, features[i]*features[j]);
-			}
-		}
-
-
-		for (auto type : Crag::NodeTypes) {
-
-			std::vector<std::string> baseNames = nodeFeatures.getFeatureNames(type);
-
-			if (optionAddPairwiseFeatureProducts) {
-
-				for (unsigned int i = 0; i < baseNames.size(); i++)
-					for (unsigned int j = i; j < baseNames.size(); j++)
-						nodeFeatures.appendFeatureName(type, baseNames[i] + "*" + baseNames[j]);
-
-			}
-		}
-
-	}
-
 	// append a 1 for bias
 	for (Crag::CragNode n : _crag.nodes())
 		if (_crag.type(n) != Crag::NoAssignmentNode)
@@ -253,29 +202,6 @@ FeatureExtractor::extractEdgeFeatures(
 			edgeFeatures.normalize();
 			edgeFeatures.getMin(min);
 			edgeFeatures.getMax(max);
-		}
-	}
-
-	//////////////////////
-	//// POSTPROCESSING //
-	//////////////////////
-
-	if ((optionAddPairwiseFeatureProducts) && !optionNoFeatureProductsForEdges) {
-
-		LOG_USER(featureextractorlog) << "adding feature products" << std::endl;
-
-		for (Crag::CragEdge e : _crag.edges()) {
-
-			const std::vector<double>& features = edgeFeatures[e];
-
-			if (optionAddPairwiseFeatureProducts) {
-
-				// compute all products of all features and add them as well
-				unsigned int numOriginalFeatures = features.size();
-				for (unsigned int i = 0; i < numOriginalFeatures; i++)
-					for (unsigned int j = i; j < numOriginalFeatures; j++)
-						edgeFeatures.append(e, features[i]*features[j]);
-			}
 		}
 	}
 

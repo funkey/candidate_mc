@@ -18,6 +18,7 @@
 #include <features/AccumulatedFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
 #include <features/ContactFeatureProvider.h>
+#include <features/PairwiseFeatureProvider.h>
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
 #include <features/SquareFeatureProvider.h>
@@ -148,12 +149,26 @@ util::ProgramOption optionEdgeShapeFeatures(
 	util::_description_text = "Compute shape features for edges."
 );
 
-// FEATURE NORMALIZATION AND POST-PROCESSING
+///////////////////////////////////////////////
+// FEATURE NORMALIZATION AND POST-PROCESSING //
+///////////////////////////////////////////////
 
 util::ProgramOption optionAddFeatureSquares(
 	util::_module           = "features",
 	util::_long_name        = "addSquares",
 	util::_description_text = "For each feature f_i add the square f_i*f_i to the feature vector as well (implied by addPairwiseFeatureProducts)."
+);
+
+util::ProgramOption optionAddPairwiseFeatureProducts(
+	util::_module           = "features",
+	util::_long_name        = "addPairwiseProducts",
+	util::_description_text = "For each pair of features f_i and f_j, add the product f_i*f_j to the feature vector as well."
+);
+
+util::ProgramOption optionNoFeatureProductsForEdges(
+	util::_module           = "features",
+	util::_long_name        = "noFeatureProductsForEdges",
+	util::_description_text = "Don't add feature products for edges (which can result in too many features)."
 );
 
 //////////////////////////
@@ -276,12 +291,19 @@ int main(int argc, char** argv) {
 			if (optionEdgeVolumeRayFeatures)
 				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
 
-			if (optionAddFeatureSquares)
-				featureProvider.emplace_back<SquareFeatureProvider>(crag);
-
 			if (optionAssignmentFeatures)
 				// TODO: replace boundaries with actual z-affinities
 				featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
+
+			////////////////////
+			// POSTPROCESSING //
+			////////////////////
+
+			if (optionAddFeatureSquares)
+				featureProvider.emplace_back<SquareFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
+
+			if (optionAddPairwiseFeatureProducts)
+				featureProvider.emplace_back<PairwiseFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
 
 			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
