@@ -9,8 +9,7 @@ public:
 
 	PairwiseFeatureProvider(const Crag& crag, bool featureForEdges) :
 		_crag(crag),
-		_featureForEdges(featureForEdges){
-	}
+		_featureForEdges(featureForEdges){}
 
 	template <typename ContainerT>
 	void appendNodeFeatures(const Crag::CragNode n, ContainerT& adaptor) {

@@ -18,9 +18,7 @@ public:
 			const std::string valuesName = "values") :
 		_crag(crag),
 		_values(values),
-		_valuesName(valuesName){
-
-	}
+		_valuesName(valuesName){}
 
 	template <typename ContainerT>
 	void appendEdgeFeatures(const Crag::CragEdge e, ContainerT& adaptor) {

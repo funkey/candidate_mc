@@ -17,8 +17,7 @@ public:
 			const VolumeRays& rays) :
 		_crag(crag),
 		_volumes (volumes),
-		_rays(rays){
-	}
+		_rays(rays){}
 
 	template <typename ContainerT>
 	void appendEdgeFeatures(const Crag::CragEdge e, ContainerT& adaptor) {
