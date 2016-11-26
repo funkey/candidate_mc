@@ -5,25 +5,11 @@
 #include <util/ProgramOptions.h>
 #include <util/helpers.hpp>
 #include <util/timing.h>
-#include <util/assert.h>
-#include "FeatureExtractor.h"
 #include <vigra/multi_impex.hxx>
 
+#include "FeatureExtractor.h"
+
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
-
-/////////////////////
-// GENERAL OPTIONS //
-/////////////////////
-
-// FEATURE GROUPS
-
-util::ProgramOption optionEdgeDerivedFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "derivedFeatures",
-	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
-							  "(difference, sum, min, max). Enabled by default.",
-	util::_default_value    = true
-);
 
 // FEATURE NORMALIZATION AND POST-PROCESSING
 util::ProgramOption optionNormalize(
@@ -170,9 +156,6 @@ FeatureExtractor::extractEdgeFeatures(
 
 	featureProvider.appendFeatures(_crag, edgeFeatures);
 
-	if (optionEdgeDerivedFeatures)
-		extractDerivedEdgeFeatures(nodeFeatures, edgeFeatures);
-
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::AdjacencyEdge)
 			<< " features per adjacency edge" << std::endl;
@@ -243,77 +226,3 @@ FeatureExtractor::extractEdgeFeatures(
     LOG_USER(featureextractorlog) << "done" << std::endl;
 }
 
-void
-FeatureExtractor::extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures) {
-
-	LOG_DEBUG(featureextractorlog) << "extracting derived edge features..." << std::endl;
-
-	if (_crag.edges().size() == 0)
-		return;
-
-	int numOriginalNodeFeatures = 0;
-	for (Crag::CragEdge e : _crag.edges()) {
-
-		if (_crag.type(e) != Crag::AdjacencyEdge)
-			continue;
-
-		switch (_crag.type(e.u())) {
-
-			case Crag::VolumeNode:
-				numOriginalNodeFeatures = _numOriginalVolumeNodeFeatures;
-				break;
-			case Crag::SliceNode:
-				numOriginalNodeFeatures = _numOriginalSliceNodeFeatures;
-				break;
-			default:
-				numOriginalNodeFeatures = _numOriginalAssignmentNodeFeatures;
-		}
-		break;
-	}
-
-	for (size_t i = 0; i < numOriginalNodeFeatures; i++) {
-
-		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_abs_") + boost::lexical_cast<std::string>(i));
-		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_min_") + boost::lexical_cast<std::string>(i));
-		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_max_") + boost::lexical_cast<std::string>(i));
-		edgeFeatures.appendFeatureName(Crag::AdjacencyEdge, std::string("derived_node_sum_") + boost::lexical_cast<std::string>(i));
-	}
-
-	////////////////////////
-	// Edge Features      //
-	// from Node Features //
-	////////////////////////
-	for (Crag::CragEdge e : _crag.edges()) {
-
-		if (_crag.type(e) != Crag::AdjacencyEdge)
-			continue;
-
-		LOG_ALL(featureextractorlog) << "extracting derived features for edge " << _crag.id(_crag.u(e)) << ", " << _crag.id(_crag.v(e)) << std::endl;
-
-		UTIL_TIME_SCOPE("extract derived edge features");
-
-		Crag::CragNode u = e.u();
-		Crag::CragNode v = e.v();
-		// feature vectors from node u/v
-		const auto & featsU = nodeFeatures[u];
-		const auto & featsV = nodeFeatures[v];
-
-		UTIL_ASSERT(_crag.type(u) == _crag.type(v));
-		UTIL_ASSERT_REL(featsU.size(), ==, featsV.size());
-		UTIL_ASSERT_REL(featsU.size(), >=, numOriginalNodeFeatures);
-		UTIL_ASSERT_REL(featsV.size(), >=, numOriginalNodeFeatures);
-
-		// loop over all features
-		for(size_t nfi=0; nfi < numOriginalNodeFeatures; ++nfi){
-			// single feature from node u/v
-			const auto fu = featsU[nfi];
-			const auto fv = featsV[nfi];
-			// convert u/v features into 
-			// edge features
-			edgeFeatures.append(e, std::abs(fu-fv));
-			edgeFeatures.append(e, std::min(fu,fv));
-			edgeFeatures.append(e, std::max(fu,fv));
-			edgeFeatures.append(e, fu+fv);
-		}
-	}
-}

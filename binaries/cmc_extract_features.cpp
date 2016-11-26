@@ -18,6 +18,7 @@
 #include <features/AccumulatedFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
 #include <features/ContactFeatureProvider.h>
+#include <features/DerivedFeatureProvider.h>
 #include <features/PairwiseFeatureProvider.h>
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
@@ -147,6 +148,14 @@ util::ProgramOption optionEdgeShapeFeatures(
 	util::_module           = "features.edges",
 	util::_long_name        = "shapeFeatures",
 	util::_description_text = "Compute shape features for edges."
+);
+
+util::ProgramOption optionEdgeDerivedFeatures(
+	util::_module           = "features.edges",
+	util::_long_name        = "derivedFeatures",
+	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
+							  "(difference, sum, min, max). Enabled by default.",
+	util::_default_value    = true
 );
 
 ///////////////////////////////////////////////
@@ -294,6 +303,9 @@ int main(int argc, char** argv) {
 			if (optionAssignmentFeatures)
 				// TODO: replace boundaries with actual z-affinities
 				featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
+
+			if (optionEdgeDerivedFeatures)
+				featureProvider.emplace_back<DerivedFeatureProvider>(crag, nodeFeatures);
 
 			////////////////////
 			// POSTPROCESSING //
