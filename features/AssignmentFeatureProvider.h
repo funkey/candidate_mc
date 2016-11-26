@@ -1,11 +1,11 @@
-#ifndef CANDIDATE_MC_FEATURES_ASSIGNENT_FEATURE_PROVIDER_H__
-#define CANDIDATE_MC_FEATURES_ASSIGNENT_FEATURE_PROVIDER_H__
+#ifndef CANDIDATE_MC_FEATURES_ASSIGNMENT_FEATURE_PROVIDER_H__
+#define CANDIDATE_MC_FEATURES_ASSIGNMENT_FEATURE_PROVIDER_H__
 
 #include "FeatureProvider.h"
 #include "HausdorffDistance.h"
 #include "Overlap.h"
 
-class AssignmentFeatureProvider : public FeatureProvider<ContactFeatureProvider> {
+class AssignmentFeatureProvider : public FeatureProvider<AssignmentFeatureProvider> {
 
 public:
 
@@ -35,11 +35,12 @@ public:
 					"assignment nodes with more than two slice nodes not yet supported"
 			);
 
-		Crag::CragNode u = *_crag.inArcs(n).begin();
-		Crag::CragNode v = *(_crag.inArcs(n).begin()++);
+		Crag::CragNode u = (*_crag.inArcs(n).begin()).source();
+		Crag::CragNode v = (*(_crag.inArcs(n).begin()++)).source();
 
 		adaptor.append(hausdorffDistance(u, v));
 		adaptor.append(overlap(u, v));
+		adaptor.append(sizeDifference(u, v));
 	}
 
 	std::map<Crag::NodeType, std::vector<std::string>> getNodeFeatureNames() const override {
@@ -48,6 +49,7 @@ public:
 
 		names[Crag::AssignmentNode].push_back("hausdorff distance");
 		names[Crag::AssignmentNode].push_back("overlap");
+		names[Crag::AssignmentNode].push_back("size difference");
 
 		return names;
 	}
@@ -107,5 +109,5 @@ private:
 	int _sizeFeatureIndex;
 };
 
-#endif // CANDIDATE_MC_FEATURES_ASSIGNENT_FEATURE_PROVIDER_H__
+#endif // CANDIDATE_MC_FEATURES_ASSIGNMENT_FEATURE_PROVIDER_H__
 
