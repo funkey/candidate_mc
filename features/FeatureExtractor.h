@@ -2,7 +2,6 @@
 #define CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__
 
 #include <io/CragStore.h>
-#include <features/VolumeRays.h>
 #include "NodeFeatures.h"
 #include "EdgeFeatures.h"
 #include "FeatureProvider.h"
@@ -12,16 +11,15 @@ class FeatureExtractor {
 public:
 
 	FeatureExtractor(
-			Crag&                        crag,
-			CragVolumes&                 volumes,
-			const ExplicitVolume<float>& raw,
-			const ExplicitVolume<float>& boundaries,
-			const VolumeRays&            rays) :
+			Crag&        crag,
+			CragVolumes& volumes) :
 		_crag(crag),
 		_volumes(volumes),
-		_raw(raw),
-		_boundaries(boundaries),
-		_rays(rays) {}
+		_numOriginalVolumeNodeFeatures(0),
+		_numOriginalSliceNodeFeatures(0),
+		_numOriginalAssignmentNodeFeatures(0),
+		_numOriginalEdgeFeatures(0),
+		_useProvidedMinMax(false){}
 
 	/**
 	 * Extract node and edge features, along with the respective min and max 
@@ -40,23 +38,6 @@ public:
 
 private:
 
-	/**
-	 * Adaptor to be used with RegionFeatures, such that mapping to the correct 
-	 * node is preserved.
-	 */
-	class FeatureNodeAdaptor {
-
-	public:
-		FeatureNodeAdaptor(Crag::CragNode node, NodeFeatures& features) : _node(node), _features(features) {}
-
-		inline void append(unsigned int /*ignored*/, double value) { _features.append(_node, value); }
-
-	private:
-
-		Crag::CragNode _node;
-		NodeFeatures&  _features;
-	};
-
 	void extractNodeFeatures(
 			FeatureProviderBase& featureProvider,
 			NodeFeatures& nodeFeatures,
@@ -70,27 +51,8 @@ private:
 			FeatureWeights& min,
 			FeatureWeights& max);
 
-	void extractDerivedEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
-
-	void extractTopologicalEdgeFeatures(EdgeFeatures& edgeFeatures);
-
-	void extractShapeEdgeFeatures(const NodeFeatures& nodeFeatures, EdgeFeatures& edgeFeatures);
-
-	void extractVolumeRaysEdgeFeatures(EdgeFeatures& edgeFeatures);
-
-    void extractAccumulatedEdgeFeatures(EdgeFeatures& edgeFeatures);
-
-	void extractEdgeSegmentationFeatures(EdgeFeatures& edgeFeatures);
-
-	void extractEdgeContactFeatures(EdgeFeatures& edgeFeatures);
-
 	Crag&        _crag;
 	CragVolumes& _volumes;
-
-	const ExplicitVolume<float>& _raw;
-	const ExplicitVolume<float>& _boundaries;
-
-	const VolumeRays& _rays;
 
 	// number of "real" node features, before add squares and bias
 	int _numOriginalVolumeNodeFeatures;

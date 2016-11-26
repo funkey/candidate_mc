@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
 			if (optionAddPairwiseFeatureProducts)
 				featureProvider.emplace_back<PairwiseFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
 
-			FeatureExtractor featureExtractor(crag, volumes, raw, boundaries, rays);
+			FeatureExtractor featureExtractor(crag, volumes);
 			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
 
 			if (!optionMinMaxFromProject) {
