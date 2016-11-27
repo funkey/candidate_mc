@@ -11,13 +11,6 @@
 
 logger::LogChannel featureextractorlog("featureextractorlog", "[FeatureExtractor] ");
 
-// FEATURE NORMALIZATION AND POST-PROCESSING
-util::ProgramOption optionNormalize(
-	util::_module           = "features",
-	util::_long_name        = "normalize",
-	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
-);
-
 util::ProgramOption optionDumpFeatureNames(
 	util::_long_name        = "dumpFeatureNames",
 	util::_description_text = "Write the feature names to files. The filenames will be the value of this argument plus 'node_?' or 'edge_?' "
@@ -28,25 +21,16 @@ void
 FeatureExtractor::extract(
 		FeatureProviderBase& featureProvider,
 		NodeFeatures& nodeFeatures,
-		EdgeFeatures& edgeFeatures,
-		FeatureWeights& min,
-		FeatureWeights& max) {
+		EdgeFeatures& edgeFeatures) {
 
-	if (!min.empty() && !max.empty())
-		_useProvidedMinMax = true;
-	else
-		_useProvidedMinMax = false;
-
-	extractNodeFeatures(featureProvider, nodeFeatures, min, max);
-	extractEdgeFeatures(featureProvider, nodeFeatures, edgeFeatures, min, max);
+	extractNodeFeatures(featureProvider, nodeFeatures);
+	extractEdgeFeatures(featureProvider, nodeFeatures, edgeFeatures);
 }
 
 void
 FeatureExtractor::extractNodeFeatures(
 		FeatureProviderBase& featureProvider,
-		NodeFeatures& nodeFeatures,
-		FeatureWeights& min,
-		FeatureWeights& max) {
+		NodeFeatures& nodeFeatures) {
 
 	int numNodes = _crag.nodes().size();
 
@@ -78,53 +62,6 @@ FeatureExtractor::extractNodeFeatures(
 	_numOriginalSliceNodeFeatures      = nodeFeatures.dims(Crag::SliceNode);
 	_numOriginalAssignmentNodeFeatures = nodeFeatures.dims(Crag::AssignmentNode);
 
-	///////////////////
-	// NORMALIZATION //
-	///////////////////
-
-	if (optionNormalize) {
-
-		if (_useProvidedMinMax) {
-
-			LOG_USER(featureextractorlog) << "normalizing node features with provided min and max" << std::endl;
-			LOG_ALL(featureextractorlog)
-					<< "min:" << min << std::endl
-					<< "max:" << max << std::endl;
-
-			nodeFeatures.normalize(min, max);
-
-		} else {
-
-			LOG_USER(featureextractorlog) << "normalizing node features" << std::endl;
-
-			nodeFeatures.normalize();
-			nodeFeatures.getMin(min);
-			nodeFeatures.getMax(max);
-		}
-	}
-
-	// append a 1 for bias
-	for (Crag::CragNode n : _crag.nodes())
-		if (_crag.type(n) != Crag::NoAssignmentNode)
-			nodeFeatures.append(n, 1);
-
-	for (auto type : Crag::NodeTypes)
-		if (type != Crag::NoAssignmentNode)
-			nodeFeatures.appendFeatureName(type, "bias");
-
-	LOG_USER(featureextractorlog)
-			<< "after postprocessing, we have "
-			<< nodeFeatures.dims(Crag::VolumeNode)
-			<< " features per volume node" << std::endl;
-	LOG_USER(featureextractorlog)
-			<< "after postprocessing, we have "
-			<< nodeFeatures.dims(Crag::SliceNode)
-			<< " features per slice node" << std::endl;
-	LOG_USER(featureextractorlog)
-			<< "after postprocessing, we have "
-			<< nodeFeatures.dims(Crag::AssignmentNode)
-			<< " features per assignment node" << std::endl;
-
 	if (optionDumpFeatureNames) {
 
 		for (auto type : Crag::NodeTypes) {
@@ -148,9 +85,7 @@ void
 FeatureExtractor::extractEdgeFeatures(
 		FeatureProviderBase& featureProvider,
 		const NodeFeatures& nodeFeatures,
-		EdgeFeatures&       edgeFeatures,
-		FeatureWeights& min,
-		FeatureWeights& max) {
+		EdgeFeatures&       edgeFeatures) {
 
 	LOG_USER(featureextractorlog) << "extracting edge features..." << std::endl;
 
@@ -161,50 +96,6 @@ FeatureExtractor::extractEdgeFeatures(
 			<< " features per adjacency edge" << std::endl;
 	LOG_USER(featureextractorlog)
 			<< "extracted " << edgeFeatures.dims(Crag::NoAssignmentEdge)
-			<< " features per no-assignment edge" << std::endl;
-
-	///////////////////
-	// NORMALIZATION //
-	///////////////////
-
-	if (optionNormalize && edgeFeatures.dims(Crag::AdjacencyEdge) > 0) {
-
-		if (_useProvidedMinMax) {
-
-			LOG_USER(featureextractorlog) << "normalizing edge features with provided min and max" << std::endl;
-			LOG_ALL(featureextractorlog)
-					<< "min:" << min << std::endl
-					<< "max:" << max << std::endl;
-
-			edgeFeatures.normalize(min, max);
-
-		} else {
-
-			LOG_USER(featureextractorlog) << "normalizing edge features" << std::endl;
-
-			edgeFeatures.normalize();
-			edgeFeatures.getMin(min);
-			edgeFeatures.getMax(max);
-		}
-	}
-
-	// append a 1 for bias
-	for (Crag::CragEdge e : _crag.edges())
-		if (_crag.type(e) != Crag::AssignmentEdge && _crag.type(e) != Crag::SeparationEdge)
-			edgeFeatures.append(e, 1);
-
-
-	for (auto type : Crag::EdgeTypes)
-		if (type != Crag::AssignmentEdge && type != Crag::SeparationEdge)
-				edgeFeatures.appendFeatureName(type, "bias");
-
-	LOG_USER(featureextractorlog)
-			<< "after postprocessing, we have "
-			<< edgeFeatures.dims(Crag::AdjacencyEdge)
-			<< " features per adjacency edge" << std::endl;
-	LOG_USER(featureextractorlog)
-			<< "after postprocessing, we have "
-			<< edgeFeatures.dims(Crag::NoAssignmentEdge)
 			<< " features per no-assignment edge" << std::endl;
 
     if (optionDumpFeatureNames) {
@@ -226,3 +117,38 @@ FeatureExtractor::extractEdgeFeatures(
     LOG_USER(featureextractorlog) << "done" << std::endl;
 }
 
+void
+FeatureExtractor::normalize(
+		NodeFeatures& nodeFeatures,
+		EdgeFeatures& edgeFeatures,
+		FeatureWeights& min,
+		FeatureWeights& max){
+
+	if (!min.empty() && !max.empty()) {
+
+		LOG_USER(featureextractorlog) << "normalizing node features with provided min and max" << std::endl;
+		LOG_ALL(featureextractorlog)
+				<< "min:" << min << "max:" << max << std::endl;
+
+		nodeFeatures.normalize(min, max);
+
+		if (edgeFeatures.dims(Crag::AdjacencyEdge) > 0)
+		{
+			LOG_USER(featureextractorlog) << "normalizing edge features with provided min and max" << std::endl;
+			edgeFeatures.normalize(min, max);
+		}
+	} else {
+
+		LOG_USER(featureextractorlog) << "normalizing node features" << std::endl;
+
+		nodeFeatures.normalize();
+		nodeFeatures.getMin(min);
+		nodeFeatures.getMax(max);
+
+		LOG_USER(featureextractorlog) << "normalizing edge features" << std::endl;
+
+		edgeFeatures.normalize();
+		edgeFeatures.getMin(min);
+		edgeFeatures.getMax(max);
+	}
+}

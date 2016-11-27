@@ -18,8 +18,7 @@ public:
 		_numOriginalVolumeNodeFeatures(0),
 		_numOriginalSliceNodeFeatures(0),
 		_numOriginalAssignmentNodeFeatures(0),
-		_numOriginalEdgeFeatures(0),
-		_useProvidedMinMax(false){}
+		_numOriginalEdgeFeatures(0){}
 
 	/**
 	 * Extract node and edge features, along with the respective min and max 
@@ -32,6 +31,10 @@ public:
 	void extract(
 			FeatureProviderBase& featureProvider,
 			NodeFeatures& nodeFeatures,
+			EdgeFeatures& edgeFeatures);
+
+	void normalize(
+			NodeFeatures& nodeFeatures,
 			EdgeFeatures& edgeFeatures,
 			FeatureWeights& min,
 			FeatureWeights& max);
@@ -40,16 +43,12 @@ private:
 
 	void extractNodeFeatures(
 			FeatureProviderBase& featureProvider,
-			NodeFeatures& nodeFeatures,
-			FeatureWeights& min,
-			FeatureWeights& max);
+			NodeFeatures& nodeFeatures);
 
 	void extractEdgeFeatures(
 			FeatureProviderBase& featureProvider,
 			const NodeFeatures& nodeFeatures,
-			EdgeFeatures& edgeFeatures,
-			FeatureWeights& min,
-			FeatureWeights& max);
+			EdgeFeatures& edgeFeatures);
 
 	Crag&        _crag;
 	CragVolumes& _volumes;
@@ -61,8 +60,6 @@ private:
 
 	// number of "real" edge features, before add squares and bias
 	int _numOriginalEdgeFeatures;
-
-	bool _useProvidedMinMax;
 };
 
 #endif // CANDIDATE_MC_FEATURES_FEATURE_EXTRACTOR_H__

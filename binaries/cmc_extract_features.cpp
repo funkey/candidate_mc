@@ -16,6 +16,7 @@
 #include <features/SkeletonExtractor.h>
 #include <features/VolumeRays.h>
 #include <features/AccumulatedFeatureProvider.h>
+#include <features/BiasFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
 #include <features/ContactFeatureProvider.h>
 #include <features/DerivedFeatureProvider.h>
@@ -162,6 +163,12 @@ util::ProgramOption optionEdgeDerivedFeatures(
 // FEATURE NORMALIZATION AND POST-PROCESSING //
 ///////////////////////////////////////////////
 
+util::ProgramOption optionNormalize(
+	util::_module           = "features",
+	util::_long_name        = "normalize",
+	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
+);
+
 util::ProgramOption optionAddFeatureSquares(
 	util::_module           = "features",
 	util::_long_name        = "addSquares",
@@ -265,7 +272,7 @@ int main(int argc, char** argv) {
 				cragStore.retrieveFeaturesMax(max);
 			}
 
-			// TODO: Is it needed a feature provider for edges?
+			// NOTE: Is it needed a feature provider for edges?
 			CompositeFeatureProvider featureProvider;
 
 			if (optionNodeShapeFeatures /* || optionEdgeShapeFeatures*/){
@@ -307,18 +314,24 @@ int main(int argc, char** argv) {
 			if (optionEdgeDerivedFeatures)
 				featureProvider.emplace_back<DerivedFeatureProvider>(crag, nodeFeatures);
 
-			////////////////////
 			// POSTPROCESSING //
-			////////////////////
-
+			CompositeFeatureProvider postProcessingFeature;
 			if (optionAddFeatureSquares)
-				featureProvider.emplace_back<SquareFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
+				postProcessingFeature.emplace_back<SquareFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
 
 			if (optionAddPairwiseFeatureProducts)
-				featureProvider.emplace_back<PairwiseFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
+				postProcessingFeature.emplace_back<PairwiseFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
+
+			// add bias
+			postProcessingFeature.emplace_back<BiasFeatureProvider>(crag, nodeFeatures, edgeFeatures);
 
 			FeatureExtractor featureExtractor(crag, volumes);
-			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures, min, max);
+			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures);
+
+			if (optionNormalize)
+				featureExtractor.normalize(nodeFeatures, edgeFeatures, min, max);
+
+			featureExtractor.extract(postProcessingFeature, nodeFeatures, edgeFeatures);
 
 			if (!optionMinMaxFromProject) {
 
