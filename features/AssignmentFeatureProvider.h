@@ -85,12 +85,12 @@ private:
 		auto it = std::find(
 				_features.getFeatureNames(Crag::AssignmentNode).begin(),
 				_features.getFeatureNames(Crag::AssignmentNode).end(),
-				"membrane size");
+				"membranes boundary size");
 
 		if (it == _features.getFeatureNames(Crag::AssignmentNode).end())
 			UTIL_THROW_EXCEPTION(
 					UsageError,
-					"feature 'membrane size' (the size of a node) was not computed prior to running AssignmentFeatureProvider"
+					"feature 'membranes boundary size' (the size of a node) was not computed prior to running AssignmentFeatureProvider"
 			);
 
 		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::AssignmentNode).begin();
