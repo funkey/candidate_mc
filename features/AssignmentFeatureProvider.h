@@ -35,12 +35,17 @@ public:
 					"assignment nodes with more than two slice nodes not yet supported"
 			);
 
-		Crag::CragNode u = (*_crag.inArcs(n).begin()).source();
-		Crag::CragNode v = (*(_crag.inArcs(n).begin()++)).source();
+		Crag::CragNode u = (*(_crag.inArcs(n).begin())).source();
+		Crag::CragNode v = (*(++_crag.inArcs(n).begin())).source();
 
 		adaptor.append(hausdorffDistance(u, v));
-		adaptor.append(overlap(u, v));
+		double value = overlap(u, v);
+		adaptor.append(value);
 		adaptor.append(sizeDifference(u, v));
+		adaptor.append(setDifference(u, value));
+		adaptor.append(setDifference(v, value));
+
+
 	}
 
 	std::map<Crag::NodeType, std::vector<std::string>> getNodeFeatureNames() const override {
@@ -50,6 +55,8 @@ public:
 		names[Crag::AssignmentNode].push_back("hausdorff distance");
 		names[Crag::AssignmentNode].push_back("overlap");
 		names[Crag::AssignmentNode].push_back("size difference");
+		names[Crag::AssignmentNode].push_back("set difference u");
+		names[Crag::AssignmentNode].push_back("set difference v");
 
 		return names;
 	}
@@ -94,6 +101,25 @@ private:
 			);
 
 		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::AssignmentNode).begin();
+	}
+
+	double setDifference(Crag::CragNode i, double overlap){
+
+		CragVolume& vol_i = *_volumes[i];
+
+		double totalVolume = 0.0;
+		for (int z = 0; z < vol_i.depth();  z++)
+		for (int y = 0; y < vol_i.height(); y++)
+		for (int x = 0; x < vol_i.width();  x++) {
+
+			if (vol_i(x, y, z) == 0)
+				continue;
+
+			totalVolume += (vol_i.getResolution().x() * vol_i.getResolution().y() *
+							vol_i.getResolution().z());
+		}
+
+		return totalVolume - overlap;
 	}
 
 	const Crag& _crag;
