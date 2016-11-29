@@ -42,8 +42,12 @@ public:
 		double value = overlap(u, v);
 		adaptor.append(value);
 		adaptor.append(sizeDifference(u, v));
-		adaptor.append(setDifference(u, value));
-		adaptor.append(setDifference(v, value));
+		adaptor.append(differences(u, value));
+		adaptor.append(differences(v, value));
+
+		std::vector<double> features = affinities(u, v);
+		for (unsigned int i = 0; i < features.size(); i++)
+			adaptor.append(features[i]);
 
 
 	}
@@ -57,6 +61,7 @@ public:
 		names[Crag::AssignmentNode].push_back("size difference");
 		names[Crag::AssignmentNode].push_back("set difference u");
 		names[Crag::AssignmentNode].push_back("set difference v");
+		names[Crag::AssignmentNode].push_back("contact");
 
 		return names;
 	}
@@ -103,7 +108,7 @@ private:
 		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::AssignmentNode).begin();
 	}
 
-	double setDifference(Crag::CragNode i, double overlap){
+	double differences(Crag::CragNode i, double overlap) {
 
 		CragVolume& vol_i = *_volumes[i];
 
@@ -120,6 +125,31 @@ private:
 		}
 
 		return totalVolume - overlap;
+	}
+
+	std::vector<double> affinities(Crag::CragNode i, Crag::CragNode j) {
+
+		// TODO: understand how the affinities works for both nodes.
+		// Should I walk in both slice nodes? Just one is enough?
+		CragVolume& vol_i = *_volumes[i];
+		//CragVolume& vol_j = *_volumes[j];
+
+		std::vector<double> measurements;
+		util::point<int, 3> offset = vol_i.getOffset(); //(vol_i.getOffset() - vol_j.getOffset())/vol_i.getResolution();
+
+		for (int y = 0; y < vol_i.height(); y++)
+		for (int x = 0; x < vol_i.width();  x++) {
+
+			util::point<int, 3> bpos(
+				x + offset.x(),
+				y + offset.y(),
+				offset.z() );
+
+			std::cout << "_affs[bpos]" << _affs[bpos] << std::endl;
+		}
+
+		// TODO: get min, max and median for instance
+		return measurements;
 	}
 
 	const Crag& _crag;
