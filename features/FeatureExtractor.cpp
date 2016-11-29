@@ -132,8 +132,7 @@ FeatureExtractor::normalize(
 
 		nodeFeatures.normalize(min, max);
 
-		if (edgeFeatures.dims(Crag::AdjacencyEdge) > 0)
-		{
+		if (edgeFeatures.dims(Crag::AdjacencyEdge) > 0) {
 			LOG_USER(featureextractorlog) << "normalizing edge features with provided min and max" << std::endl;
 			edgeFeatures.normalize(min, max);
 		}

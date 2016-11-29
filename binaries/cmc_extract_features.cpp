@@ -298,8 +298,7 @@ int main(int argc, char** argv) {
 			if (optionEdgeContactFeatures)
 				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries);
 
-			if (optionEdgeAccumulatedFeatures)
-			{
+			if (optionEdgeAccumulatedFeatures) {
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, boundaries, "membranes");
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, raw, "raw");
 			}
