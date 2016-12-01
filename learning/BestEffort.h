@@ -79,27 +79,27 @@ private:
 			const Crag::NodeMap<int>&                gtAssignments);
 
 	void selectAssignments(
-			const Crag&                 crag,
-	        const CragVolumes&          volumes,
-	        const ExplicitVolume<int>&  groundTruth,
-			Crag::NodeMap<int>&         gtAssignments,
+			const Crag&                        crag,
+			const CragVolumes&                 volumes,
+			const ExplicitVolume<int>&         groundTruth,
+			Crag::NodeMap<int>&                gtAssignments,
 			Crag::NodeMap<std::map<int, int>>& overlaps);
 
 	void unselectChildren(
-	        const Crag&    crag,
-	        Crag::CragNode n);
+			const Crag&    crag,
+			Crag::CragNode n);
 
-    void checkConstraint(
-            const Crag&                 crag,
-            const CragVolumes&          volumes,
-            const ExplicitVolume<int>&  groundTruth,
-            Crag::NodeMap<int>&         gtAssignments,
-            Crag::NodeMap<std::map<int, int>>& overlaps);
+	void explanationConstraint(
+			const Crag&                 crag,
+			const CragVolumes&          volumes,
+			const ExplicitVolume<int>&  groundTruth,
+			Crag::NodeMap<int>&         gtAssignments,
+			Crag::NodeMap<std::map<int, int>>& overlaps);
 
-    void selectNoAssignmentEdges(
-            const Crag&                 crag,
-            const CragVolumes&          volumes,
-            const ExplicitVolume<int>&  groundTruth);
+	void selectNoAssignmentEdges(
+			const Crag&                crag,
+			const CragVolumes&         volumes,
+			const ExplicitVolume<int>& groundTruth);
 
 	// include children and child edges of best-effort candidates and edges
 	bool _fullBestEffort;

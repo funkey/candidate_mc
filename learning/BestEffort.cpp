@@ -292,20 +292,25 @@ void BestEffort::selectAssignments(
 		Crag::CragNode previousChild;
 		for (Crag::CragEdge edge : crag.adjEdges(n)) {
 
-			Crag::CragNode child = edge.u();
+			Crag::CragNode opposite = crag.oppositeNode(n, edge);
 
-			// If the candidate is not select, go to the next assignmentoNode
-			if (!selected(child))
+			if (opposite == lemon::INVALID)
+				continue;
+
+			UTIL_ASSERT_REL(crag.type(opposite), ==, Crag::SliceNode)
+
+			// If the candidate is not select, go to the next assignmentNode
+			if (!selected(opposite))
 				break;
 
 			if (label == -1) {
-				label = gtAssignments[child];
-				previousChild = child;
+				label = gtAssignments[opposite];
+				previousChild = opposite;
 			}
-			else if (label == gtAssignments[child] && label == gtAssignments[n]) {
+			else if (label == gtAssignments[opposite] && label == gtAssignments[n]) {
 				// Select the assignment node with the same label
 				setSelected(n, true);
-				LOG_ALL(bestEffortlog) << "\tselecting assignment node " <<  crag.id(n) << " with label: " << gtAssignments[n] << std::endl;
+				LOG_DEBUG(bestEffortlog) << "\tselecting assignment node " <<  crag.id(n) << " with label: " << gtAssignments[n] << std::endl;
 			}
 		}
 	}
@@ -329,11 +334,11 @@ void BestEffort::selectAssignments(
 		}
 	}
 
-	checkConstraint( crag, volumes, groundTruth, gtAssignments, overlaps );
+	explanationConstraint( crag, volumes, groundTruth, gtAssignments, overlaps );
 
 	selectNoAssignmentEdges( crag, volumes, groundTruth );
 
-//#ifdef DEBUG
+#ifdef DEBUG
 	LOG_DEBUG(bestEffortlog) << "\tChecking results: selected edges for each selected slice node::" <<  std::endl;
 	// Check if there is a selected candidate with more than two assignment edges selected
 	bool OK = true;
@@ -365,8 +370,7 @@ void BestEffort::selectAssignments(
 
 	if(OK)
 		LOG_DEBUG(bestEffortlog) << "\tOK" <<  std::endl;
-
-//#endif
+#endif
 }
 
 void BestEffort::unselectChildren(
@@ -379,12 +383,13 @@ void BestEffort::unselectChildren(
 	}
 }
 
-void BestEffort::checkConstraint(
-		const Crag&                 crag,
-		const CragVolumes&          volumes,
-		const ExplicitVolume<int>&  groundTruth,
-		Crag::NodeMap<int>&         gtAssignments,
+void BestEffort::explanationConstraint(
+		const Crag&                        crag,
+		const CragVolumes&                 volumes,
+		const ExplicitVolume<int>&         groundTruth,
+		Crag::NodeMap<int>&                gtAssignments,
 		Crag::NodeMap<std::map<int, int>>& overlaps) {
+
 	// For all selected sliceNodes, check if they have more than one assignment node selected per section
 	for (Crag::CragNode n : crag.nodes()) {
 		if (crag.type(n) != Crag::SliceNode)
@@ -393,71 +398,74 @@ void BestEffort::checkConstraint(
 		if (!selected(n))
 			continue;
 
-		int assignmentSelected = 0;
-		int section = -1;
 		Crag::CragNode previous;
-		for (Crag::CragEdge edge : crag.adjEdges(n)) {
+		// For each direction
+		for (int direction : { +1, -1 }) {
+			// count the assignment node selected in each direction
+			int assignmentSelected = 0;
+			for (Crag::CragEdge edge : crag.adjEdges(n)) {
 
-			if (crag.type(edge) != Crag::AssignmentEdge)
-				continue;
+				if (crag.type(edge) != Crag::AssignmentEdge)
+					continue;
 
-			Crag::CragNode child = edge.v();
+				if (!selected(edge))
+					continue;
 
-			if (!selected(edge))
-				continue;
+				Crag::CragNode opposite = crag.oppositeNode(n, edge);
 
-			// Identify the assignment node section
-			const CragVolume& region = *volumes[child];
+				if (opposite == lemon::INVALID)
+					continue;
 
-			util::point<unsigned int, 3> offset = (region.getOffset()
-					- groundTruth.getOffset()) / groundTruth.getResolution();
+				UTIL_ASSERT_REL(crag.type(opposite), ==, Crag::AssignmentNode)
 
-			// If the edge is selected, so is the assignmentNode
-			assignmentSelected++;
-			previous = child;
+				// z offset from n to other
+				float zDiff =
+						volumes[opposite]->getBoundingBox().center().z() -
+						volumes[n]->getBoundingBox().center().z();
 
-			if (section == -1)
-				section = offset.z();
+				// if not in the right direction, skip this edge
+				if (zDiff*direction < 0)
+					continue;
 
-			if (assignmentSelected > 1) {
+				assignmentSelected++;
 
-				if (section == offset.z()) {
+				if (assignmentSelected > 1) {
+
 					assignmentSelected--;
+					int label = gtAssignments[previous];
+
 					// keep selected only the one with the most overlaping gt area
 					Crag::CragNode removed =
-							(overlaps[previous] > overlaps[child]) ?
-									child : previous;
+							(overlaps[previous][label] > overlaps[opposite][label]) ?
+									opposite : previous;
 
 					setSelected(removed, false);
+
 					LOG_ALL(bestEffortlog) << "\tunselecting assignment node: "
-							<< crag.id(child) << std::endl;
+							<< crag.id(removed) << std::endl;
 					// unselect all edges from the assignment node
 					for (Crag::CragEdge e : crag.adjEdges(removed)) {
 						setSelected(e, false);
+
 						LOG_ALL(bestEffortlog)
 								<< "\tunselecting edges between: "
 								<< crag.id(crag.u(e)) << " and "
 								<< crag.id(crag.v(e)) << std::endl;
 					}
-				} else {
-					section = offset.z();
-					assignmentSelected--;
 				}
+
+				// update previous only if the opposite is still selected
+				if (selected(opposite))
+					previous = opposite;
 			}
 		}
 	}
 }
 
 void BestEffort::selectNoAssignmentEdges(
-		const Crag&                 crag,
-		const CragVolumes&          volumes,
-		const ExplicitVolume<int>&  groundTruth) {
-
-	// Count sections
-	int sections = -1;
-	for (Crag::CragNode n : crag.nodes())
-		if (crag.type(n) == Crag::NoAssignmentNode)
-			sections++;
+		const Crag&                crag,
+		const CragVolumes&         volumes,
+		const ExplicitVolume<int>& groundTruth) {
 
 	// Check if there is a selected candidate missing assignment
 	for (Crag::CragNode n : crag.nodes()) {
@@ -468,63 +476,64 @@ void BestEffort::selectNoAssignmentEdges(
 		if (!selected(n))
 			continue;
 
-		int assignmentSelected = 0;
-		for (Crag::CragEdge edge : crag.adjEdges(n))
-			if (crag.type(edge) == Crag::AssignmentEdge)
+		for (int direction : { +1, -1 }) {
+			bool needNoAssignmentNode = true;
+			for (Crag::CragEdge edge : crag.adjEdges(n)) {
+
+				if (crag.type(edge) != Crag::AssignmentEdge)
+					continue;
+
+				Crag::CragNode opposite = crag.oppositeNode(n, edge);
+
+				if (opposite == lemon::INVALID)
+					continue;
+
+				UTIL_ASSERT_REL(crag.type(opposite), ==, Crag::AssignmentNode)
+
+				// z offset from n to other
+				float zDiff =
+						volumes[opposite]->getBoundingBox().center().z() -
+						volumes[n]->getBoundingBox().center().z();
+
+				// if not in the right direction, skip this edge
+				if (zDiff*direction < 0)
+					continue;
+
 				if (selected(edge))
-					assignmentSelected++;
+					needNoAssignmentNode = false;
+			}
 
-		// Check in which section the selected node is
-		const CragVolume& region = *volumes[n];
-
-		util::point<unsigned int, 3> offset = (region.getOffset()
-				- groundTruth.getOffset()) / groundTruth.getResolution();
-
-		// No one assignment node selected, should select the noAssignmentEdge
-		if (assignmentSelected == 0) {
+			// If do not need a no assignment node, check the other direction
+			if (!needNoAssignmentNode)
+				continue;
 
 			for (Crag::CragEdge edge : crag.adjEdges(n)) {
+
 				if (crag.type(edge) != Crag::NoAssignmentEdge)
 					continue;
 
-				// select the noAssignmentEdge before the section
-				if ((crag.id(edge.v()) == offset.z()))
+				Crag::CragNode opposite = crag.oppositeNode(n, edge);
+
+				if (opposite == lemon::INVALID)
+					continue;
+
+				UTIL_ASSERT_REL(crag.type(opposite), ==, Crag::NoAssignmentNode)
+
+				// z offset from n to other
+				float zDiff =
+						volumes[opposite]->getBoundingBox().center().z() -
+						volumes[n]->getBoundingBox().center().z();
+
+				// if not in the right direction, skip this edge
+				if (zDiff*direction < 0)
+					continue;
+				// else, select the noAssignmentEdge
+				// there is just one per direction
+				else {
 					setSelected(edge, true);
-
-				// selecte the noAssignmentEdge after the section
-				if ((crag.id(edge.v()) == offset.z() + 1))
-					setSelected(edge, true);
-			}
-		} else if (assignmentSelected == 1) {
-			int section = 0;
-			// First or last section
-			if (offset.z() == 0 || (offset.z() == (sections - 1))) {
-				section = (offset.z() == 0) ? 0 : sections;
-			} else {
-				// Search for the position of the assignmentNode selected
-				util::point<unsigned int, 3> assignmentOffset;
-				for (Crag::CragEdge edge : crag.adjEdges(n)) {
-					if (crag.type(edge.v()) != Crag::AssignmentNode)
-						continue;
-					if (!selected(edge.v()))
-						continue;
-
-					const CragVolume& region = *volumes[edge.v()];
-
-					assignmentOffset = (region.getOffset()
-							- groundTruth.getOffset())
-							/ groundTruth.getResolution();
 				}
-
-				section =
-						(offset.z() == assignmentOffset.z()) ?
-								offset.z() : offset.z() + 1;
 			}
 
-			for (Crag::CragEdge edge : crag.adjEdges(n))
-				if (crag.type(edge) == Crag::NoAssignmentEdge)
-					if (crag.id(edge.v()) == section)
-						setSelected(edge, true);
 		}
 	}
 }
