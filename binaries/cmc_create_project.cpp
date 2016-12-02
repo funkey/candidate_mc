@@ -54,6 +54,18 @@ util::ProgramOption optionBoundaries(
 		util::_short_name       = "b",
 		util::_description_text = "The boundary prediciton image or directory of images.");
 
+util::ProgramOption optionXAffinities(
+		util::_long_name        = "xAffinities",
+		util::_description_text = "The affinities prediciton on X axis image or directory of images.");
+
+util::ProgramOption optionYAffinities(
+		util::_long_name        = "yAffinities",
+		util::_description_text = "The affinities prediciton on Y axis image or directory of images.");
+
+util::ProgramOption optionZAffinities(
+		util::_long_name        = "zAffinities",
+		util::_description_text = "The affinities prediciton on Z axis image or directory of images.");
+
 util::ProgramOption optionGroundTruth(
 		util::_long_name        = "groundTruth",
 		util::_short_name       = "g",
@@ -437,6 +449,27 @@ int main(int argc, char** argv) {
 				boundaries.setOffset(offset);
 				boundaries.normalize();
 				volumeStore.saveBoundaries(boundaries);
+			}
+
+			bool atLeastOneAffinity = optionXAffinities || optionYAffinities || optionZAffinities;
+			bool allAfinities = optionXAffinities && optionYAffinities && optionZAffinities;
+
+			if (atLeastOneAffinity) {
+
+				if (!allAfinities) {
+
+					LOG_ERROR(logger::out)
+							<< "One of the affinities was not provided. "
+							<< "Affinities will be ignored." << std::endl;
+
+				} else {
+
+					ExplicitVolume<float> xAffinities = readVolume<float>(getImageFiles(optionXAffinities));
+					ExplicitVolume<float> yAffinities = readVolume<float>(getImageFiles(optionYAffinities));
+					ExplicitVolume<float> zAffinities = readVolume<float>(getImageFiles(optionZAffinities));
+
+					volumeStore.saveAffinities( xAffinities, yAffinities, zAffinities);
+				}
 			}
 		}
 

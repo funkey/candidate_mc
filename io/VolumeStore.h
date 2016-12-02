@@ -31,6 +31,13 @@ public:
 	virtual void saveLabels(const ExplicitVolume<int>& labels) = 0;
 
 	/**
+	 * Store the given affinities.
+	 */
+	virtual void saveAffinities(const ExplicitVolume<float>& xAffinities,
+								const ExplicitVolume<float>& yAffinities,
+								const ExplicitVolume<float>& zAffinities) = 0;
+
+	/**
 	 * Get the intensity volume.
 	 */
 	virtual void retrieveIntensities(ExplicitVolume<float>& intensities) = 0;
@@ -49,6 +56,13 @@ public:
 	 * Get the label volume.
 	 */
 	virtual void retrieveLabels(ExplicitVolume<int>& labels) = 0;
+
+	/**
+	 * Get the affinities volumes.
+	 */
+	virtual void retrieveAffinities(ExplicitVolume<float>& xAffinities,
+									ExplicitVolume<float>& yAffinities,
+									ExplicitVolume<float>& zAffinities) = 0;
 
 	/**
 	 * Get a volume by its name.

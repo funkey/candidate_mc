@@ -24,6 +24,10 @@ public:
 
 	void saveLabels(const ExplicitVolume<int>& labels) override;
 
+	void saveAffinities(const ExplicitVolume<float>& xAffinities,
+						const ExplicitVolume<float>& yAffinities,
+						const ExplicitVolume<float>& zAffinities) override;
+
 	void retrieveIntensities(ExplicitVolume<float>& intensities) override;
 
 	void retrieveBoundaries(ExplicitVolume<float>& boundaries) override;
@@ -31,6 +35,10 @@ public:
 	void retrieveGroundTruth(ExplicitVolume<int>& groundTruth) override;
 
 	void retrieveLabels(ExplicitVolume<int>& labels) override;
+
+	void retrieveAffinities(ExplicitVolume<float>& xAffinities,
+							ExplicitVolume<float>& yAffinities,
+							ExplicitVolume<float>& zAffinities) override;
 
 	void retrieveVolume(ExplicitVolume<int>& volume, std::string name) {
 
