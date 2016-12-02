@@ -58,16 +58,20 @@ public:
 		Crag::CragNode u = (*(_crag.inArcs(n).begin())).source();
 		Crag::CragNode v = (*(++_crag.inArcs(n).begin())).source();
 
-		adaptor.append(hausdorffDistance(u, v));
-		double value = overlap(u, v);
-		adaptor.append(value);
-		adaptor.append(sizeDifference(u, v));
-		adaptor.append(differences(u, value));
-		adaptor.append(differences(v, value));
+		adaptor.append(getHausdorffDistance(u, v));
 
 		std::vector<double> features = getAffinityFeatures(u, v);
 		for (unsigned int i = 0; i < features.size(); i++)
 			adaptor.append(features[i]);
+
+		// first affinity feature is number of contact voxels, i.e., overlap
+		int overlap = features[0];
+		int size_u = getSize(u);
+		int size_v = getSize(v);
+		int setDifference = size_u + size_v - 2*overlap;
+
+		adaptor.append(std::abs(size_u - size_v));
+		adaptor.append(setDifference);
 	}
 
 	std::map<Crag::NodeType, std::vector<std::string>> getNodeFeatureNames() const override {
@@ -76,19 +80,18 @@ public:
 
 		names[Crag::AssignmentNode].push_back("hausdorff distance");
 		names[Crag::AssignmentNode].push_back("overlap");
-		names[Crag::AssignmentNode].push_back("size difference");
-		names[Crag::AssignmentNode].push_back("set difference u");
-		names[Crag::AssignmentNode].push_back("set difference v");
 		names[Crag::AssignmentNode].push_back("affinity min");
 		names[Crag::AssignmentNode].push_back("affinity median");
 		names[Crag::AssignmentNode].push_back("affinity max");
+		names[Crag::AssignmentNode].push_back("size difference");
+		names[Crag::AssignmentNode].push_back("set difference");
 
 		return names;
 	}
 
 private:
 
-	inline double hausdorffDistance(Crag::CragNode i, Crag::CragNode j) {
+	inline double getHausdorffDistance(Crag::CragNode i, Crag::CragNode j) {
 
 		double i_j, j_i;
 		_hausdorff(*_volumes[i], *_volumes[j], i_j, j_i);
@@ -96,23 +99,14 @@ private:
 		return std::max(i_j, j_i);
 	}
 
-	inline double overlap(Crag::CragNode i, Crag::CragNode j) {
+	inline double getSize(Crag::CragNode n) {
 
-		return _overlap(*_volumes[i], *_volumes[j]);
-	}
-
-	inline double sizeDifference(Crag::CragNode i, Crag::CragNode j) {
-
-		UTIL_ASSERT_REL(_crag.type(i), ==, Crag::SliceNode);
-		UTIL_ASSERT_REL(_crag.type(j), ==, Crag::SliceNode);
+		UTIL_ASSERT_REL(_crag.type(n), ==, Crag::SliceNode);
 
 		if (_sizeFeatureIndex == -1)
 			findSizeFeature();
 
-		double size_i = _features[i][_sizeFeatureIndex];
-		double size_j = _features[j][_sizeFeatureIndex];
-
-		return std::abs(size_i - size_j);
+		return _features[n][_sizeFeatureIndex];
 	}
 
 	void findSizeFeature() {
@@ -209,11 +203,13 @@ private:
 		}
 
 		if (contactAffinities.size() == 0)
-			return {0, 0, 0};
+			return {0, 0, 0, 0};
 
 		std::vector<double> features;
 
 		std::sort(contactAffinities.begin(), contactAffinities.end());
+		// number of contact voxels
+		features.push_back(contactAffinities.size());
 		// min
 		features.push_back(*contactAffinities.begin());
 		// median
