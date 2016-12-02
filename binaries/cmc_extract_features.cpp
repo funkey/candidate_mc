@@ -264,18 +264,13 @@ int main(int argc, char** argv) {
 
 			LOG_USER(logger::out) << "extracting features" << std::endl;
 
-			FeatureWeights min, max;
-
-			if (optionMinMaxFromProject) {
-
-				cragStore.retrieveFeaturesMin(min);
-				cragStore.retrieveFeaturesMax(max);
-			}
-
 			// NOTE: Is it needed a feature provider for edges?
 			CompositeFeatureProvider featureProvider;
 
 			if (optionNodeShapeFeatures /* || optionEdgeShapeFeatures*/){
+
+				LOG_USER(logger::out) << "\tshape features" << std::endl;
+
 				ShapeFeatureProvider::Parameters p;
 				p.numAnglePoints = optionFeaturePointinessAnglePoints;
 				p.contourVecAsArcSegmentRatio = optionFeaturePointinessVectorLength;
@@ -286,35 +281,77 @@ int main(int argc, char** argv) {
 
 			if (optionNodeStatisticsFeatures) {
 
+				LOG_USER(logger::out) << "\tnode statistics features" << std::endl;
+
 				StatisticsFeatureProvider::Parameters p;
 				p.wholeVolume = true;
-				p.boundaryVoxels = true;
+				p.boundaryVoxels = false;
 				p.computeCoordinateStatistics = !!!optionNoCoordinatesStatistics;
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
 			}
 
-			if (optionNodeTopologicalFeatures /* || optionEdgeTopologicalFeatures */)
-				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
+			if (optionNodeTopologicalFeatures /* || optionEdgeTopologicalFeatures */) {
 
-			if (optionEdgeContactFeatures)
+				LOG_USER(logger::out) << "\tnode topological features" << std::endl;
+
+				featureProvider.emplace_back<TopologicalFeatureProvider>(crag);
+			}
+
+			if (optionEdgeContactFeatures) {
+
+				LOG_USER(logger::out) << "\tedge contact features" << std::endl;
+
 				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries);
+			}
 
 			if (optionEdgeAccumulatedFeatures) {
+
+				LOG_USER(logger::out) << "\tedge accumulated features" << std::endl;
+
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, boundaries, "membranes");
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, raw, "raw");
 			}
 
-			if (optionEdgeVolumeRayFeatures)
-				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
+			if (optionEdgeDerivedFeatures) {
 
-			if (optionAssignmentFeatures)
+				LOG_USER(logger::out) << "\tedge derived features" << std::endl;
+
+				featureProvider.emplace_back<DerivedFeatureProvider>(crag, nodeFeatures);
+			}
+
+			if (optionEdgeVolumeRayFeatures) {
+
+				LOG_USER(logger::out) << "\tvolume ray features" << std::endl;
+
+				featureProvider.emplace_back<VolumeRayFeatureProvider>(crag, volumes, rays);
+			}
+
+			if (optionAssignmentFeatures) {
+
+				LOG_USER(logger::out) << "\tassignment features" << std::endl;
+
 				// TODO: replace boundaries with actual z-affinities
 				featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
+			}
 
-			if (optionEdgeDerivedFeatures)
-				featureProvider.emplace_back<DerivedFeatureProvider>(crag, nodeFeatures);
+			FeatureExtractor featureExtractor(crag, volumes);
+			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures);
 
-			// POSTPROCESSING //
+			LOG_USER(logger::out) << "normalizing features" << std::endl;
+
+			FeatureWeights min, max;
+
+			if (optionMinMaxFromProject) {
+
+				cragStore.retrieveFeaturesMin(min);
+				cragStore.retrieveFeaturesMax(max);
+			}
+
+			if (optionNormalize)
+				featureExtractor.normalize(nodeFeatures, edgeFeatures, min, max);
+
+			LOG_USER(logger::out) << "post-processing features" << std::endl;
+
 			CompositeFeatureProvider postProcessingFeature;
 			if (optionAddFeatureSquares)
 				postProcessingFeature.emplace_back<SquareFeatureProvider>(crag, !optionNoFeatureProductsForEdges);
@@ -324,12 +361,6 @@ int main(int argc, char** argv) {
 
 			// add bias
 			postProcessingFeature.emplace_back<BiasFeatureProvider>(crag, nodeFeatures, edgeFeatures);
-
-			FeatureExtractor featureExtractor(crag, volumes);
-			featureExtractor.extract(featureProvider, nodeFeatures, edgeFeatures);
-
-			if (optionNormalize)
-				featureExtractor.normalize(nodeFeatures, edgeFeatures, min, max);
 
 			featureExtractor.extract(postProcessingFeature, nodeFeatures, edgeFeatures);
 
@@ -362,6 +393,8 @@ int main(int argc, char** argv) {
 		}
 
 		{
+			LOG_USER(logger::out) << "saving features" << std::endl;
+
 			UTIL_TIME_SCOPE("storing features");
 			cragStore.saveNodeFeatures(crag, nodeFeatures);
 			cragStore.saveEdgeFeatures(crag, edgeFeatures);
