@@ -38,12 +38,14 @@ util::ProgramOption optionProjectFile(
 		util::_default_value    = "project.hdf");
 
 util::ProgramOption optionAppendBestEffortFeature(
+		util::_module           = "features",
 		util::_long_name        = "appendBestEffortFeature",
 		util::_description_text = "Compute the best-effort from ground-truth and append a binary feature "
 		                          "to each node and edge indicating if this node or edge is part of the "
 		                          "best-effort solution. Used for testing the learning method.");
 
 util::ProgramOption optionNoFeatures(
+		util::_module           = "features",
 		util::_long_name        = "noFeatures",
 		util::_description_text = "Perform a dry run and don't extract any features (except for "
 		                          "best-effort features, if set). Used for testing the learning "
@@ -52,35 +54,31 @@ util::ProgramOption optionNoFeatures(
 util::ProgramOption optionNodeShapeFeatures(
 		util::_module           = "features.nodes",
 		util::_long_name        = "shapeFeatures",
-		util::_description_text = "Compute shape features for each candidate. Enabled by default.",
-		util::_default_value    = true
+		util::_description_text = "Compute shape features for each candidate."
 );
 
 util::ProgramOption optionNodeTopologicalFeatures(
 		util::_module           = "features.nodes",
 		util::_long_name        = "topologicalFeatures",
 		util::_description_text = "Compute topological features for each candidate (like level in the subset graph). "
-								  "Enabled by default.",
-		util::_default_value    = true
 );
 
 util::ProgramOption optionNodeStatisticsFeatures(
 		util::_module           = "features.nodes",
 		util::_long_name        = "statisticsFeatures",
 		util::_description_text = "Compute statistics features for each candidate (like mean and stddev of intensity, "
-								  "and many more). By default, this computes the statistics over all voxels of the "
-								  "candidate on the raw image. Enabled by default.",
-		util::_default_value    = true
+		                          "and many more). By default, this computes the statistics over all voxels of the "
+		                          "candidate on the raw image."
 );
 
 /////////////////////////
 // STATISTICS FEATURES //
 /////////////////////////
 
-util::ProgramOption optionNoCoordinatesStatistics(
-		util::_module           = "features.statistics",
-		util::_long_name        = "noCoordinatesStatistics",
-		util::_description_text = "Do not include statistics features over voxel coordinates."
+util::ProgramOption optionCoordinatesStatistics(
+		util::_module           = "features.nodes.statistics",
+		util::_long_name        = "coordinatesStatistics",
+		util::_description_text = "Include statistics features over voxel coordinates."
 );
 
 ////////////////////
@@ -98,7 +96,7 @@ util::ProgramOption optionFeaturePointinessVectorLength(
 		util::_module           = "features.shape.pointiness",
 		util::_long_name        = "angleVectorLength",
 		util::_description_text = "The amount to walk on the contour from a sample point in either direction, to estimate the angle. Values are between "
-								  "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
+		                          "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
 		util::_default_value    = 0.1
 );
 
@@ -120,43 +118,41 @@ util::ProgramOption optionAssignmentFeatures(
 ///////////////////
 
 util::ProgramOption optionEdgeContactFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "contactFeatures",
-	util::_description_text = "Compute contact features as in Gala."
+		util::_module           = "features.edges",
+		util::_long_name        = "contactFeatures",
+		util::_description_text = "Compute contact features as in Gala."
 );
 
 util::ProgramOption optionEdgeAccumulatedFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "accumulatedFeatures",
-	util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
-	                          "(mean, 1-moment, 2-moment). Enabled by default.",
-	util::_default_value    = true
+		util::_module           = "features.edges",
+		util::_long_name        = "accumulatedFeatures",
+		util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
+		                          "(mean, 1-moment, 2-moment)."
 );
 
 util::ProgramOption optionEdgeVolumeRayFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "volumeRayFeatures",
-	util::_description_text = "Compute features based on rays on the surface of the volumes. Disabled by default."
+		util::_module           = "features.edges",
+		util::_long_name        = "volumeRayFeatures",
+		util::_description_text = "Compute features based on rays on the surface of the volumes."
 );
 
 util::ProgramOption optionEdgeTopologicalFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "topologicalFeatures",
-	util::_description_text = "Compute topological features for edges."
+		util::_module           = "features.edges",
+		util::_long_name        = "topologicalFeatures",
+		util::_description_text = "Compute topological features for edges."
 );
 
 util::ProgramOption optionEdgeShapeFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "shapeFeatures",
-	util::_description_text = "Compute shape features for edges."
+		util::_module           = "features.edges",
+		util::_long_name        = "shapeFeatures",
+		util::_description_text = "Compute shape features for edges."
 );
 
 util::ProgramOption optionEdgeDerivedFeatures(
-	util::_module           = "features.edges",
-	util::_long_name        = "derivedFeatures",
-	util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
-							  "(difference, sum, min, max). Enabled by default.",
-	util::_default_value    = true
+		util::_module           = "features.edges",
+		util::_long_name        = "derivedFeatures",
+		util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
+		                          "(difference, sum, min, max)."
 );
 
 ///////////////////////////////////////////////
@@ -164,27 +160,27 @@ util::ProgramOption optionEdgeDerivedFeatures(
 ///////////////////////////////////////////////
 
 util::ProgramOption optionNormalize(
-	util::_module           = "features",
-	util::_long_name        = "normalize",
-	util::_description_text = "Normalize each original feature to be in the interval [0,1]."
+		util::_module           = "features",
+		util::_long_name        = "normalize",
+		util::_description_text = "Normalize each original feature to be in the interval [0,1]."
 );
 
 util::ProgramOption optionAddFeatureSquares(
-	util::_module           = "features",
-	util::_long_name        = "addSquares",
-	util::_description_text = "For each feature f_i add the square f_i*f_i to the feature vector as well (implied by addPairwiseFeatureProducts)."
+		util::_module           = "features",
+		util::_long_name        = "addSquares",
+		util::_description_text = "For each feature f_i add the square f_i*f_i to the feature vector as well (implied by addPairwiseFeatureProducts)."
 );
 
 util::ProgramOption optionAddPairwiseFeatureProducts(
-	util::_module           = "features",
-	util::_long_name        = "addPairwiseProducts",
-	util::_description_text = "For each pair of features f_i and f_j, add the product f_i*f_j to the feature vector as well."
+		util::_module           = "features",
+		util::_long_name        = "addPairwiseProducts",
+		util::_description_text = "For each pair of features f_i and f_j, add the product f_i*f_j to the feature vector as well."
 );
 
 util::ProgramOption optionNoFeatureProductsForEdges(
-	util::_module           = "features",
-	util::_long_name        = "noFeatureProductsForEdges",
-	util::_description_text = "Don't add feature products for edges (which can result in too many features)."
+		util::_module           = "features",
+		util::_long_name        = "noFeatureProductsForEdges",
+		util::_description_text = "Don't add feature products for edges (which can result in too many features)."
 );
 
 //////////////////////////
@@ -192,24 +188,29 @@ util::ProgramOption optionNoFeatureProductsForEdges(
 //////////////////////////
 
 util::ProgramOption optionMinMaxFromProject(
+		util::_module           = "features",
 		util::_long_name        = "minMaxFromProject",
 		util::_description_text = "Instead of computing the min and max values of the features for normalization, "
 		                          "use min and max stored in the project file.");
 
-util::ProgramOption optionNoSkeletons(
-		util::_long_name        = "noSkeletons",
-		util::_description_text = "Do not extract skeletons for the candidates.");
+util::ProgramOption optionSkeletons(
+		util::_module           = "features.nodes",
+		util::_long_name        = "skeletons",
+		util::_description_text = "Extract skeletons for the candidates.");
 
-util::ProgramOption optionNoVolumeRays(
-		util::_long_name        = "noVolumeRays",
-		util::_description_text = "Do not extract rays locally describing the volume for the candidates.");
+util::ProgramOption optionVolumeRays(
+		util::_module           = "features.nodes",
+		util::_long_name        = "volumeRays",
+		util::_description_text = "Extract rays locally describing the volume for the candidates.");
 
 util::ProgramOption optionVolumeRaysSampleRadius(
+		util::_module           = "features.nodes.rays",
 		util::_long_name        = "volumeRaysSampleRadius",
 		util::_description_text = "The size of the sphere to use to estimate the surface normal of boundary points.",
 		util::_default_value    = 50);
 
 util::ProgramOption optionVolumeRaysSampleDensity(
+		util::_module           = "features.nodes.rays",
 		util::_long_name        = "volumeRaysSampleDensity",
 		util::_description_text = "Distance between sample points in the normal estimation sphere.",
 		util::_default_value    = 2);
@@ -245,7 +246,7 @@ int main(int argc, char** argv) {
 
 		VolumeRays rays(crag);
 
-		if (!optionNoVolumeRays) {
+		if (optionVolumeRays) {
 
 			LOG_USER(logger::out) << "extracting volume rays" << std::endl;
 
@@ -286,7 +287,7 @@ int main(int argc, char** argv) {
 				StatisticsFeatureProvider::Parameters p;
 				p.wholeVolume = true;
 				p.boundaryVoxels = false;
-				p.computeCoordinateStatistics = !!!optionNoCoordinatesStatistics;
+				p.computeCoordinateStatistics = optionCoordinatesStatistics;
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
 			}
 
@@ -400,7 +401,7 @@ int main(int argc, char** argv) {
 			cragStore.saveEdgeFeatures(crag, edgeFeatures);
 		}
 
-		if (!optionNoSkeletons) {
+		if (optionSkeletons) {
 
 			LOG_USER(logger::out) << "extracting skeletons" << std::endl;
 
