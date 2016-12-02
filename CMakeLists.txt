@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 2.8.12)
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
@@ -23,8 +22,14 @@ include(${CMAKE_SOURCE_DIR}/cmake/include/git_sha1.cmake)
 # compiler settings #
 #####################
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-deprecated-declarations -fomit-frame-pointer -fPIC -std=c++11 -DWITH_BOOST_GRAPH")
-set(CMAKE_CXX_FLAGS_DEBUG   "-g -Wall -Wextra -fPIC -std=c++11 -DWITH_BOOST_GRAPH")
+if(WIN32)
+  set(SYSTEM_WINDOWS 1)
+else()
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-deprecated-declarations -fomit-frame-pointer -fPIC -std=c++11 -DWITH_BOOST_GRAPH")
+  set(CMAKE_CXX_FLAGS_DEBUG   "-g -Wall -Wextra -fPIC -std=c++11 -DWITH_BOOST_GRAPH")
+  set(SYSTEM_UNIX 1)
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Release or Debug" FORCE)
 endif()
