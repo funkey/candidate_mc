@@ -29,7 +29,7 @@ public:
 		features(type).appendFeatureNames(names);
 	}
 
-	inline std::vector<std::string> getFeatureNames(Crag::EdgeType type) const {
+	inline const std::vector<std::string>& getFeatureNames(Crag::EdgeType type) const {
 
 		return features(type).getFeatureNames();
 	}

@@ -48,7 +48,7 @@ public:
 			appendFeatureName(n);
 	}
 
-	inline std::vector<std::string> getFeatureNames() const {
+	inline const std::vector<std::string>& getFeatureNames() const {
 
 		return _featureNames;
 	}
