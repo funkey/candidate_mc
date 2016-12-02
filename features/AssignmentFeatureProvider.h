@@ -188,7 +188,7 @@ private:
 				continue;
 
 			// same 2D position inside volume j
-			util::point<int,3> pos_j = pos_i + discreteOffset_i_to_j;
+			util::point<int,3> pos_j = pos_i - discreteOffset_i_to_j;
 
 			if (!vol_j.getDiscreteBoundingBox().contains(pos_j))
 				// does not overlap with vol_j
