@@ -4,6 +4,7 @@
 #include "FeatureProvider.h"
 #include "HausdorffDistance.h"
 #include "Overlap.h"
+#include <util/helpers.hpp>
 
 class AssignmentFeatureProvider : public FeatureProvider<AssignmentFeatureProvider> {
 
@@ -124,7 +125,8 @@ private:
 		if (it == _features.getFeatureNames(Crag::SliceNode).end())
 			UTIL_THROW_EXCEPTION(
 					UsageError,
-					"feature 'membranes size' (the size of a node) was not computed prior to running AssignmentFeatureProvider"
+					"Feature 'membranes size' (the size of a node) was not computed prior to running AssignmentFeatureProvider. "
+					"Encountered features: " << _features.getFeatureNames(Crag::SliceNode)
 			);
 
 		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::AssignmentNode).begin();
