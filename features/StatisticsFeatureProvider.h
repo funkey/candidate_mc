@@ -81,6 +81,9 @@ public:
 	template <typename ContainerT>
 	void appendNodeFeatures(const Crag::CragNode n, ContainerT& adaptor) {
 
+		if (_crag.type(n) == Crag::NoAssignmentNode)
+			return;
+
 		// the bounding box of the volume
 		const util::box<float, 3>&   nodeBoundingBox    = _volumes[n]->getBoundingBox();
 		util::point<unsigned int, 3> nodeSize           = (nodeBoundingBox.max() - nodeBoundingBox.min())/_volumes[n]->getResolution();
