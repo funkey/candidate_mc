@@ -51,6 +51,10 @@ util::ProgramOption optionNoFeatures(
 		                          "best-effort features, if set). Used for testing the learning "
 		                          "method.");
 
+///////////////////
+// NODE FEATURES //
+///////////////////
+
 util::ProgramOption optionNodeShapeFeatures(
 		util::_module           = "features.nodes",
 		util::_long_name        = "shapeFeatures",
@@ -71,46 +75,10 @@ util::ProgramOption optionNodeStatisticsFeatures(
 		                          "candidate on the raw image."
 );
 
-/////////////////////////
-// STATISTICS FEATURES //
-/////////////////////////
-
-util::ProgramOption optionCoordinatesStatistics(
-		util::_module           = "features.nodes.statistics",
-		util::_long_name        = "coordinatesStatistics",
-		util::_description_text = "Include statistics features over voxel coordinates."
-);
-
-////////////////////
-// SHAPE FEATURES //
-////////////////////
-
-util::ProgramOption optionFeaturePointinessAnglePoints(
-		util::_module           = "features.shape.pointiness",
-		util::_long_name        = "numAnglePoints",
-		util::_description_text = "The number of points to sample equidistantly on the contour of nodes. Default is 50.",
-		util::_default_value    = 50
-);
-
-util::ProgramOption optionFeaturePointinessVectorLength(
-		util::_module           = "features.shape.pointiness",
-		util::_long_name        = "angleVectorLength",
-		util::_description_text = "The amount to walk on the contour from a sample point in either direction, to estimate the angle. Values are between "
-		                          "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
-		util::_default_value    = 0.1
-);
-
-util::ProgramOption optionFeaturePointinessHistogramBins(
-		util::_module           = "features.shape.pointiness",
-		util::_long_name        = "numHistogramBins",
-		util::_description_text = "The number of histogram bins for the measured angles. Default is 16.",
-		util::_default_value    = 16
-);
-
 util::ProgramOption optionAssignmentFeatures(
-	util::_module           = "features.nodes",
-	util::_long_name        = "assignmentFeatures",
-	util::_description_text = "Compute assignment node features."
+		util::_module           = "features.nodes",
+		util::_long_name        = "assignmentFeatures",
+		util::_description_text = "Compute assignment node features."
 );
 
 ///////////////////
@@ -153,6 +121,42 @@ util::ProgramOption optionEdgeDerivedFeatures(
 		util::_long_name        = "derivedFeatures",
 		util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
 		                          "(difference, sum, min, max)."
+);
+
+/////////////////////////
+// STATISTICS FEATURES //
+/////////////////////////
+
+util::ProgramOption optionCoordinatesStatistics(
+		util::_module           = "features.nodes.statistics",
+		util::_long_name        = "coordinatesStatistics",
+		util::_description_text = "Include statistics features over voxel coordinates."
+);
+
+////////////////////
+// SHAPE FEATURES //
+////////////////////
+
+util::ProgramOption optionFeaturePointinessAnglePoints(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "numAnglePoints",
+		util::_description_text = "The number of points to sample equidistantly on the contour of nodes. Default is 50.",
+		util::_default_value    = 50
+);
+
+util::ProgramOption optionFeaturePointinessVectorLength(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "angleVectorLength",
+		util::_description_text = "The amount to walk on the contour from a sample point in either direction, to estimate the angle. Values are between "
+		                          "0 (at the sample point) and 1 (at the next sample point). Default is 0.1.",
+		util::_default_value    = 0.1
+);
+
+util::ProgramOption optionFeaturePointinessHistogramBins(
+		util::_module           = "features.shape.pointiness",
+		util::_long_name        = "numHistogramBins",
+		util::_description_text = "The number of histogram bins for the measured angles. Default is 16.",
+		util::_default_value    = 16
 );
 
 ///////////////////////////////////////////////
