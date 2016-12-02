@@ -18,5 +18,9 @@ SoltionView::onSignal(SetCandidate& signal) {
 		return;
 
 	if (_nodeFeatures[signal.getCandidate()].size() > 0)
-		std::cout << "features of current node: " << _nodeFeatures[signal.getCandidate()] << std::endl;
+		std::cout
+				<< "features node " << _crag.id(signal.getCandidate())
+				<< ":" << std::endl << "\t"
+				<< _nodeFeatures[signal.getCandidate()]
+				<< std::endl;
 }
