@@ -58,6 +58,10 @@ util::ProgramOption optionShowSolution(
 		util::_long_name        = "showSolution",
 		util::_description_text = "For each selected candidate, show whether it is part of the solution with the given name.");
 
+util::ProgramOption optionRecord(
+		util::_long_name        = "record",
+		util::_description_text = "Make a screen cast. This will dump many png files in your working directory.");
+
 std::shared_ptr<ExplicitVolume<float>>
 getOverlay(
 		std::string name,
@@ -171,6 +175,23 @@ getOverlay(
 
 	return overlay;
 }
+
+class Recorder : public sg::Agent<Recorder, sg::Accepts<sg_gui::ContentChanged>> {
+
+public:
+
+	Recorder(std::shared_ptr<sg_gui::Window> window) : _window(window) {}
+
+	void onSignal(sg_gui::ContentChanged& signal) {
+
+		std::cout << "[Recorder] requesting frame save" << std::endl;
+		_window->requestFrameSave();
+	}
+
+private:
+
+	std::shared_ptr<sg_gui::Window> _window;
+};
 
 int main(int argc, char** argv) {
 
@@ -337,6 +358,12 @@ int main(int argc, char** argv) {
 
 			auto solutionView = std::make_shared<SolutionView>(crag, *viewSolution, optionShowSolution.as<std::string>());
 			rotateView->add(solutionView);
+		}
+
+		if (optionRecord) {
+
+			auto recorder = std::make_shared<Recorder>(window);
+			window->add(recorder);
 		}
 
 		cragView->setRawVolume(intensities);
