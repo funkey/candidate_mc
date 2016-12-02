@@ -9,19 +9,38 @@ class AssignmentFeatureProvider : public FeatureProvider<AssignmentFeatureProvid
 
 public:
 
+	struct Parameters {
+
+		Parameters() :
+			affinitiesPositiveDirection(true),
+			maxHausdorffDistance(100) {}
+
+		/**
+		 * If true, affinity values of voxel (x,y,z) are treated as affinities 
+		 * into the positive direction (e.g., to voxel (x,y,z+1)).
+		 */
+		bool affinitiesPositiveDirection;
+
+		/**
+		 * Clip Hausdorff distance values above this threshold.
+		 */
+		double maxHausdorffDistance;
+	};
+
 	AssignmentFeatureProvider(
 			const Crag& crag,
 			const CragVolumes& volumes,
 			const ExplicitVolume<float>& affinitiesZ,
 			const NodeFeatures& nodeFeatures,
-			double maxHausdorffDistance = 100) :
+			const Parameters& parameters = Parameters()) :
 
 		_crag(crag),
 		_volumes (volumes),
 		_affs(affinitiesZ),
 		_features(nodeFeatures),
-		_hausdorff(maxHausdorffDistance),
-		_sizeFeatureIndex(-1) {}
+		_hausdorff(parameters.maxHausdorffDistance),
+		_sizeFeatureIndex(-1),
+		_parameters(parameters) {}
 
 	template <typename ContainerT>
 	void appendNodeFeatures(const Crag::CragNode n, ContainerT& adaptor) {
@@ -45,11 +64,9 @@ public:
 		adaptor.append(differences(u, value));
 		adaptor.append(differences(v, value));
 
-		std::vector<double> features = affinities(u, v);
+		std::vector<double> features = getAffinityFeatures(u, v);
 		for (unsigned int i = 0; i < features.size(); i++)
 			adaptor.append(features[i]);
-
-
 	}
 
 	std::map<Crag::NodeType, std::vector<std::string>> getNodeFeatureNames() const override {
@@ -61,7 +78,9 @@ public:
 		names[Crag::AssignmentNode].push_back("size difference");
 		names[Crag::AssignmentNode].push_back("set difference u");
 		names[Crag::AssignmentNode].push_back("set difference v");
-		names[Crag::AssignmentNode].push_back("contact");
+		names[Crag::AssignmentNode].push_back("affinity min");
+		names[Crag::AssignmentNode].push_back("affinity median");
+		names[Crag::AssignmentNode].push_back("affinity max");
 
 		return names;
 	}
@@ -130,29 +149,77 @@ private:
 		return totalVolume - overlap;
 	}
 
-	std::vector<double> affinities(Crag::CragNode i, Crag::CragNode j) {
+	std::vector<double> getAffinityFeatures(Crag::CragNode i, Crag::CragNode j) {
 
-		// TODO: understand how the affinities works for both nodes.
-		// Should I walk in both slice nodes? Just one is enough?
-		CragVolume& vol_i = *_volumes[i];
-		//CragVolume& vol_j = *_volumes[j];
+		UTIL_ASSERT_REL(_crag.type(i), ==, Crag::SliceNode);
+		UTIL_ASSERT_REL(_crag.type(j), ==, Crag::SliceNode);
 
-		std::vector<double> measurements;
-		util::point<int, 3> offset = vol_i.getOffset(); //(vol_i.getOffset() - vol_j.getOffset())/vol_i.getResolution();
+		// make sure i is lower in z
+		if (_volumes[i]->getBoundingBox().center().z() > _volumes[j]->getBoundingBox().center().z())
+			std::swap(i, j);
+
+		// list of voxel affinity values between the two slice nodes
+		std::vector<float> contactAffinities;
+
+		const CragVolume& vol_i = *_volumes[i];
+		const CragVolume& vol_j = *_volumes[j];
+
+		util::point<int,3> discreteGlobalOffset_i = vol_i.getOffset()/vol_i.getResolution();
+		util::point<int,3> discreteGlobalOffset_j = vol_j.getOffset()/vol_j.getResolution();
+
+		// offset to add to 2D locations in i to get to 2D locations in j
+		util::point<int,3> discreteOffset_i_to_j  = discreteGlobalOffset_j - discreteGlobalOffset_i;
+		discreteOffset_i_to_j.z() = 0;
+
+		// If affinities point in the positive axis directions, we have to read 
+		// the values in slice i, otherwise in j. This offset handles that.
+		int affinityZIndex = (_parameters.affinitiesPositiveDirection ? discreteGlobalOffset_i.z() : discreteGlobalOffset_j.z());
 
 		for (int y = 0; y < vol_i.height(); y++)
 		for (int x = 0; x < vol_i.width();  x++) {
 
-			util::point<int, 3> bpos(
-				x + offset.x(),
-				y + offset.y(),
-				offset.z() );
+			// 2D position inside volume i
+			util::point<int,3> pos_i(x, y, 0);
 
-			std::cout << "_affs[bpos]" << _affs[bpos] << std::endl;
+			if (!vol_i[pos_i])
+				// is not part of candidate i
+				continue;
+
+			// same 2D position inside volume j
+			util::point<int,3> pos_j = pos_i + discreteOffset_i_to_j;
+
+			if (!vol_j.getDiscreteBoundingBox().contains(pos_j))
+				// does not overlap with vol_j
+				continue;
+
+			if (!vol_j[pos_j])
+				// is not part of candidate j
+				continue;
+
+			// global 3D position
+			util::point<int,3> globalDiscretePosition = discreteGlobalOffset_i + pos_i;
+			util::point<int,3> affPos(
+					globalDiscretePosition.x(),
+					globalDiscretePosition.y(),
+					affinityZIndex);
+
+			contactAffinities.push_back(_affs[affPos]);
 		}
 
-		// TODO: get min, max and median for instance
-		return measurements;
+		if (contactAffinities.size() == 0)
+			return {0, 0, 0};
+
+		std::vector<double> features;
+
+		std::sort(contactAffinities.begin(), contactAffinities.end());
+		// min
+		features.push_back(*contactAffinities.begin());
+		// median
+		features.push_back(*(contactAffinities.begin() + contactAffinities.size()/2));
+		// max
+		features.push_back(*contactAffinities.rbegin());
+
+		return features;
 	}
 
 	const Crag& _crag;
@@ -166,6 +233,8 @@ private:
 	Overlap _overlap;
 
 	int _sizeFeatureIndex;
+
+	Parameters _parameters;
 };
 
 #endif // CANDIDATE_MC_FEATURES_ASSIGNMENT_FEATURE_PROVIDER_H__
