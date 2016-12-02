@@ -287,7 +287,8 @@ int main(int argc, char** argv) {
 			if (optionNodeStatisticsFeatures) {
 
 				StatisticsFeatureProvider::Parameters p;
-				p.wholeVolume = false;
+				p.wholeVolume = true;
+				p.boundaryVoxels = true;
 				p.computeCoordinateStatistics = !!!optionNoCoordinatesStatistics;
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
 			}
