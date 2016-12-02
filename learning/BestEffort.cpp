@@ -282,36 +282,50 @@ void BestEffort::selectAssignments(
 			unselectChildren(crag, n);
 	}
 
-	// For all assignment nodes, check if it links two selected candidates with the same label
+	// For all assignment nodes, check if it links selected candidates with the
+	// same label
 	for (Crag::CragNode n : crag.nodes()) {
 
 		if (crag.type(n) != Crag::AssignmentNode)
 			continue;
 
-		int label = -1;
-		Crag::CragNode previousChild;
+		bool selectAssignmentNode = true;
+		int sliceLabel = -1;
+
 		for (Crag::CragEdge edge : crag.adjEdges(n)) {
 
 			Crag::CragNode opposite = crag.oppositeNode(n, edge);
 
-			if (opposite == lemon::INVALID)
-				continue;
-
 			UTIL_ASSERT_REL(crag.type(opposite), ==, Crag::SliceNode)
 
 			// If the candidate is not select, go to the next assignmentNode
-			if (!selected(opposite))
-				break;
+			if (!selected(opposite)) {
 
-			if (label == -1) {
-				label = gtAssignments[opposite];
-				previousChild = opposite;
+				selectAssignmentNode = false;
+				break;
 			}
-			else if (label == gtAssignments[opposite] && label == gtAssignments[n]) {
-				// Select the assignment node with the same label
-				setSelected(n, true);
-				LOG_DEBUG(bestEffortlog) << "\tselecting assignment node " <<  crag.id(n) << " with label: " << gtAssignments[n] << std::endl;
+
+			if (sliceLabel == -1) {
+
+				// first slice node
+				sliceLabel = gtAssignments[opposite];
+
+			} else {
+
+				// subsequent slice node, if different label than first one, 
+				// don't take this assignment node
+				if (sliceLabel != gtAssignments[opposite]) {
+
+					selectAssignmentNode = false;
+					break;
+				}
 			}
+		}
+
+		if (selectAssignmentNode) {
+
+			setSelected(n, true);
+			LOG_DEBUG(bestEffortlog) << "\tselecting assignment node " <<  crag.id(n) << " with label: " << sliceLabel << std::endl;
 		}
 	}
 
