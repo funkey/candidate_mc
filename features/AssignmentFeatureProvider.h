@@ -83,6 +83,9 @@ private:
 
 	inline double sizeDifference(Crag::CragNode i, Crag::CragNode j) {
 
+		UTIL_ASSERT_REL(_crag.type(i), ==, Crag::SliceNode);
+		UTIL_ASSERT_REL(_crag.type(j), ==, Crag::SliceNode);
+
 		if (_sizeFeatureIndex == -1)
 			findSizeFeature();
 
@@ -95,11 +98,11 @@ private:
 	void findSizeFeature() {
 
 		auto it = std::find(
-				_features.getFeatureNames(Crag::AssignmentNode).begin(),
-				_features.getFeatureNames(Crag::AssignmentNode).end(),
+				_features.getFeatureNames(Crag::SliceNode).begin(),
+				_features.getFeatureNames(Crag::SliceNode).end(),
 				"membranes size");
 
-		if (it == _features.getFeatureNames(Crag::AssignmentNode).end())
+		if (it == _features.getFeatureNames(Crag::SliceNode).end())
 			UTIL_THROW_EXCEPTION(
 					UsageError,
 					"feature 'membranes size' (the size of a node) was not computed prior to running AssignmentFeatureProvider"
