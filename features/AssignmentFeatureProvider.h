@@ -123,7 +123,7 @@ private:
 					"Encountered features: " << _features.getFeatureNames(Crag::SliceNode)
 			);
 
-		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::AssignmentNode).begin();
+		_sizeFeatureIndex = it - _features.getFeatureNames(Crag::SliceNode).begin();
 	}
 
 	double differences(Crag::CragNode i, double overlap) {
