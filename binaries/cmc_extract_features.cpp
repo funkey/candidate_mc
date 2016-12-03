@@ -242,8 +242,19 @@ int main(int argc, char** argv) {
 		Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 		ExplicitVolume<float> raw;
 		ExplicitVolume<float> boundaries;
+		ExplicitVolume<float> xAffinities;
+		ExplicitVolume<float> yAffinities;
+		ExplicitVolume<float> zAffinities;
+		bool hasAffinities = true;
+
 		volumeStore.retrieveIntensities(raw);
 		volumeStore.retrieveBoundaries(boundaries);
+
+		try {
+			volumeStore.retrieveAffinities(xAffinities, yAffinities, zAffinities);
+		} catch (std::exception e) {
+			hasAffinities = false;
+		}
 
 		NodeFeatures nodeFeatures(crag);
 		EdgeFeatures edgeFeatures(crag);
@@ -335,8 +346,16 @@ int main(int argc, char** argv) {
 
 				LOG_USER(logger::out) << "\tassignment features" << std::endl;
 
-				// TODO: replace boundaries with actual z-affinities
-				featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
+				if (hasAffinities) {
+
+					LOG_USER(logger::out) << "\t\tusing affinity in z direction" << std::endl;
+					featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, zAffinities, nodeFeatures);
+
+				} else {
+
+					LOG_USER(logger::out) << "\t\tusing boundaries" << std::endl;
+					featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
+				}
 			}
 
 			FeatureExtractor featureExtractor(crag, volumes);
