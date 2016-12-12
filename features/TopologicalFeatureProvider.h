@@ -39,6 +39,9 @@ public:
 	template <typename ContainerT>
 	void appendEdgeFeatures(const Crag::CragEdge e, ContainerT& adaptor) {
 
+		if (_crag.type(e) == Crag::AssignmentEdge)
+			return;
+
 		Crag::CragNode u = e.u();
 		Crag::CragNode v = e.v();
 
@@ -59,6 +62,9 @@ public:
 		std::map<Crag::EdgeType, std::vector<std::string>> names;
 
 		for (auto type : Crag::EdgeTypes) {
+
+			if (type == Crag::AssignmentEdge)
+				continue;
 
 			names[type].push_back("min_level");
 			names[type].push_back("max_level");
