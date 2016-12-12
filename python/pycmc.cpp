@@ -466,6 +466,12 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("retrieveGroundTruth", &Hdf5VolumeStore::retrieveGroundTruth)
 			;
 
+	// volume store
+	boost::python::class_<Hdf5VolumeReader, boost::noncopyable>("Hdf5VolumeReader", boost::python::init<std::string>())
+			.def("readIntVolume", static_cast<void(Hdf5VolumeReader::*)(ExplicitVolume<int>&, std::string)>(&Hdf5VolumeReader::readVolume))
+			.def("readFloatVolume", static_cast<void(Hdf5VolumeReader::*)(ExplicitVolume<float>&, std::string)>(&Hdf5VolumeReader::readVolume))
+			;
+
 	// RandomForest
 	boost::python::class_<RandomForest>("RandomForest")
 			.def("prepareTraining", &RandomForest::prepareTraining)
