@@ -2,15 +2,15 @@
 #define CANDIDATE_MC_IO_HDF5_VOLUME_WRITER_H__
 
 #include <string>
-#include <vigra/hdf5impex.hxx>
 #include <imageprocessing/ExplicitVolume.h>
+#include "Hdf5FileAccessor.h"
 
-class Hdf5VolumeWriter {
+class Hdf5VolumeWriter : public Hdf5FileAccessor {
 
 public:
 
-	Hdf5VolumeWriter(vigra::HDF5File& hdfFile) :
-		_hdfFile(hdfFile) {}
+	Hdf5VolumeWriter(std::string filename) :
+		Hdf5FileAccessor(filename, vigra::HDF5File::OpenMode::ReadWrite) {}
 
 protected:
 
@@ -52,10 +52,6 @@ protected:
 				"offset",
 				p);
 	}
-
-private:
-
-	vigra::HDF5File& _hdfFile;
 };
 
 #endif // CANDIDATE_MC_IO_HDF5_VOLUME_WRITER_H__

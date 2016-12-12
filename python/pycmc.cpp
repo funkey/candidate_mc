@@ -461,11 +461,15 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("saveIntensities", &Hdf5VolumeStore::saveIntensities)
 			.def("saveBoundaries", &Hdf5VolumeStore::saveBoundaries)
 			.def("saveGroundTruth", &Hdf5VolumeStore::saveGroundTruth)
-			.def("saveLabels", &Hdf5VolumeStore::saveLabels)
 			.def("retrieveIntensities", &Hdf5VolumeStore::retrieveIntensities)
 			.def("retrieveBoundaries", &Hdf5VolumeStore::retrieveBoundaries)
 			.def("retrieveGroundTruth", &Hdf5VolumeStore::retrieveGroundTruth)
-			.def("retrieveLabels", &Hdf5VolumeStore::retrieveLabels)
+			;
+
+	// volume store
+	boost::python::class_<Hdf5VolumeReader, boost::noncopyable>("Hdf5VolumeReader", boost::python::init<std::string>())
+			.def("readIntVolume", static_cast<void(Hdf5VolumeReader::*)(ExplicitVolume<int>&, std::string)>(&Hdf5VolumeReader::readVolume))
+			.def("readFloatVolume", static_cast<void(Hdf5VolumeReader::*)(ExplicitVolume<float>&, std::string)>(&Hdf5VolumeReader::readVolume))
 			;
 
 	// RandomForest
