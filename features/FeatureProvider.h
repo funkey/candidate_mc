@@ -26,10 +26,11 @@ public:
 
 	void appendFeatures(const Crag& crag, NodeFeatures& nodeFeatures) override {
 
-		for (auto n : crag.nodes()) {
+		#pragma omp parallel
+		for (auto n = crag.nodes().begin(); n != crag.nodes().end(); n++) {
 
-			FeatureNodeAdaptor adaptor(nodeFeatures, n);
-			static_cast<Derived*>(this)->appendNodeFeatures(n, adaptor);
+			FeatureNodeAdaptor adaptor(nodeFeatures, *n);
+			static_cast<Derived*>(this)->appendNodeFeatures(*n, adaptor);
 		}
 
 		for (const auto& p : getNodeFeatureNames())
@@ -38,10 +39,11 @@ public:
 
 	void appendFeatures(const Crag& crag, EdgeFeatures& edgeFeatures) override {
 
-		for (auto e : crag.edges()) {
+		#pragma omp parallel
+		for (auto e = crag.edges().begin(); e != crag.edges().end(); e++) {
 
-			FeatureEdgeAdaptor adaptor(edgeFeatures, e);
-			static_cast<Derived*>(this)->appendEdgeFeatures(e, adaptor);
+			FeatureEdgeAdaptor adaptor(edgeFeatures, *e);
+			static_cast<Derived*>(this)->appendEdgeFeatures(*e, adaptor);
 		}
 
 		for (const auto& p : getEdgeFeatureNames())
