@@ -461,11 +461,9 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("saveIntensities", &Hdf5VolumeStore::saveIntensities)
 			.def("saveBoundaries", &Hdf5VolumeStore::saveBoundaries)
 			.def("saveGroundTruth", &Hdf5VolumeStore::saveGroundTruth)
-			.def("saveLabels", &Hdf5VolumeStore::saveLabels)
 			.def("retrieveIntensities", &Hdf5VolumeStore::retrieveIntensities)
 			.def("retrieveBoundaries", &Hdf5VolumeStore::retrieveBoundaries)
 			.def("retrieveGroundTruth", &Hdf5VolumeStore::retrieveGroundTruth)
-			.def("retrieveLabels", &Hdf5VolumeStore::retrieveLabels)
 			;
 
 	// RandomForest

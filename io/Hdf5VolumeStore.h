@@ -22,8 +22,6 @@ public:
 
 	void saveGroundTruth(const ExplicitVolume<int>& groundTruth) override;
 
-	void saveLabels(const ExplicitVolume<int>& labels) override;
-
 	void saveAffinities(const ExplicitVolume<float>& xAffinities,
 						const ExplicitVolume<float>& yAffinities,
 						const ExplicitVolume<float>& zAffinities) override;
@@ -33,8 +31,6 @@ public:
 	void retrieveBoundaries(ExplicitVolume<float>& boundaries) override;
 
 	void retrieveGroundTruth(ExplicitVolume<int>& groundTruth) override;
-
-	void retrieveLabels(ExplicitVolume<int>& labels) override;
 
 	void retrieveAffinities(ExplicitVolume<float>& xAffinities,
 							ExplicitVolume<float>& yAffinities,

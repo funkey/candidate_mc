@@ -26,11 +26,6 @@ public:
 	virtual void saveGroundTruth(const ExplicitVolume<int>& groundTruth) = 0;
 
 	/**
-	 * Store the given label volume.
-	 */
-	virtual void saveLabels(const ExplicitVolume<int>& labels) = 0;
-
-	/**
 	 * Store the given affinities.
 	 */
 	virtual void saveAffinities(const ExplicitVolume<float>& xAffinities,
@@ -51,11 +46,6 @@ public:
 	 * Get the ground-truth label volume.
 	 */
 	virtual void retrieveGroundTruth(ExplicitVolume<int>& groundTruth) = 0;
-
-	/**
-	 * Get the label volume.
-	 */
-	virtual void retrieveLabels(ExplicitVolume<int>& labels) = 0;
 
 	/**
 	 * Get the affinities volumes.
