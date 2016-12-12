@@ -324,6 +324,8 @@ BOOST_PYTHON_MODULE(pycmc) {
 					util::point<float,3>, float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
 			;
 
+	boost::python::def("volumeFromIntNumpyArray", volumeFromNumpyArray<int>);
+
 	// CragVolume
 	boost::python::class_<CragVolume, std::shared_ptr<CragVolume>>("CragVolume")
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
