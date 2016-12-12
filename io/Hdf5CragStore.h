@@ -16,8 +16,8 @@ class Hdf5CragStore :
 		public Hdf5GraphWriter,
 		public Hdf5DigraphReader,
 		public Hdf5DigraphWriter,
-		public Hdf5VolumeReader,
-		public Hdf5VolumeWriter {
+		public Hdf5VolumeWriter,
+		public Hdf5VolumeReader {
 
 public:
 
@@ -26,8 +26,8 @@ public:
 		Hdf5GraphWriter(_hdfFile),
 		Hdf5DigraphReader(_hdfFile),
 		Hdf5DigraphWriter(_hdfFile),
-		Hdf5VolumeReader(projectFile),
 		Hdf5VolumeWriter(projectFile),
+		Hdf5VolumeReader(projectFile),
 		_hdfFile(
 				projectFile,
 				vigra::HDF5File::OpenMode::ReadWrite) {}
