@@ -40,9 +40,19 @@ Dependencies
 Install the Python wrappers
 ---------------------------
 
+### Using virtual envs:
+
   ```
   mkvirtualenv -p python3.5 ~/.virtualenvs/candidate_mc
   workon candidate_mc
+  python setup.py install
+  ```
+
+### Using conda:
+
+  ```
+  conda create -n candidate_mc python=3.5
+  source activate candidate_mc
   python setup.py install
   ```
 
