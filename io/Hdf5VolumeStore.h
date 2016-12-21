@@ -10,12 +10,11 @@ class Hdf5VolumeStore : public VolumeStore, public Hdf5VolumeReader, public Hdf5
 public:
 
 	Hdf5VolumeStore(std::string projectFile) :
-		Hdf5VolumeReader(projectFile),
-		Hdf5VolumeWriter(projectFile) {
-
-		Hdf5VolumeReader::cd("/volumes");
-		Hdf5VolumeWriter::cd("/volumes");
-	}
+		Hdf5VolumeReader(_hdfFile),
+		Hdf5VolumeWriter(_hdfFile),
+		_hdfFile(
+				projectFile,
+				vigra::HDF5File::OpenMode::ReadWrite) {}
 
 	void saveIntensities(const ExplicitVolume<float>& intensities) override;
 
@@ -41,6 +40,10 @@ public:
 
 		readVolume(volume, std::string("/volumes/") + name);
 	}
+
+private:
+
+	vigra::HDF5File _hdfFile;
 };
 
 #endif // CANDIDATE_MC_IO_HDF5_VOLUME_STORE_H__

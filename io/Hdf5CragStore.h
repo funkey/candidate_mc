@@ -26,8 +26,8 @@ public:
 		Hdf5GraphWriter(_hdfFile),
 		Hdf5DigraphReader(_hdfFile),
 		Hdf5DigraphWriter(_hdfFile),
-		Hdf5VolumeReader(projectFile),
-		Hdf5VolumeWriter(projectFile),
+		Hdf5VolumeReader(_hdfFile),
+		Hdf5VolumeWriter(_hdfFile),
 		_hdfFile(
 				projectFile,
 				vigra::HDF5File::OpenMode::ReadWrite) {}
