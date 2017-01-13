@@ -185,7 +185,7 @@ public:
 	void onSignal(sg_gui::ContentChanged& signal) {
 
 		std::cout << "[Recorder] requesting frame save" << std::endl;
-		_window->requestFrameSave();
+		_window->requestNextFrameSave();
 	}
 
 private:
