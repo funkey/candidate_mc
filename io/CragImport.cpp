@@ -81,6 +81,14 @@ CragImport::readCragFromMergeHistory(
 
 	std::map<int, Crag::Node> idToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
 
+	// get the highest id
+	int maxId = -1;
+	for (auto& p : idToNode) {
+
+		int id = p.first;
+		maxId = std::max(maxId, id);
+	}
+
 	int maxMerges = -1;
 	if (optionMaxMerges)
 		maxMerges = optionMaxMerges;
@@ -107,6 +115,8 @@ CragImport::readCragFromMergeHistory(
 
 	LOG_USER(logger::out) << "parsing merge history..." << std::endl;
 
+	std::map<int, int> newIdMap;
+
 	int numAdded = 0;
 	while (true) {
 		int a, b, c;
@@ -119,6 +129,23 @@ CragImport::readCragFromMergeHistory(
 
 		if (!file.good())
 			break;
+
+		// some merge histories are re-using ids, we translate them to new ones
+		// on-the-fly
+		bool recycledId = (c == a || c == b);
+
+		if (newIdMap.count(a))
+			a = newIdMap[a];
+		if (newIdMap.count(b))
+			b = newIdMap[b];
+
+		if (recycledId) {
+
+			maxId++;
+			LOG_ALL(logger::out) << "mapping new region " << c << " to " << maxId << std::endl;
+			newIdMap[c] = maxId;
+			c = maxId;
+		}
 
 		// we might encounter ids that we didn't add, since they are too high in 
 		// the merge tree or have a score exceeding maxScore
