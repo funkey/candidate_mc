@@ -404,6 +404,8 @@ int main(int argc, char** argv) {
 		boost::filesystem::remove(optionProjectFile.as<std::string>());
 		Hdf5CragStore store(optionProjectFile.as<std::string>());
 
+		LOG_USER(logger::out) << "saving CRAG" << std::endl;
+
 		{
 			UTIL_TIME_SCOPE("saving CRAG");
 
@@ -413,12 +415,15 @@ int main(int argc, char** argv) {
 				store.saveCosts(*crag, *mergeCosts, "merge-scores");
 		}
 
+		LOG_USER(logger::out) << "saving volumes" << std::endl;
+
 		{
 			UTIL_TIME_SCOPE("saving volumes");
 
 			Hdf5VolumeStore volumeStore(optionProjectFile.as<std::string>());
 
-			ExplicitVolume<float> intensities = readVolume<float>(getImageFiles(optionIntensities));
+			ExplicitVolume<float> intensities;
+			readVolumeFromOption(intensities, optionIntensities);
 			intensities.setResolution(resolution);
 			intensities.setOffset(offset);
 			intensities.normalize();
@@ -426,7 +431,8 @@ int main(int argc, char** argv) {
 
 			if (optionGroundTruth) {
 
-				ExplicitVolume<int> groundTruth = readVolume<int>(getImageFiles(optionGroundTruth));
+				ExplicitVolume<int> groundTruth;
+				readVolumeFromOption(groundTruth, optionGroundTruth);
 
 				if (optionExtractGroundTruthLabels) {
 
@@ -444,7 +450,8 @@ int main(int argc, char** argv) {
 
 			if (optionBoundaries) {
 
-				ExplicitVolume<float> boundaries = readVolume<float>(getImageFiles(optionBoundaries));
+				ExplicitVolume<float> boundaries;
+				readVolumeFromOption(boundaries, optionBoundaries);
 				boundaries.setResolution(resolution);
 				boundaries.setOffset(offset);
 				boundaries.normalize();
@@ -464,10 +471,12 @@ int main(int argc, char** argv) {
 
 				} else {
 
-					ExplicitVolume<float> xAffinities = readVolume<float>(getImageFiles(optionXAffinities));
-					ExplicitVolume<float> yAffinities = readVolume<float>(getImageFiles(optionYAffinities));
-					ExplicitVolume<float> zAffinities = readVolume<float>(getImageFiles(optionZAffinities));
-
+					ExplicitVolume<float> xAffinities;
+					ExplicitVolume<float> yAffinities;
+					ExplicitVolume<float> zAffinities;
+					readVolumeFromOption(xAffinities, optionXAffinities);
+					readVolumeFromOption(yAffinities, optionYAffinities);
+					readVolumeFromOption(zAffinities, optionZAffinities);
 					volumeStore.saveAffinities( xAffinities, yAffinities, zAffinities);
 				}
 			}

@@ -12,8 +12,6 @@ public:
 	Hdf5VolumeReader(vigra::HDF5File& hdfFile) :
 		_hdfFile(hdfFile) {}
 
-protected:
-
 	template <typename ValueType>
 	void readVolume(ExplicitVolume<ValueType>& volume, std::string dataset, bool onlyGeometry = false) {
 
@@ -24,18 +22,24 @@ protected:
 		vigra::MultiArray<1, float> p(3);
 
 		// resolution
-		_hdfFile.readAttribute(
-				dataset,
-				"resolution",
-				p);
-		volume.setResolution(p[0], p[1], p[2]);
+		if (_hdfFile.existsAttribute(dataset, "resolution")) {
+
+			_hdfFile.readAttribute(
+					dataset,
+					"resolution",
+					p);
+			volume.setResolution(p[0], p[1], p[2]);
+		}
 
 		// offset
-		_hdfFile.readAttribute(
-				dataset,
-				"offset",
-				p);
-		volume.setOffset(p[0], p[1], p[2]);
+		if (_hdfFile.existsAttribute(dataset, "offset")) {
+
+			_hdfFile.readAttribute(
+					dataset,
+					"offset",
+					p);
+			volume.setOffset(p[0], p[1], p[2]);
+		}
 	}
 
 private:

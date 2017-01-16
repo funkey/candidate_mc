@@ -5,7 +5,6 @@
 #include <util/ProgramOptions.h>
 #include <crag/MergeTreeParser.h>
 #include "CragImport.h"
-#include "volumes.h"
 
 util::ProgramOption optionMaxMerges(
 		util::_long_name        = "maxMerges",
@@ -73,7 +72,8 @@ CragImport::readCragFromMergeHistory(
 		util::point<float, 3> offset,
 		Costs&                mergeCosts) {
 
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	ExplicitVolume<int> ids;
+	readVolumeFromOption(ids, supervoxels);
 
 	bool is2D = false;
 	if (ids.depth() == 1 || option2dSupervoxels)
@@ -215,7 +215,8 @@ CragImport::readCragFromCandidateSegmentation(
 		util::point<float, 3> resolution,
 		util::point<float, 3> offset) {
 
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	ExplicitVolume<int> ids;
+	readVolumeFromOption(ids, supervoxels);
 
 	bool is2D = false;
 	if (ids.depth() == 1 || option2dSupervoxels)
@@ -225,7 +226,8 @@ CragImport::readCragFromCandidateSegmentation(
 
 	LOG_USER(logger::out) << "reading segmentation" << std::endl;
 
-	ExplicitVolume<int> segmentation = readVolume<int>(getImageFiles(candidateSegmentation));
+	ExplicitVolume<int> segmentation;
+	readVolumeFromOption(segmentation, candidateSegmentation);
 
 	// get all segments
 	std::set<int> segmentIds;
