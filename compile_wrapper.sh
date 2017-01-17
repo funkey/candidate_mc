@@ -10,6 +10,8 @@ shift
 echo "Creating pycmc build directory in $BUILD_DIR"
 mkdir $BUILD_DIR
 cd $BUILD_DIR
+# avoid confusion with earlier (possibly failed) builds
+rm CMakeCache.txt
 echo "Calling CMake for sources in $SOURCE_DIR"
 cmake $SOURCE_DIR
 echo "Creating target $TARGET_NAME"
