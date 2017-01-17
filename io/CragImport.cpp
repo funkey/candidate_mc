@@ -5,7 +5,6 @@
 #include <util/ProgramOptions.h>
 #include <crag/MergeTreeParser.h>
 #include "CragImport.h"
-#include "volumes.h"
 
 util::ProgramOption optionMaxMerges(
 		util::_long_name        = "maxMerges",
@@ -73,13 +72,22 @@ CragImport::readCragFromMergeHistory(
 		util::point<float, 3> offset,
 		Costs&                mergeCosts) {
 
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	ExplicitVolume<int> ids;
+	readVolumeFromOption(ids, supervoxels);
 
 	bool is2D = false;
 	if (ids.depth() == 1 || option2dSupervoxels)
 		is2D = true;
 
 	std::map<int, Crag::Node> idToNode = readSupervoxels(ids, crag, volumes, resolution, offset);
+
+	// get the highest id
+	int maxId = -1;
+	for (auto& p : idToNode) {
+
+		int id = p.first;
+		maxId = std::max(maxId, id);
+	}
 
 	int maxMerges = -1;
 	if (optionMaxMerges)
@@ -107,6 +115,8 @@ CragImport::readCragFromMergeHistory(
 
 	LOG_USER(logger::out) << "parsing merge history..." << std::endl;
 
+	std::map<int, int> newIdMap;
+
 	int numAdded = 0;
 	while (true) {
 		int a, b, c;
@@ -119,6 +129,23 @@ CragImport::readCragFromMergeHistory(
 
 		if (!file.good())
 			break;
+
+		// some merge histories are re-using ids, we translate them to new ones
+		// on-the-fly
+		bool recycledId = (c == a || c == b);
+
+		if (newIdMap.count(a))
+			a = newIdMap[a];
+		if (newIdMap.count(b))
+			b = newIdMap[b];
+
+		if (recycledId) {
+
+			maxId++;
+			LOG_ALL(logger::out) << "mapping new region " << c << " to " << maxId << std::endl;
+			newIdMap[c] = maxId;
+			c = maxId;
+		}
 
 		// we might encounter ids that we didn't add, since they are too high in 
 		// the merge tree or have a score exceeding maxScore
@@ -188,7 +215,8 @@ CragImport::readCragFromCandidateSegmentation(
 		util::point<float, 3> resolution,
 		util::point<float, 3> offset) {
 
-	ExplicitVolume<int> ids = readVolume<int>(getImageFiles(supervoxels));
+	ExplicitVolume<int> ids;
+	readVolumeFromOption(ids, supervoxels);
 
 	bool is2D = false;
 	if (ids.depth() == 1 || option2dSupervoxels)
@@ -198,7 +226,8 @@ CragImport::readCragFromCandidateSegmentation(
 
 	LOG_USER(logger::out) << "reading segmentation" << std::endl;
 
-	ExplicitVolume<int> segmentation = readVolume<int>(getImageFiles(candidateSegmentation));
+	ExplicitVolume<int> segmentation;
+	readVolumeFromOption(segmentation, candidateSegmentation);
 
 	// get all segments
 	std::set<int> segmentIds;

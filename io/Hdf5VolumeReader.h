@@ -12,8 +12,6 @@ public:
 	Hdf5VolumeReader(vigra::HDF5File& hdfFile) :
 		_hdfFile(hdfFile) {}
 
-protected:
-
 	template <typename ValueType>
 	void readVolume(ExplicitVolume<ValueType>& volume, std::string dataset, bool onlyGeometry = false) {
 

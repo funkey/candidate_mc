@@ -4,7 +4,32 @@
 #include <map>
 #include <crag/Crag.h>
 #include <crag/CragVolumes.h>
+#include <io/Hdf5VolumeReader.h>
 #include <inference/Costs.h>
+#include "volumes.h"
+
+template <typename T>
+void
+readVolumeFromOption(ExplicitVolume<T>& volume, std::string option) {
+
+	// hdf file given?
+	size_t sepPos = option.find_first_of(":");
+	if (sepPos != std::string::npos) {
+
+		std::string hdfFileName = option.substr(0, sepPos);
+		std::string dataset     = option.substr(sepPos + 1);
+
+		vigra::HDF5File file(hdfFileName, vigra::HDF5File::OpenMode::ReadOnly);
+		Hdf5VolumeReader hdfReader(file);
+		hdfReader.readVolume(volume, dataset);
+
+	// read volume from set of images
+	} else {
+
+		std::vector<std::string> files = getImageFiles(option);
+		volume = readVolume<T>(files);
+	}
+}
 
 class CragImport {
 
