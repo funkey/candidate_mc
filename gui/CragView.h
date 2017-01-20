@@ -7,6 +7,7 @@
 #include <sg_gui/MeshView.h>
 #include <sg_gui/VolumeView.h>
 #include <sg_gui/KeySignals.h>
+#include <EdgeView.h>
 
 class CragView :
 		public sg::Scope<
@@ -162,6 +163,7 @@ private:
 
 	std::shared_ptr<NormalsView>        _normalsView;
 	std::shared_ptr<sg_gui::MeshView>   _meshView;
+	std::shared_ptr<EdgeView>           _edgeView;
 	std::shared_ptr<RawScope>           _rawScope;
 	std::shared_ptr<LabelsScope>        _labelsScope;
 	std::shared_ptr<sg_gui::VolumeView> _rawView;

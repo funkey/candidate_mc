@@ -12,6 +12,7 @@ util::ProgramOption optionShowOverlayContours(
 CragView::CragView() :
 	_normalsView(std::make_shared<NormalsView>()),
 	_meshView(std::make_shared<sg_gui::MeshView>()),
+	_edgeView(std::make_shared<EdgeView>()),
 	_rawScope(std::make_shared<RawScope>()),
 	_labelsScope(std::make_shared<LabelsScope>()),
 	_rawView(std::make_shared<sg_gui::VolumeView>()),
@@ -39,6 +40,7 @@ CragView::CragView() :
 	add(_rawScope);
 	add(_labelsScope);
 	add(_meshView);
+	add(_edgeView);
 
 	if (optionShowNormals)
 		add(_normalsView);
@@ -56,8 +58,9 @@ CragView::setVolumeMeshes(std::shared_ptr<sg_gui::Meshes> meshes) {
 void
 CragView::setRawVolume(std::shared_ptr<ExplicitVolume<float>> volume) {
 
-	// shift the meshes to be centered on the 2D images
+	// shift the meshes and edges to be centered on the 2D images
 	_meshView->setOffset(util::point<float, 3>(0, 0, -volume->getResolution().z()/2));
+	_edgeView->setOffset(util::point<float, 3>(0, 0, -volume->getResolution().z()/2));
 
 	_rawView->setVolume(volume);
 }
