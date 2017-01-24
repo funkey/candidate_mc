@@ -7,7 +7,7 @@ logger::LogChannel contactfeaturelog("contactfeaturelog", "[ContactFeature] ");
 std::vector<double>
 ContactFeature::compute(Crag::CragEdge e) {
 
-	std::vector<double> features(_thresholds.size()*4*2 + 4);
+	std::vector<double> features(_thresholds.size()*4*2 + 4 + _thresholds.size());
 
 	LOG_ALL(contactfeaturelog) << "computing contact feature for thresholds " << _thresholds << std::endl;
 
@@ -78,6 +78,10 @@ ContactFeature::compute(Crag::CragEdge e) {
 	features[2*contactScores.size() + 1] = log(vVolRatio);
 	features[2*contactScores.size() + 2] = uVolRatio;
 	features[2*contactScores.size() + 3] = vVolRatio;
+
+	// finally, add the size of the contact
+	for (int i = 0; i < _thresholds.size(); i++)
+		features[2*contactScores.size() + 4 + i] = contactCounts[i];
 
 	return features;
 }

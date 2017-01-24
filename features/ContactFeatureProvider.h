@@ -53,6 +53,11 @@ public:
 		names[Crag::AdjacencyEdge].push_back(_valuesName + "_volume_ratio_u");
 		names[Crag::AdjacencyEdge].push_back(_valuesName + "_volume_ratio_v");
 
+		for (int i = 0; i < 3/*number of thresholds*/; i++) {
+
+			names[Crag::AdjacencyEdge].push_back(_valuesName + "_contact_size_" + boost::lexical_cast<std::string>(i));
+		}
+
 		return names;
 	}
 
