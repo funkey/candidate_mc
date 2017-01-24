@@ -58,6 +58,8 @@ public:
 	 * volumes[n].getBoundingBox().
 	 */
 	util::box<float,3> getBoundingBox(Crag::CragNode n) const {
+
+		update(n);
 		return _volumes[n].getBoundingBox();
 	}
 
@@ -83,6 +85,9 @@ protected:
 
 		util::box<float, 3> bb;
 		for (Crag::CragNode n : _crag.nodes())
+			// Here we deliberatly ignore empty UnionVolumes. Since they are 
+			// composed of leaf nodes anyway, their bounding box does not 
+			// contribute to the whole bounding box.
 			if (!_volumes[n].getBoundingBox().isZero())
 				bb += operator[](n)->getBoundingBox();
 
@@ -90,6 +95,8 @@ protected:
 	}
 
 private:
+
+	void update(Crag::CragNode n) const;
 
 	const Crag& _crag;
 
