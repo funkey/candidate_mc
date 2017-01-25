@@ -18,6 +18,7 @@ MeshViewController::MeshViewController(
 	_volumes(volumes),
 	_labels(labels),
 	_meshes(std::make_shared<sg_gui::Meshes>()),
+	_edges(std::make_shared<Edges>()),
 	_currentNeighbor(-1) {}
 
 void
@@ -127,7 +128,9 @@ MeshViewController::onSignal(sg_gui::KeyDown& signal) {
 	if (signal.key == sg_gui::keys::C) {
 
 		clearCandidates();
+		_edges->clear();
 		send<sg_gui::SetMeshes>(_meshes);
+		send<SetEdges>(_edges);
 	}
 }
 
@@ -198,6 +201,13 @@ MeshViewController::setCurrentCandidate(Crag::CragNode n) {
 				addMesh(m);
 			}
 
+		for (Crag::CragEdge e : _crag.edges())
+			if (_solution->selected(e) && _solution->label(e.u()) == label) {
+
+				LOG_DEBUG(meshviewcontrollerlog) << "adding edge " << _crag.id(e) << std::endl;
+				addEdge(e);
+			}
+
 	} else {
 
 		addMesh(n);
@@ -209,6 +219,7 @@ MeshViewController::setCurrentCandidate(Crag::CragNode n) {
 		_neighbors.push_back(e.opposite(_currentCandidate));
 
 	send<sg_gui::SetMeshes>(_meshes);
+	send<SetEdges>(_edges);
 	send<SetCandidate>(n);
 
 	LOG_USER(meshviewcontrollerlog) << "current node has " << _neighbors.size() << " neighbors" << std::endl;
@@ -297,6 +308,15 @@ MeshViewController::addMesh(Crag::CragNode n) {
 	_meshCache[n] = mesh;
 
 	LOG_DEBUG(meshviewcontrollerlog) << "mesh for node " << _crag.id(n) << " added" << std::endl;
+}
+
+void
+MeshViewController::addEdge(Crag::CragEdge e) {
+
+	util::point<float, 3> cu = _volumes[e.u()]->getBoundingBox().center();
+	util::point<float, 3> cv = _volumes[e.v()]->getBoundingBox().center();
+
+	_edges->add(_crag.id(e), Edge(cu, cv));
 }
 
 void

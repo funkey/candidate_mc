@@ -25,22 +25,7 @@ CragVolumes::operator[](Crag::CragNode n) const {
 	if (_volumes[n].numUnionVolumes() == 1)
 		return _volumes[n].getUnionVolume(0);
 
-	// if this volume is empty, we need to find all leaf node volumes that 
-	// create it
-	if (_volumes[n].numUnionVolumes() == 0) {
-
-		if (_crag.isLeafNode(n))
-			UTIL_THROW_EXCEPTION(
-					UsageError,
-					"node " << _crag.id(n) << " is a leaf node but has no volume assigned");
-
-		auto leafNodes = _crag.leafNodes(n);
-		std::vector<std::shared_ptr<CragVolume>> leafVolumes;
-
-		for (Crag::CragNode l : leafNodes)
-			leafVolumes.push_back(this->operator[](l));
-		_volumes[n] = UnionVolume(leafVolumes);
-	}
+	update(n);
 
 	UnionVolume& v = _volumes[n];
 	return _cache.get(n, [v]{ return v.materialize(); });
@@ -60,4 +45,25 @@ void
 CragVolumes::clearCache() {
 
 	_cache.clear();
+}
+
+void
+CragVolumes::update(Crag::CragNode n) const {
+
+	// if this volume is empty, we need to find all leaf node volumes that 
+	// create it
+	if (_volumes[n].numUnionVolumes() == 0) {
+
+		if (_crag.isLeafNode(n))
+			UTIL_THROW_EXCEPTION(
+					UsageError,
+					"node " << _crag.id(n) << " is a leaf node but has no volume assigned");
+
+		auto leafNodes = _crag.leafNodes(n);
+		std::vector<std::shared_ptr<CragVolume>> leafVolumes;
+
+		for (Crag::CragNode l : leafNodes)
+			leafVolumes.push_back(this->operator[](l));
+		_volumes[n] = UnionVolume(leafVolumes);
+	}
 }

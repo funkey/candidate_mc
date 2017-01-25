@@ -9,6 +9,8 @@
 #include <sg_gui/MeshView.h>
 #include <sg_gui/Meshes.h>
 #include <sg_gui/KeySignals.h>
+#include "EdgeView.h"
+#include "Edges.h"
 #include "Signals.h"
 
 template <typename EV>
@@ -51,6 +53,7 @@ class MeshViewController :
 				>,
 				sg::Provides<
 						sg_gui::SetMeshes,
+						SetEdges,
 						SetCandidate,
 						SetEdge
 				>
@@ -100,6 +103,9 @@ private:
 	// add the mesh of a candidate
 	void addMesh(Crag::CragNode n);
 
+	// add an edge
+	void addEdge(Crag::CragEdge e);
+
 	// remove the mesh of a candidate
 	void removeMesh(Crag::CragNode n);
 
@@ -122,6 +128,8 @@ private:
 	std::shared_ptr<ExplicitVolume<float>> _labels;
 
 	std::shared_ptr<sg_gui::Meshes> _meshes;
+
+	std::shared_ptr<Edges> _edges;
 
 	std::map<Crag::CragNode, std::shared_ptr<sg_gui::Mesh>> _meshCache;
 

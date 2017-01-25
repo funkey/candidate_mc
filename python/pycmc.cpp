@@ -271,6 +271,18 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("__setitem__", &genericSetter<util::point<int,3>, int, int>)
 			;
 
+	// util::point<unsigned int, 3>
+	boost::python::class_<util::point<unsigned int, 3>>("point_ui3")
+			.def("x", static_cast<const unsigned int&(util::point<unsigned int, 3>::*)() const>(&util::point<unsigned int, 3>::x),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("y", static_cast<const unsigned int&(util::point<unsigned int, 3>::*)() const>(&util::point<unsigned int, 3>::y),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("z", static_cast<const unsigned int&(util::point<unsigned int, 3>::*)() const>(&util::point<unsigned int, 3>::z),
+					boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__getitem__", &genericGetter<util::point<unsigned int,3>, int, unsigned int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
+			.def("__setitem__", &genericSetter<util::point<unsigned int,3>, int, unsigned int>)
+			;
+
 	// util::box<T, 3> (aka bounding boxes)
 	boost::python::class_<util::box<float, 3>>("box_f3")
 			.def("min", static_cast<util::point<float, 3>&(util::box<float, 3>::*)()>(&util::box<float, 3>::min),
