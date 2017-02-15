@@ -25,7 +25,7 @@
 util::ProgramOption optionMergeTree(
 		util::_long_name        = "mergeTree",
 		util::_short_name       = "m",
-		util::_description_text = "The merge-tree image. If this is a directory, one mergtree will be extracted "
+		util::_description_text = "The merge-tree image. If this is a directory, one merge tree will be extracted "
 		                          "per image in the directory and adjacencies introduced across subsequent images.");
 
 util::ProgramOption optionSupervoxels(
@@ -52,19 +52,19 @@ util::ProgramOption optionIntensities(
 util::ProgramOption optionBoundaries(
 		util::_long_name        = "boundaries",
 		util::_short_name       = "b",
-		util::_description_text = "The boundary prediciton image or directory of images.");
+		util::_description_text = "The boundary prediction image or directory of images.");
 
 util::ProgramOption optionXAffinities(
 		util::_long_name        = "xAffinities",
-		util::_description_text = "The affinities prediciton on X axis image or directory of images.");
+		util::_description_text = "The affinities prediction on X axis image or directory of images.");
 
 util::ProgramOption optionYAffinities(
 		util::_long_name        = "yAffinities",
-		util::_description_text = "The affinities prediciton on Y axis image or directory of images.");
+		util::_description_text = "The affinities prediction on Y axis image or directory of images.");
 
 util::ProgramOption optionZAffinities(
 		util::_long_name        = "zAffinities",
-		util::_description_text = "The affinities prediciton on Z axis image or directory of images.");
+		util::_description_text = "The affinities prediction on Z axis image or directory of images.");
 
 util::ProgramOption optionGroundTruth(
 		util::_long_name        = "groundTruth",
