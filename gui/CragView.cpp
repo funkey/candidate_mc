@@ -19,7 +19,8 @@ CragView::CragView() :
 	_labelsView(std::make_shared<sg_gui::VolumeView>()),
 	_volumeRaysView(std::make_shared<VolumeRaysView>()),
 	_alpha(1.0),
-	_overlayContourWidth(0) {
+	_overlayContourWidth(0),
+	_currentOverlay(0){
 
 	if (optionShowOverlayContours) {
 
