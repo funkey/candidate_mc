@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
 
 				LOG_USER(logger::out) << "\tedge contact features" << std::endl;
 
-				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries);
+				featureProvider.emplace_back<ContactFeatureProvider>(crag, volumes, boundaries, "membranes");
 			}
 
 			if (optionEdgeAccumulatedFeatures) {
