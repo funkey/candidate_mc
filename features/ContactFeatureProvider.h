@@ -16,17 +16,15 @@ public:
 		_crag(crag),
 		_volumes (volumes),
 		_values(values),
-		_valuesName(valuesName){
-	}
+		_valuesName(valuesName),
+		_contactFeature(crag, volumes, values) {}
 
 	template <typename ContainerT>
 	void appendEdgeFeatures(const Crag::CragEdge e, ContainerT& adaptor) {
 
 		if (_crag.type(e) == Crag::AdjacencyEdge)
 		{
-			ContactFeature contactFeature(_crag, _volumes, _values);
-
-			for (double feature : contactFeature.compute(e))
+			for (double feature : _contactFeature.compute(e))
 				adaptor.append(feature);
 		}
 	}
@@ -68,6 +66,8 @@ private:
 
 	const ExplicitVolume<float>& _values;
 	std::string _valuesName;
+
+	ContactFeature _contactFeature;
 };
 
 #endif // CANDIDATE_MC_FEATURES_CONTACT_FEATURE_PROVIDER_H__
