@@ -16,6 +16,7 @@
 #include <features/SkeletonExtractor.h>
 #include <features/VolumeRays.h>
 #include <features/AccumulatedFeatureProvider.h>
+#include <features/AffinityFeatureProvider.h>
 #include <features/BiasFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
 #include <features/ContactFeatureProvider.h>
@@ -96,6 +97,13 @@ util::ProgramOption optionEdgeAccumulatedFeatures(
 		util::_long_name        = "accumulatedFeatures",
 		util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
 		                          "(mean, 1-moment, 2-moment)."
+);
+
+util::ProgramOption optionEdgeAffinityFeatures(
+		util::_module           = "features.edges",
+		util::_long_name        = "affinityFeatures",
+		util::_description_text = "Compute accumulated statistics for each edge on affinities of affiliated edges "
+		                          "(min, 25%, median, 75%, max, mean, 1-moment, 2-moment)."
 );
 
 util::ProgramOption optionEdgeVolumeRayFeatures(
@@ -326,6 +334,20 @@ int main(int argc, char** argv) {
 
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, boundaries, "membranes");
 				featureProvider.emplace_back<AccumulatedFeatureProvider>(crag, raw, "raw");
+			}
+
+			if (optionEdgeAffinityFeatures) {
+
+				if (!hasAffinities) {
+
+					UTIL_THROW_EXCEPTION(
+							UsageError,
+							"asked for affinity features, but no affinities provided");
+				}
+
+				LOG_USER(logger::out) << "\tedge affinity features" << std::endl;
+
+				featureProvider.emplace_back<AffinityFeatureProvider>(crag, xAffinities, yAffinities, zAffinities);
 			}
 
 			if (optionEdgeDerivedFeatures) {
