@@ -103,7 +103,7 @@ util::ProgramOption optionEdgeAffinityFeatures(
 		util::_module           = "features.edges",
 		util::_long_name        = "affinityFeatures",
 		util::_description_text = "Compute accumulated statistics for each edge on affinities of affiliated edges "
-		                          "(min, median, max, mean, 1-moment, 2-moment)."
+		                          "(min, 25%, median, 75%, max, mean, 1-moment, 2-moment)."
 );
 
 util::ProgramOption optionEdgeVolumeRayFeatures(

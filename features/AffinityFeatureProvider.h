@@ -10,6 +10,7 @@
 #include <boost/accumulators/statistics/median.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/moment.hpp>
+#include <boost/accumulators/statistics/p_square_quantile.hpp>
 
 class AffinityFeatureProvider : public FeatureProvider<AffinityFeatureProvider> {
 
@@ -32,8 +33,6 @@ public:
 
 		if (_crag.type(e) == Crag::AdjacencyEdge)
 		{
-			// Define an accumulator set for calculating the mean and the
-			// 2nd moment .
 			using namespace boost::accumulators;
 			typedef  stats<
 				tag::min,
@@ -44,6 +43,10 @@ public:
 				tag::moment<2>
 			> Stats;
 			accumulator_set<double, Stats> accumulator;
+
+			typedef accumulator_set<double, stats<tag::p_square_quantile>> quantile_accumulator;
+			quantile_accumulator acc25(quantile_probability = 0.25);
+			quantile_accumulator acc75(quantile_probability = 0.75);
 
 			const auto & gridGraph = _crag.getGridGraph();
 
@@ -67,6 +70,9 @@ public:
 						affinity = _zAffinities[max];
 
 					accumulator(affinity);
+					acc25(affinity);
+					acc75(affinity);
+
 					numAffiliatedEdges++;
 				}
 
@@ -75,7 +81,9 @@ public:
 
 			// extract the features from the accumulator
 			adaptor.append(min(accumulator));
+			adaptor.append(p_square_quantile(acc25));
 			adaptor.append(median(accumulator));
+			adaptor.append(p_square_quantile(acc75));
 			adaptor.append(max(accumulator));
 			adaptor.append(mean(accumulator));
 			adaptor.append(moment<1>(accumulator));
@@ -89,7 +97,9 @@ public:
 
 		names[Crag::AdjacencyEdge].push_back("num_affiliated_edges_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affinities_min_" + _valuesName);
+		names[Crag::AdjacencyEdge].push_back("affinities_25quantile_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affinities_median_" + _valuesName);
+		names[Crag::AdjacencyEdge].push_back("affinities_75quantile_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affinities_max_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affinities_mean_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affinities_stddev_" + _valuesName);
