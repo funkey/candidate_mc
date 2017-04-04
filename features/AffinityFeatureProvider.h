@@ -39,10 +39,11 @@ public:
 				tag::median,
 				tag::max,
 				tag::mean,
-				tag::moment<1>,
-				tag::moment<2>
+				tag::moment<2>,
+				tag::moment<3>
 			> Stats;
 			accumulator_set<double, Stats> accumulator;
+
 
 			typedef accumulator_set<double, stats<tag::p_square_quantile>> quantile_accumulator;
 			quantile_accumulator acc25(quantile_probability = 0.25);
@@ -86,8 +87,8 @@ public:
 			adaptor.append(p_square_quantile(acc75));
 			adaptor.append(max(accumulator));
 			adaptor.append(mean(accumulator));
-			adaptor.append(moment<1>(accumulator));
-			adaptor.append(moment<2>(accumulator));
+			adaptor.append(sqrt(moment<2>(accumulator)));
+			adaptor.append(moment<3>(accumulator));
 		}
 	}
 
