@@ -7,10 +7,8 @@
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/min.hpp>
 #include <boost/accumulators/statistics/max.hpp>
-#include <boost/accumulators/statistics/median.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/moment.hpp>
-#include <boost/accumulators/statistics/p_square_quantile.hpp>
 
 class AffinityFeatureProvider : public FeatureProvider<AffinityFeatureProvider> {
 
@@ -36,23 +34,15 @@ public:
 			using namespace boost::accumulators;
 			typedef  stats<
 				tag::min,
-				tag::median,
 				tag::max,
 				tag::mean,
 				tag::moment<2>,
 				tag::moment<3>
 			> Stats;
 			accumulator_set<double, Stats> accumulator;
-
-
-			typedef accumulator_set<double, stats<tag::p_square_quantile>> quantile_accumulator;
-			quantile_accumulator acc25(quantile_probability = 0.25);
-			quantile_accumulator acc75(quantile_probability = 0.75);
-
+			std::vector<double> affinities;
 			const auto & gridGraph = _crag.getGridGraph();
 
-			// push data into the accumulator
-			unsigned int numAffiliatedEdges = 0;
 			for (Crag::CragEdge leafEdge : _crag.leafEdges(e))
 				for (vigra::GridGraph<3>::Edge ae : _crag.getAffiliatedEdges(leafEdge)) {
 
@@ -62,7 +52,7 @@ public:
 					auto max = std::max(ggU, ggV);
 					auto min = std::min(ggU, ggV);
 
-					float affinity;
+					double affinity;
 					if (max[0] != min[0])
 						affinity = _xAffinities[max];
 					else if (max[1] != min[1])
@@ -71,20 +61,31 @@ public:
 						affinity = _zAffinities[max];
 
 					accumulator(affinity);
-					acc25(affinity);
-					acc75(affinity);
-
-					numAffiliatedEdges++;
+					affinities.push_back(affinity);
 				}
 
 			// TODO: affilitatedEdgesProvider?
-			adaptor.append(numAffiliatedEdges);
+
+			// number of affiliated edges
+			adaptor.append(affinities.size());
 
 			// extract the features from the accumulator
+			// quartiles and median are approximation on accumulator, so we will get information from std::nth_element
+			auto const quantile25 = affinities.size() / 4;
+			auto const median     = affinities.size() / 2;
+			auto const quantile75 = quantile25 + median;
+
+			// quantile 25%
+			std::nth_element(affinities.begin(),                  affinities.begin() + quantile25, affinities.end());
+			//median
+			std::nth_element(affinities.begin() + quantile25 + 1, affinities.begin() + median,     affinities.end());
+			// quantile 75%
+			std::nth_element(affinities.begin() + median + 1,     affinities.begin() + quantile75, affinities.end());
+
 			adaptor.append(min(accumulator));
-			adaptor.append(p_square_quantile(acc25));
-			adaptor.append(median(accumulator));
-			adaptor.append(p_square_quantile(acc75));
+			adaptor.append(affinities[quantile25]);
+			adaptor.append(affinities[median]);
+			adaptor.append(affinities[quantile75]);
 			adaptor.append(max(accumulator));
 			adaptor.append(mean(accumulator));
 			adaptor.append(sqrt(moment<2>(accumulator)));
