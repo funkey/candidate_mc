@@ -26,12 +26,12 @@ public:
 		if (_crag.type(e) == Crag::AdjacencyEdge)
 		{
 			// Define an accumulator set for calculating the mean and the
-			// 2nd moment .
+			// 2nd moment and 3rd moment.
 			using namespace boost::accumulators;
 			typedef  stats<
 				tag::mean,
-				tag::moment<1>,
-				tag::moment<2>
+				tag::moment<2>,
+				tag::moment<3>
 			> Stats;
 			accumulator_set<double, Stats> accumulator;
 
@@ -55,8 +55,8 @@ public:
 
 			// extract the features from the accumulator
 			adaptor.append(mean(accumulator));
-			adaptor.append(moment<1>(accumulator));
-			adaptor.append(moment<2>(accumulator));
+			adaptor.append(sqrt(moment<2>(accumulator)));
+			adaptor.append(moment<3>(accumulator));
 
 		}
 	}
@@ -68,7 +68,7 @@ public:
 		names[Crag::AdjacencyEdge].push_back("num_affiliated_edges_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affiliated_edges_mean_" + _valuesName);
 		names[Crag::AdjacencyEdge].push_back("affiliated_edges_stddev_" + _valuesName);
-		names[Crag::AdjacencyEdge].push_back("affiliated_edges_skey_" + _valuesName);
+		names[Crag::AdjacencyEdge].push_back("affiliated_edges_skew_" + _valuesName);
 
 		return names;
 	}
