@@ -27,7 +27,6 @@
 #include <features/SquareFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
 #include <features/VolumeRayFeatureProvider.h>
-#include <features/ContactFeatureProvider.h>
 #include <features/AssignmentFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
@@ -96,14 +95,14 @@ util::ProgramOption optionEdgeAccumulatedFeatures(
 		util::_module           = "features.edges",
 		util::_long_name        = "accumulatedFeatures",
 		util::_description_text = "Compute accumulated statistics for each edge (so far on raw data and probability map) "
-		                          "(mean, 1-moment, 2-moment)."
+		                          "(mean, std deviation, skewness)."
 );
 
 util::ProgramOption optionEdgeAffinityFeatures(
 		util::_module           = "features.edges",
 		util::_long_name        = "affinityFeatures",
 		util::_description_text = "Compute accumulated statistics for each edge on affinities of affiliated edges "
-		                          "(min, 25%, median, 75%, max, mean, 1-moment, 2-moment)."
+		                          "(min, 25%, median, 75%, max, mean, std deviation, skweness)."
 );
 
 util::ProgramOption optionEdgeVolumeRayFeatures(
@@ -311,7 +310,9 @@ int main(int argc, char** argv) {
 				p.wholeVolume = true;
 				p.boundaryVoxels = false;
 				p.computeCoordinateStatistics = optionCoordinatesStatistics;
+
 				featureProvider.emplace_back<StatisticsFeatureProvider>(boundaries, crag, volumes, "membranes ", p);
+
 			}
 
 			if (optionNodeTopologicalFeatures /* || optionEdgeTopologicalFeatures */) {
