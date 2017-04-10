@@ -64,13 +64,14 @@ CragImport::readCrag(
 
 void
 CragImport::readCragFromMergeHistory(
-		std::string           supervoxels,
-		std::string           mergeHistory,
-		Crag&                 crag,
-		CragVolumes&          volumes,
-		util::point<float, 3> resolution,
-		util::point<float, 3> offset,
-		Costs&                mergeCosts) {
+		std::string                supervoxels,
+		std::string                mergeHistory,
+		Crag&                      crag,
+		CragVolumes&               volumes,
+		util::point<float, 3>      resolution,
+		util::point<float, 3>      offset,
+		Costs&                     mergeCosts,
+		Crag::NodeMap<int>&        nodeToId) {
 
 	ExplicitVolume<int> ids;
 	readVolumeFromOption(ids, supervoxels);
@@ -88,6 +89,8 @@ CragImport::readCragFromMergeHistory(
 		int id = p.first;
 		maxId = std::max(maxId, id);
 	}
+
+	std::cout << "max id: " << maxId << std::endl;
 
 	int maxMerges = -1;
 	if (optionMaxMerges)
@@ -187,6 +190,10 @@ CragImport::readCragFromMergeHistory(
 				n);
 		numAdded++;
 	}
+
+	// Walk along the map to create a CragNodeMap of node x id
+	for (auto& p : idToNode)
+		nodeToId[p.second] = p.first;
 
 	LOG_USER(logger::out) << "history parsed, " << numAdded << " candidates added" << std::endl;
 
@@ -329,6 +336,8 @@ CragImport::readSupervoxels(
 		volume->setOffset(offset + bb.min()*resolution);
 		volumes.setVolume(n, volume);
 		idToNode[id] = n;
+
+		std::cout << " id " << id << "to node " << crag.id(n) << std::endl;
 	}
 
 	for (unsigned int z = 0; z < ids.depth();  z++)
