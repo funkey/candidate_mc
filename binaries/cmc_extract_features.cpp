@@ -15,19 +15,20 @@
 #include <features/FeatureExtractor.h>
 #include <features/SkeletonExtractor.h>
 #include <features/VolumeRays.h>
+#include <features/AssignmentFeatureProvider.h>
 #include <features/AccumulatedFeatureProvider.h>
 #include <features/AffinityFeatureProvider.h>
 #include <features/BiasFeatureProvider.h>
 #include <features/CompositeFeatureProvider.h>
 #include <features/ContactFeatureProvider.h>
 #include <features/DerivedFeatureProvider.h>
+#include <features/MergeTreeScoreFeatureProvider.h>
 #include <features/PairwiseFeatureProvider.h>
 #include <features/ShapeFeatureProvider.h>
 #include <features/StatisticsFeatureProvider.h>
 #include <features/SquareFeatureProvider.h>
 #include <features/TopologicalFeatureProvider.h>
 #include <features/VolumeRayFeatureProvider.h>
-#include <features/AssignmentFeatureProvider.h>
 #include <learning/RandLoss.h>
 #include <learning/BestEffort.h>
 
@@ -128,6 +129,14 @@ util::ProgramOption optionEdgeDerivedFeatures(
 		util::_long_name        = "derivedFeatures",
 		util::_description_text = "Compute features for each adjacency edges that are derived from the features of incident candidates "
 		                          "(difference, sum, min, max)."
+);
+
+util::ProgramOption optionMergeTreeScoreFeatures(
+		util::_module           = "features.edges",
+		util::_long_name        = "mergeTreeScoreFeature",
+		util::_description_text = "Use the score in the merge history as a indicator if the nodes should be merged. "
+		                          "Also use the information of the level on the tree where two nodes have a common parent."
+		                          "It is necessary to inform a path to the merge history file."
 );
 
 /////////////////////////
@@ -379,6 +388,21 @@ int main(int argc, char** argv) {
 					LOG_USER(logger::out) << "\t\tusing boundaries" << std::endl;
 					featureProvider.emplace_back<AssignmentFeatureProvider>(crag, volumes, boundaries, nodeFeatures);
 				}
+			}
+
+			if (optionMergeTreeScoreFeatures.as<bool>()) {
+
+				LOG_USER(logger::out) << "\tedge merge tree score features" << std::endl;
+
+				Crag::NodeMap<int> nodeToId(crag);
+				Costs              mergeCosts(crag);
+
+				cragStore.retrieveNodeToIdMap(crag, nodeToId, "node-to-id");
+				cragStore.retrieveCosts(crag, mergeCosts, "merge-scores");
+
+				std::string mergeHistoryPath = optionMergeTreeScoreFeatures;
+				featureProvider.emplace_back<MergeTreeScoreFeatureProvider>(crag, volumes, nodeToId, mergeHistoryPath);
+
 			}
 
 			FeatureExtractor featureExtractor(crag, volumes);
