@@ -401,7 +401,7 @@ int main(int argc, char** argv) {
 				cragStore.retrieveCosts(crag, mergeCosts, "merge-scores");
 
 				std::string mergeHistoryPath = optionMergeTreeScoreFeatures;
-				featureProvider.emplace_back<MergeTreeScoreFeatureProvider>(crag, volumes, nodeToId, mergeHistoryPath);
+				featureProvider.emplace_back<MergeTreeScoreFeatureProvider>(crag, volumes, nodeToId, mergeCosts, mergeHistoryPath);
 
 			}
 
