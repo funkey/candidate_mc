@@ -147,6 +147,17 @@ public:
 			CragSolution& solution,
 			std::string   name);
 
+	/**
+	 * Store the map between the id on merge history and the node id on crag.
+	 */
+	void saveNodeToIdMap(
+			const Crag& crag, Crag::NodeMap<int>& map, std::string name);
+
+	/**
+	 * Retrieve the map between the id on merge history and the node id on crag.
+	 */
+	void retrieveNodeToIdMap(
+			const Crag& crag, Crag::NodeMap<int>& map, std::string name);
 
 	/**
 	 * Get a list of the names of all stored segmentations.

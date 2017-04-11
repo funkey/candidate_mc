@@ -754,6 +754,24 @@ Hdf5CragStore::retrieveSolution(
 	}
 }
 
+void Hdf5CragStore::saveNodeToIdMap(const Crag& crag, Crag::NodeMap<int>& map, std::string name) {
+
+	_hdfFile.root();
+	_hdfFile.cd_mk("/crag");
+	_hdfFile.cd_mk("node_merge-tree-id");
+
+	Hdf5GraphWriter::writeNodeMap(crag, map, name);
+
+}
+
+void Hdf5CragStore::retrieveNodeToIdMap(const Crag& crag, Crag::NodeMap<int>& map, std::string name) {
+
+	_hdfFile.cd("/crag");
+	_hdfFile.cd("node_merge-tree-id");
+
+	Hdf5GraphReader::readNodeMap(crag, map, name);
+}
+
 std::vector<std::string>
 Hdf5CragStore::getSolutionNames() {
 

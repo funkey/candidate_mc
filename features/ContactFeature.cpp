@@ -64,7 +64,7 @@ ContactFeature::compute(Crag::CragEdge e) {
 		contactScores.push_back(normalizedContactRatio);
 	}
 
-	LOG_ALL(contactfeaturelog) << "contanct scores of edge " << _crag.id(e.u()) << ", " << _crag.id(e.v()) << ": " << contactScores << std::endl;
+	LOG_ALL(contactfeaturelog) << "contact scores of edge " << _crag.id(e.u()) << ", " << _crag.id(e.v()) << ": " << contactScores << std::endl;
 
 	// copy flattened contact matrix and its log into feature vector
 	for (int i = 0; i < contactScores.size(); i++) {

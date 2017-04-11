@@ -321,6 +321,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getBoundingBox", &ExplicitVolume<int>::getBoundingBox, boost::python::return_internal_reference<>())
 			.def("getDiscreteBoundingBox", &ExplicitVolume<int>::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &ExplicitVolume<int>::getResolution, boost::python::return_internal_reference<>())
+			.def("getOffset", &CragVolume::getOffset, boost::python::return_internal_reference<>())
 			.def("cut", &ExplicitVolume<int>::cut)
 			.def("__getitem__", &genericGetter<ExplicitVolume<int>,
 					util::point<int,3>, int>, boost::python::return_value_policy<boost::python::copy_const_reference>())
@@ -331,6 +332,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getBoundingBox", &ExplicitVolume<float>::getBoundingBox, boost::python::return_internal_reference<>())
 			.def("getDiscreteBoundingBox", &ExplicitVolume<float>::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &ExplicitVolume<float>::getResolution, boost::python::return_internal_reference<>())
+			.def("getOffset", &CragVolume::getOffset, boost::python::return_internal_reference<>())
 			.def("cut", &ExplicitVolume<float>::cut)
 			.def("__getitem__", &genericGetter<ExplicitVolume<float>,
 					util::point<float,3>, float>, boost::python::return_value_policy<boost::python::copy_const_reference>())
@@ -341,6 +343,7 @@ BOOST_PYTHON_MODULE(pycmc) {
 			.def("getBoundingBox", &CragVolume::getBoundingBox, boost::python::return_internal_reference<>())
 			.def("getDiscreteBoundingBox", &CragVolume::getDiscreteBoundingBox, boost::python::return_internal_reference<>())
 			.def("getResolution", &CragVolume::getResolution, boost::python::return_internal_reference<>())
+			.def("getOffset", &CragVolume::getOffset, boost::python::return_internal_reference<>())
 			.def("cut", &CragVolume::cut)
 			.def("__getitem__", &genericGetter<ExplicitVolume<unsigned char>, util::point<int,3>, unsigned char>,
 					boost::python::return_value_policy<boost::python::copy_const_reference>())

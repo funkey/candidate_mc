@@ -84,15 +84,18 @@ public:
 	 * @param mergeCosts
 	 *              The merge-score of each candidate, if it was stored in the
 	 *              merge history file.
+	 * @param idToNode
+	 *              Map the id on merge history with the node id on crag
 	 */
 	void readCragFromMergeHistory(
-			std::string           supervoxels,
-			std::string           mergeHistory,
-			Crag&                 crag,
-			CragVolumes&          volumes,
-			util::point<float, 3> resolution,
-			util::point<float, 3> offset,
-			Costs&                mergeCosts);
+			std::string                supervoxels,
+			std::string                mergeHistory,
+			Crag&                      crag,
+			CragVolumes&               volumes,
+			util::point<float, 3>      resolution,
+			util::point<float, 3>      offset,
+			Costs&                     mergeCosts,
+			Crag::NodeMap<int>&        nodeToId);
 
 	/**
 	 * Import a CRAG of depth 1 from a supervoxel image or volume and a 

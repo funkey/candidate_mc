@@ -35,7 +35,7 @@ public:
 			// the largest mutual piercing distance
 			double mutualPiercingScore = std::min(uvMaxPiercingDepth, vuMaxPiercingDepth);
 
-			// normalize piercing dephts
+			// normalize piercing depths
 			double norm = std::max(length(uvRay.direction()), length(vuRay.direction()));
 			double normalizedMutualPiercingScore = mutualPiercingScore/norm;
 
